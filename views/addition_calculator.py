@@ -134,39 +134,67 @@ def main():
             f"**Antibiotikum:** {antibiotic}  \n"
             f"**Klasse:** {ab_class}"
         )
-        st.write("")  # spacing
+        st.write("")
         st.metric("Resistenzrate", f"{rate:.1f}%")
         st.metric("Einstufung", label)
         st.metric("Daten (res/gesamt)", f"{resistant}/{total}")
     with right:
-        st.write("")  # spacing
+        st.write("")
         st.info("Tipp: Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
 
     # Zusatztexte / Interpretation (ausblendbar)
     with st.expander("Interpretation und Hinweise"):
         show_mdr_texts(organism, ab_class, resistant)
 
-    # Visualisierung (Donut + Alternative Balken)
+    # Visualisierung
     st.subheader("Visualisierung")
     chart_df = pd.DataFrame({
         "Kategorie": ["Sensible", "Resistent"],
         "Anzahl": [sensitive, resistant],
     })
+    # Anteil als Bruch
+    total_n = chart_df["Anzahl"].sum()
+    if total_n > 0:
+        chart_df["Share"] = chart_df["Anzahl"] / total_n
+    else:
+        chart_df["Share"] = 0.0
 
-    pie = (
+    # Farbzuordnung:
+    color_scale = alt.Scale(
+        domain=["Sensible", "Resistent"],
+        range=["#2ca02c", "#d62728"]
+    )
+    # Kreisdiagramm
+    donut_chart = (
         alt.Chart(chart_df)
         .encode(
             theta=alt.Theta("Anzahl:Q"),
-            color=alt.Color("Kategorie:N", sort=["Sensible", "Resistent"], legend=alt.Legend(title="Kategorie")),
-            tooltip=["Kategorie", "Anzahl"]
+            color=alt.Color("Kategorie:N", scale=color_scale, legend=None),
+            tooltip=[
+                alt.Tooltip("Kategorie:N"),
+                alt.Tooltip("Anzahl:Q"),
+                alt.Tooltip("Share:Q", format=".1%")
+            ]
         )
         .mark_arc(innerRadius=60)
+        .properties(height=300)
     )
 
-    st.altair_chart(pie, use_container_width=True)
+    # Layout: Donut links, Prozentanzeige rechts
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        st.altair_chart(donut_chart, use_container_width=True)
 
-    st.write("Alternative Ansicht:")
-    st.bar_chart(chart_df.set_index("Kategorie"))
+    with c2:
+        # Werte für Anzeige rechts
+        share_s = chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0]
+        share_r = chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0]
+
+        st.markdown(f"**Anteile**")
+        st.write("")
+        st.markdown(f"🔴 **Resistent:** {share_r:.1%}  \n( Anzahl: {int(chart_df.loc[chart_df['Kategorie']=='Resistent','Anzahl'].iloc[0])} )")
+        st.markdown(f"🟢 **Sensible:** {share_s:.1%}  \n( Anzahl: {int(chart_df.loc[chart_df['Kategorie']=='Sensible','Anzahl'].iloc[0])} )")
+        
 
     st.caption(f"Auswertung: {organism} – {antibiotic} ({period})")
 
