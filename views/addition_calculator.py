@@ -64,6 +64,16 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
             "(z. B. CRPA). Abklärung und Therapie gemäss Spitalhygiene prüfen."
         )
 
+def mdr_has_hints(organism: str, ab_class: str, resistant_n: int) -> bool:
+    if resistant_n <= 0:
+        return False
+    if is_enterobacterales(organism) and ab_class in {"Carbapenem", "Cephalosporin"}:
+        return True
+    if organism == "S. aureus" and ab_class == "Penicillin":
+        return True
+    if organism == "Pseudomonas aeruginosa" and ab_class == "Carbapenem":
+        return True
+    return False
 
 def main():
     st.title("Rechner Resistenzmonitoring")
@@ -140,11 +150,14 @@ def main():
         st.metric("Daten (res/gesamt)", f"{resistant}/{total}")
     with right:
         st.write("")
-        st.info("Tipp: Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+        if mdr_has_hints(organism, ab_class, resistant):
+            st.info("Tipp: Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+        
 
     # Zusatztexte / Interpretation (ausblendbar)
-    with st.expander("Interpretation und Hinweise"):
-        show_mdr_texts(organism, ab_class, resistant)
+    if mdr_has_hints(organism, ab_class, resistant):
+        with st.expander("Interpretation und Hinweise"):
+            show_mdr_texts(organism, ab_class, resistant)
 
     # Visualisierung
     st.subheader("Visualisierung")
