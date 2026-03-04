@@ -2,6 +2,7 @@
 
 import streamlit as st
 import pandas as pd
+import altair as alt
 
 from functions.addition import subtract, percent
 
@@ -65,9 +66,9 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
 
 
 def main():
-    st.title("Bakterienfilter – Resistenzmonitoring")
+    st.title("Rechner Resistenzmonitoring")
 
-    # ---- Eingaben (einfach, nachvollziehbar) ----
+    # Eingabe
     with st.form("res_form"):
         st.subheader("Auswahl")
 
@@ -125,33 +126,47 @@ def main():
 
     # Ergebnisanzeige
     st.subheader("Ergebnis")
-    st.markdown(
-        f"**Zeitperiode:** {period}  \n"
-        f"**Keim:** {organism}  \n"
-        f"**Antibiotikum:** {antibiotic}  \n"
-        f"**Klasse:** {ab_class}"
+    left, right = st.columns([2, 1])
+    with left:
+        st.markdown(
+            f"**Zeitperiode:** {period}  \n"
+            f"**Keim:** {organism}  \n"
+            f"**Antibiotikum:** {antibiotic}  \n"
+            f"**Klasse:** {ab_class}"
+        )
+        st.write("")  # spacing
+        st.metric("Resistenzrate", f"{rate:.1f}%", delta=rate - 10.0)
+        st.metric("Einstufung", label)
+        st.metric("Daten (res/gesamt)", f"{resistant}/{total}")
+    with right:
+        st.write("")  # spacing
+        st.info("Tipp: Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+
+    # Zusatztexte / Interpretation (ausblendbar)
+    with st.expander("Interpretation und Hinweise"):
+        show_mdr_texts(organism, ab_class, resistant)
+
+    # Visualisierung (Donut + Alternative Balken)
+    st.subheader("Visualisierung")
+    chart_df = pd.DataFrame({
+        "Kategorie": ["Sensible", "Resistent"],
+        "Anzahl": [sensitive, resistant],
+    })
+
+    pie = (
+        alt.Chart(chart_df)
+        .encode(
+            theta=alt.Theta("Anzahl:Q"),
+            color=alt.Color("Kategorie:N", sort=["Sensible", "Resistent"], legend=alt.Legend(title="Kategorie")),
+            tooltip=["Kategorie", "Anzahl"]
+        )
+        .mark_arc(innerRadius=60)
     )
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.metric("Resistenzrate", f"{rate:.1f}%")
-    with c2:
-        st.metric("Einstufung", label)
-    with c3:
-        st.metric("Daten", f"{resistant}/{total}")
+    st.altair_chart(pie, use_container_width=True)
 
-    # Zusatztexte bei 'multiresistenten' Konstellationen
-    show_mdr_texts(organism, ab_class, resistant)
-
-    # Visualisierung
-    st.subheader("Visualisierung")
-    df = pd.DataFrame(
-        {
-            "Kategorie": ["Sensible", "Resistent"],
-            "Anzahl": [sensitive, resistant],
-        }
-    ).set_index("Kategorie")
-    st.bar_chart(df)
+    st.write("Alternative Ansicht:")
+    st.bar_chart(chart_df.set_index("Kategorie"))
 
     st.caption(f"Auswertung: {organism} – {antibiotic} ({period})")
 
