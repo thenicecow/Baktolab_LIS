@@ -1,10 +1,22 @@
-def add(a , b):
+def add(a, b):
     return a + b
-def subtract(a , b):
+
+
+def subtract(a, b):
     return a - b
-def multiply(a , b):
+
+
+def multiply(a, b):
     return a * b
-def divide(a , b):
+
+
+def divide(a, b):
     if b == 0:
-        return "Fehler: Division durch Null ist nicht erlaubt."
+        return None
     return a / b
+
+
+def percent(part, total):
+    if total == 0:
+        return None
+    return (part / total) * 100

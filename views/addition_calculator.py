@@ -8,11 +8,11 @@ from functions.addition import subtract, percent
 
 def classify_rate(rate_pct: float) -> str:
     """Einfache Ampel-Klassifikation."""
-    if rate_pct < 10:
-        return "🟢 niedrig (<10%)"
-    if rate_pct <= 25:
-        return "🟠 mittel (10–25%)"
-    return "🔴 hoch (>25%)"
+    if rate_pct < 5:
+        return "🟢 niedrig (<5%)"
+    if rate_pct <= 10:
+        return "🟠 mittel (5–10%)"
+    return "🔴 hoch (>10%)"
 
 
 def is_enterobacterales(organism: str) -> bool:
@@ -20,10 +20,6 @@ def is_enterobacterales(organism: str) -> bool:
 
 
 def antibiotic_class(antibiotic: str) -> str:
-    """
-    Ordnet eine Auswahl grob einer Klasse zu.
-    (Einfach gehalten für Anfänger.)
-    """
     if antibiotic in ["Meropenem", "Imipenem"]:
         return "Carbapenem"
     if antibiotic in ["Ceftriaxon", "Cefepim"]:
@@ -36,7 +32,6 @@ def antibiotic_class(antibiotic: str) -> str:
 def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
     """
     Zusätzliche Texte bei 'multiresistenten' Konstellationen.
-    Sehr vereinfachte Regeln (didaktisch).
     """
     if resistant_n <= 0:
         return
@@ -45,33 +40,32 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
     if is_enterobacterales(organism) and ab_class == "Carbapenem":
         st.warning(
             "Warnhinweis: Carbapenem-Resistenz bei Enterobacterales ist besonders relevant "
-            "(mögliche CRE/CPE). Bestätigung/Abklärung und Hygienemassnahmen gemäss lokalen Vorgaben prüfen."
+            "(mögliche CRE/CPE). Bestätigung/Abklärung und Hygienemassnahmen gemäss Spitalhygiene prüfen."
         )
 
     # Enterobacterales + Cephalosporin resistent -> ESBL-Verdacht Hinweis
     if is_enterobacterales(organism) and ab_class == "Cephalosporin":
         st.info(
             "Hinweis: Cephalosporin-Resistenz bei Enterobacterales kann auf ESBL/AmpC hindeuten. "
-            "Interpretation gemäss lokalen Richtlinien."
+            "Interpretation gemäss Spitalhygiene-Richtlinien."
         )
 
-    # S. aureus + Penicillin resistent -> MRSA Hinweis (didaktisch sauber formuliert)
+    # S. aureus + Penicillin resistent -> MRSA Hinweis
     if organism == "S. aureus" and ab_class == "Penicillin":
         st.warning(
-            "Hinweis: Penicillin-Resistenz bei S. aureus ist häufig. "
-            "MRSA wird jedoch über Oxacillin/Cefoxitin beurteilt (nicht über Penicillin)."
+            "Hinweis: Penicillin-Resistenz bei S. aureus ist häufig ein Hinweis auf MRSA. Weitere Tests (z. B. Oxacillin/Cefoxitin) zur Bestätigung empfohlen."
         )
 
     # Pseudomonas + Carbapenem resistent -> CRPA Hinweis
     if organism == "Pseudomonas aeruginosa" and ab_class == "Carbapenem":
         st.warning(
             "Warnhinweis: Carbapenem-Resistenz bei Pseudomonas aeruginosa kann klinisch relevant sein "
-            "(z. B. CRPA). Abklärung und Therapie gemäss lokalen Vorgaben."
+            "(z. B. CRPA). Abklärung und Therapie gemäss Spitalhygiene prüfen."
         )
 
 
 def main():
-    st.title("Bakterienfilter – Resistenzmonitor (einfach)")
+    st.title("Bakterienfilter – Resistenzmonitoring")
 
     # ---- Eingaben (einfach, nachvollziehbar) ----
     with st.form("res_form"):
@@ -113,12 +107,12 @@ def main():
         st.info("Werte eingeben und auf **Berechnen** klicken.")
         return
 
-    # ---- Plausibilitätscheck ----
+    # Plausibilitätschecks
     if resistant > total:
         st.error("Fehler: 'resistente Isolate' darf nicht größer sein als 'gesamt'.")
         return
 
-    # ---- Berechnung (über functions/addition.py) ----
+    # Berechnung
     rate = percent(resistant, total)  # None wenn total==0
     if rate is None:
         st.error("Fehler: Gesamtzahl ist 0 – Resistenzrate kann nicht berechnet werden.")
@@ -129,7 +123,7 @@ def main():
 
     ab_class = antibiotic_class(antibiotic)
 
-    # ---- Ergebnis (Zeitperiode + Keim + AB sichtbar) ----
+    # Ergebnisanzeige
     st.subheader("Ergebnis")
     st.markdown(
         f"**Zeitperiode:** {period}  \n"
@@ -146,10 +140,10 @@ def main():
     with c3:
         st.metric("Daten", f"{resistant}/{total}")
 
-    # ---- Zusatztexte zu Multiresistenzen (vereinfachte Regeln) ----
+    # Zusatztexte bei 'multiresistenten' Konstellationen
     show_mdr_texts(organism, ab_class, resistant)
 
-    # ---- Kleine Visualisierung (sehr einfach) ----
+    # Visualisierung
     st.subheader("Visualisierung")
     df = pd.DataFrame(
         {
@@ -159,7 +153,6 @@ def main():
     ).set_index("Kategorie")
     st.bar_chart(df)
 
-    # Unten nochmals klar sichtbar (wie verlangt)
     st.caption(f"Auswertung: {organism} – {antibiotic} ({period})")
 
 
