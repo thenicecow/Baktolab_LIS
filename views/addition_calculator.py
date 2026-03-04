@@ -29,11 +29,9 @@ def antibiotic_class(antibiotic: str) -> str:
         return "Penicillin"
     return "Other"
 
-
+# Textkonservern für klinische Hinweise
 def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
-    """
-    Zusätzliche Texte bei 'multiresistenten' Konstellationen.
-    """
+    
     if resistant_n <= 0:
         return
 
@@ -41,7 +39,7 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
     if is_enterobacterales(organism) and ab_class == "Carbapenem":
         st.warning(
             "Warnhinweis: Carbapenem-Resistenz bei Enterobacterales ist besonders relevant "
-            "(mögliche CRE/CPE). Bestätigung/Abklärung und Hygienemassnahmen gemäss Spitalhygiene prüfen."
+            "Bestätigung/Abklärung und Hygienemassnahmen gemäss Spitalhygiene prüfen."
         )
 
     # Enterobacterales + Cephalosporin resistent -> ESBL-Verdacht Hinweis
@@ -61,7 +59,7 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
     if organism == "Pseudomonas aeruginosa" and ab_class == "Carbapenem":
         st.warning(
             "Warnhinweis: Carbapenem-Resistenz bei Pseudomonas aeruginosa kann klinisch relevant sein "
-            "(z. B. CRPA). Abklärung und Therapie gemäss Spitalhygiene prüfen."
+            "Abklärung und Therapie gemäss Spitalhygiene prüfen."
         )
 
 def mdr_has_hints(organism: str, ab_class: str, resistant_n: int) -> bool:
@@ -90,13 +88,13 @@ def main():
             )
         with col2:
             period = st.selectbox(
-                "Zeitperiode",
+                "Auswertungszeitraum",
                 ["letzter Monat", "letzte 3 Monate", "letztes Halbjahr", "letztes Jahr"],
             )
 
         st.subheader("Antibiotikum")
         antibiotic = st.selectbox(
-            "Antibiotikum (Beispiele)",
+            "Antibiotikum (eingeschränkte Auswahl)",
             [
                 "Meropenem",     # Carbapenem
                 "Imipenem",      # Carbapenem
@@ -139,7 +137,7 @@ def main():
     left, right = st.columns([2, 1])
     with left:
         st.markdown(
-            f"**Zeitperiode:** {period}  \n"
+            f"**Auswertungszeitraum:** {period}  \n"
             f"**Keim:** {organism}  \n"
             f"**Antibiotikum:** {antibiotic}  \n"
             f"**Klasse:** {ab_class}"
@@ -151,7 +149,7 @@ def main():
     with right:
         st.write("")
         if mdr_has_hints(organism, ab_class, resistant):
-            st.info("Tipp: Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+            st.info("⚠️ Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
         
 
     # Zusatztexte / Interpretation (ausblendbar)
@@ -203,10 +201,8 @@ def main():
         share_s = chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0]
         share_r = chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0]
 
-        st.markdown(f"**Anteile**")
-        st.write("")
         st.markdown(f"🔴 **Resistent:** {share_r:.1%}  \n( Anzahl: {int(chart_df.loc[chart_df['Kategorie']=='Resistent','Anzahl'].iloc[0])} )")
-        st.markdown(f"🟢 **Sensible:** {share_s:.1%}  \n( Anzahl: {int(chart_df.loc[chart_df['Kategorie']=='Sensible','Anzahl'].iloc[0])} )")
+        st.markdown(f"🟢 **Sensibel:** {share_s:.1%}  \n( Anzahl: {int(chart_df.loc[chart_df['Kategorie']=='Sensible','Anzahl'].iloc[0])} )")
         
 
     st.caption(f"Auswertung: {organism} – {antibiotic} ({period})")
