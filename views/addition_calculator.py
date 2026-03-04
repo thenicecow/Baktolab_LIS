@@ -35,7 +35,7 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
     if resistant_n <= 0:
         return
 
-    # Enterobacterales + Carbapenem resistent -> CPE/CRE Hinweis
+    # Enterobacterales + Carbapenem resistent
     if is_enterobacterales(organism) and ab_class == "Carbapenem":
         st.warning(
             "Warnhinweis: Carbapenem-Resistenz bei Enterobacterales ist besonders relevant "
@@ -55,7 +55,7 @@ def show_mdr_texts(organism: str, ab_class: str, resistant_n: int):
             "Hinweis: Penicillin-Resistenz bei S. aureus ist häufig ein Hinweis auf MRSA. Weitere Tests (z. B. Oxacillin/Cefoxitin) zur Bestätigung empfohlen."
         )
 
-    # Pseudomonas + Carbapenem resistent -> CRPA Hinweis
+    # Pseudomonas + Carbapenem resistent
     if organism == "Pseudomonas aeruginosa" and ab_class == "Carbapenem":
         st.warning(
             "Warnhinweis: Carbapenem-Resistenz bei Pseudomonas aeruginosa kann klinisch relevant sein "
