@@ -135,7 +135,7 @@ def main():
             f"**Klasse:** {ab_class}"
         )
         st.write("")  # spacing
-        st.metric("Resistenzrate", f"{rate:.1f}%", delta=rate - 10.0)
+        st.metric("Resistenzrate", f"{rate:.1f}%")
         st.metric("Einstufung", label)
         st.metric("Daten (res/gesamt)", f"{resistant}/{total}")
     with right:
