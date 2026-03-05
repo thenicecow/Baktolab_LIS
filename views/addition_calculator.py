@@ -10,7 +10,7 @@ from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 #St.session_stat implementieren
 if "data_df" not in st.session_state:
     st.session_state["data_df"] = pd.DataFrame(
-        columns=["Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate"]
+        columns=["Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
     )
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
@@ -99,7 +99,7 @@ def main():
                     "Auswertungsperiode": [period],
                     "Keim": [organism],
                     "Antibiotikum": [antibiotic],
-                    "Resistenzrate": [float(rate)],
+                    "Resistenzrate in %": [float(rate)],
                 }
             )
             st.session_state["data_df"] = pd.concat(
