@@ -10,7 +10,7 @@ from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 #St.session_stat implementieren
 if "data_df" not in st.session_state:
     st.session_state["data_df"] = pd.DataFrame(
-        columns=["Zeitperiode", "Keim", "Antibiotikum", "Resistenzrate"]
+        columns=["Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate"]
     )
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
@@ -22,38 +22,37 @@ def main():
     with st.form("res_form"):
         st.subheader("Auswahl")
 
+        organism = st.selectbox(
+            "Keim",
+            ["E. coli", "S. aureus", "Klebsiella pneumoniae", "Pseudomonas aeruginosa"],
+        )
+
+        antibiotic = st.selectbox(
+            "Antibiotikum",
+            ["Meropenem", "Imipenem", "Ceftriaxon", "Cefepim", "Penicillin", "Ciprofloxacin", "Gentamicin"],
+        )
+
+        st.subheader("Testergebnisse")
+        total = st.number_input("Anzahl getesteter Isolate (gesamt)", min_value=0, value=0, step=1)
+        resistant = st.number_input("Anzahl resistenter Isolate", min_value=0, value=0, step=1)
+
+        st.write("Auswertungsperidode erfassen:")
         col1, col2 = st.columns(2)
         with col1:
-            organism = st.selectbox(
-                "Keim",
-                ["E. coli", "S. aureus", "Klebsiella pneumoniae", "Pseudomonas aeruginosa"],
+            month = st.selectbox(
+                "Monat",
+        [
+            "Januar", "Februar", "März", "April",
+            "Mai", "Juni", "Juli", "August",
+            "September", "Oktober", "November", "Dezember"
+        ]
             )
         with col2:
             year = st.selectbox(
         "Jahr",
         [2026, 2025, 2024, 2023, 2022, 2021, 2020]
     )
-
-        month = st.selectbox(
-        "Monat",
-        [
-            "Januar", "Februar", "März", "April",
-            "Mai", "Juni", "Juli", "August",
-            "September", "Oktober", "November", "Dezember"
-        ]
-    )
-
         period = f"{month} {year}"
-
-        st.subheader("Antibiotikum")
-        antibiotic = st.selectbox(
-            "Antibiotikum",
-            ["Meropenem", "Imipenem", "Ceftriaxon", "Cefepim", "Penicillin", "Ciprofloxacin", "Gentamicin"],
-        )
-
-        st.subheader("Labordaten")
-        total = st.number_input("Anzahl getesteter Isolate (gesamt)", min_value=0, value=100, step=1)
-        resistant = st.number_input("Anzahl resistenter Isolate", min_value=0, value=10, step=1)
 
         submitted = st.form_submit_button("Berechnen")
 
@@ -97,7 +96,7 @@ def main():
         if st.session_state["last_saved"] != run_id:
             new_row = pd.DataFrame(
                 {
-                    "Zeitperiode": [period],
+                    "Auswertungsperiode": [period],
                     "Keim": [organism],
                     "Antibiotikum": [antibiotic],
                     "Resistenzrate": [float(rate)],
@@ -117,7 +116,7 @@ def main():
     left, right = st.columns([2, 1])
     with left:
         st.markdown(
-            f"**Auswertungszeitraum:** {r['period']}  \n"
+            f"**Auswertungsperiode:** {r['period']}  \n"
             f"**Keim:** {r['organism']}  \n"
             f"**Antibiotikum:** {r['antibiotic']}  \n"
             f"**Klasse:** {r['ab_class']}"
@@ -174,8 +173,12 @@ def main():
     with c2:
         share_s = float(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0])
         share_r = float(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0])
-        st.markdown(f"🔴 **Resistent:** {share_r:.1%}")
-        st.markdown(f"🟢 **Sensibel:** {share_s:.1%}")
+
+        abs_s = int(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Anzahl"].iloc[0])
+        abs_r = int(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Anzahl"].iloc[0])
+
+        st.markdown(f"🔴 **Resistent:** {share_r:.1%}  \n({abs_r} Isolate)")
+        st.markdown(f"🟢 **Sensibel:** {share_s:.1%}  \n({abs_s} Isolate)")
 
     st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
 
