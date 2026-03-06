@@ -46,7 +46,6 @@ def get_mdr_hints(organism: str, ab_class: str, resistant_n: int) -> List[Hint]:
             "Interpretation gemäss Spitalhygiene-Richtlinien."
         ))
 
-    # didaktisch korrekt: Penicillin-Resistenz ≠ MRSA, MRSA via Oxacillin/Cefoxitin
     if organism == "S. aureus" and ab_class == "Penicillin":
         hints.append((
             "warning",
