@@ -3,6 +3,8 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from datetime import datetime
+import pytz
 
 from functions.addition import subtract, percent
 from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
@@ -116,6 +118,7 @@ def main():
     left, right = st.columns([2, 1])
     with left:
         st.markdown(
+            f"**Zeitpunkt:** {r['timestamp']}  \n"
             f"**Auswertungsperiode:** {r['period']}  \n"
             f"**Keim:** {r['organism']}  \n"
             f"**Antibiotikum:** {r['antibiotic']}  \n"
