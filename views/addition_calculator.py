@@ -99,6 +99,7 @@ def main():
         if st.session_state["last_saved"] != run_id:
             new_row = pd.DataFrame(
                 {
+                    "Zeitpunkt": [st.session_state["result"]["timestamp"]],
                     "Auswertungsperiode": [period],
                     "Keim": [organism],
                     "Antibiotikum": [antibiotic],
