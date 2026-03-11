@@ -9,6 +9,5 @@ Samuel Wehrli (wehs@zhaw.ch)
 ## Weiterentwickelt durch
 
 Kevin Engehausen (engehkev@students.zhaw.ch)
-Melina Kraus (krausme1@students.zhaw.ch)
 
 

@@ -10,9 +10,8 @@ Es können mehrere Auswertungen durchgeführt und in einer Tabelle gespeichert w
 """)
 
 st.markdown("""
-Diese App wurde von folgenden Personen entwickelt:
+Diese App wurde von folgender Person entwickelt:
 - Kevin Engehausen (engehkev@students.zhaw.ch) 
-- Melina Kraus (krausme1@students.zhaw.ch)
 
 
 Autor: Samuel Wehrli (wehs@zhaw.ch)
