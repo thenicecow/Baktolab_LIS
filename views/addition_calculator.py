@@ -12,7 +12,7 @@ from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 #St.session_stat implementieren
 if "data_df" not in st.session_state:
     st.session_state["data_df"] = pd.DataFrame(
-        columns=["Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
+        columns=["Zeitpunkt", "Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
     )
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
@@ -81,6 +81,7 @@ def main():
 
         # Resultat speichern (für Anzeige nach dem Rerun)
         st.session_state["result"] = {
+            "timestamp": datetime.now(pytz.timezone('Europe/Zurich')),
             "organism": organism,
             "period": period,
             "antibiotic": antibiotic,
