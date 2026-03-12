@@ -115,6 +115,9 @@ def main():
     # gespeichertes Resultat laden (z.B. nach Rerun)
     r = st.session_state["result"]
 
+    data_manager = DataManager()
+    data_manager.save_user_data(st.session_state)
+
     # Ergebnisanzeige
     st.subheader("Ergebnis")
     left, right = st.columns([2, 1])
