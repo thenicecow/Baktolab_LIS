@@ -6,21 +6,25 @@ import altair as alt
 from datetime import datetime
 import pytz
 
+from utils.data_manager import DataManager
 from functions.addition import subtract, percent
 from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 
-#St.session_stat implementieren
+
+# Session State initialisieren
 if "data_df" not in st.session_state:
     st.session_state["data_df"] = pd.DataFrame(
         columns=["Zeitpunkt", "Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
     )
+
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
+
 
 def main():
     st.title("Rechner Resistenzmonitoring")
 
-    # Eingabe
+    # Eingabeformular
     with st.form("res_form"):
         st.subheader("Auswahl")
 
@@ -38,22 +42,25 @@ def main():
         total = st.number_input("Anzahl getesteter Isolate (gesamt)", min_value=0, value=0, step=1)
         resistant = st.number_input("Anzahl resistenter Isolate", min_value=0, value=0, step=1)
 
-        st.write("Auswertungsperidode erfassen:")
+        st.write("Auswertungsperiode erfassen:")
         col1, col2 = st.columns(2)
+
         with col1:
             month = st.selectbox(
                 "Monat",
-        [
-            "Januar", "Februar", "März", "April",
-            "Mai", "Juni", "Juli", "August",
-            "September", "Oktober", "November", "Dezember"
-        ]
+                [
+                    "Januar", "Februar", "März", "April",
+                    "Mai", "Juni", "Juli", "August",
+                    "September", "Oktober", "November", "Dezember"
+                ]
             )
+
         with col2:
             year = st.selectbox(
-        "Jahr",
-        [2026, 2025, 2024, 2023, 2022, 2021, 2020]
-    )
+                "Jahr",
+                [2026, 2025, 2024, 2023, 2022, 2021, 2020]
+            )
+
         period = f"{month} {year}"
 
         submitted = st.form_submit_button("Berechnen")
@@ -62,14 +69,13 @@ def main():
         st.info("Werte eingeben und auf **Berechnen** klicken.")
         return
 
-    # Beim Klicken Berechnung durchführen
+    # Berechnung durchführen
     if submitted:
-        # Plausibilitätschecks
         if resistant > total:
             st.error("Fehler: 'resistente Isolate' darf nicht größer sein als 'gesamt'.")
             st.stop()
 
-        rate = percent(resistant, total)  # None wenn total==0
+        rate = percent(resistant, total)
         if rate is None:
             st.error("Fehler: Gesamtzahl ist 0 – Resistenzrate kann nicht berechnet werden.")
             st.stop()
@@ -79,9 +85,14 @@ def main():
         ab_class = antibiotic_class(antibiotic)
         hints = get_mdr_hints(organism, ab_class, resistant)
 
-        # Resultat speichern (für Anzeige nach dem Rerun)
+        # Timestamp als String speichern
+        timestamp = datetime.now(
+            pytz.timezone("Europe/Zurich")
+        ).strftime("%d.%m.%Y %H:%M")
+
+        # Resultat speichern
         st.session_state["result"] = {
-            "timestamp": datetime.now(pytz.timezone('Europe/Zurich')),
+            "timestamp": timestamp,
             "organism": organism,
             "period": period,
             "antibiotic": antibiotic,
@@ -96,31 +107,39 @@ def main():
 
         # Verlauf sofort speichern
         run_id = (period, organism, antibiotic, int(total), int(resistant))
-        if st.session_state["last_saved"] != run_id:
+        if st.session_state.get("last_saved") != run_id:
             new_row = pd.DataFrame(
                 {
-                    "Zeitpunkt": [st.session_state["result"]["timestamp"]],
+                    "Zeitpunkt": [timestamp],
                     "Auswertungsperiode": [period],
                     "Keim": [organism],
                     "Antibiotikum": [antibiotic],
                     "Resistenzrate in %": [float(rate)],
                 }
             )
+
             st.session_state["data_df"] = pd.concat(
                 [st.session_state["data_df"], new_row],
                 ignore_index=True,
             )
             st.session_state["last_saved"] = run_id
 
-    # gespeichertes Resultat laden (z.B. nach Rerun)
-    r = st.session_state["result"]
+        # Nur serialisierbare Daten speichern
+        data_manager = DataManager()
+        data_to_save = {
+            "result": st.session_state.get("result"),
+            "data_df": st.session_state["data_df"].to_dict(orient="records"),
+            "last_saved": st.session_state.get("last_saved"),
+        }
+        data_manager.save_user_data(data_to_save)
 
-    data_manager = DataManager()
-    data_manager.save_user_data(st.session_state)
+    # gespeichertes Resultat laden
+    r = st.session_state["result"]
 
     # Ergebnisanzeige
     st.subheader("Ergebnis")
     left, right = st.columns([2, 1])
+
     with left:
         st.markdown(
             f"**Zeitpunkt:** {r['timestamp']}  \n"
@@ -137,7 +156,7 @@ def main():
         if r["hints"]:
             st.info("⚠️ Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
 
-    # Zusatztexte / Interpretation (ausblendbar)
+    # Zusatztexte / Interpretation
     if r["hints"]:
         with st.expander("Interpretation und Hinweise"):
             for hint_type, text in r["hints"]:
@@ -148,6 +167,7 @@ def main():
 
     # Visualisierung
     st.subheader("Visualisierung")
+
     chart_df = pd.DataFrame(
         {
             "Kategorie": ["Sensible", "Resistent"],
@@ -158,7 +178,10 @@ def main():
     total_n = int(chart_df["Anzahl"].sum())
     chart_df["Share"] = chart_df["Anzahl"] / total_n if total_n > 0 else 0.0
 
-    color_scale = alt.Scale(domain=["Sensible", "Resistent"], range=["#2ca02c", "#d62728"])
+    color_scale = alt.Scale(
+        domain=["Sensible", "Resistent"],
+        range=["#2ca02c", "#d62728"]
+    )
 
     donut_chart = (
         alt.Chart(chart_df)
@@ -176,8 +199,10 @@ def main():
     )
 
     c1, c2 = st.columns([2, 1])
+
     with c1:
         st.altair_chart(donut_chart, use_container_width=True)
+
     with c2:
         share_s = float(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0])
         share_r = float(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0])
@@ -185,14 +210,21 @@ def main():
         abs_s = int(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Anzahl"].iloc[0])
         abs_r = int(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Anzahl"].iloc[0])
 
-        st.markdown(f"🔴 **Resistent:** {share_r:.1%}  \n({abs_r} Isolate)")
-        st.markdown(f"🟢 **Sensibel:** {share_s:.1%}  \n({abs_s} Isolate)")
+        st.markdown(
+            f"🔴 **Resistent:** {share_r:.1%}<br>({abs_r} Isolate)",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"🟢 **Sensibel:** {share_s:.1%}<br>({abs_s} Isolate)",
+            unsafe_allow_html=True
+        )
 
     st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
 
     # Verlauf
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
+
 
 if __name__ == "__main__":
     main()
