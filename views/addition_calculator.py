@@ -129,10 +129,9 @@ def main():
         data_to_save = {
             "result": st.session_state.get("result"),
             "data_df": st.session_state["data_df"].to_dict(orient="records"),
-            "last_saved": st.session_state.get("last_saved"), "resistance_data.csv"
-            "file_path": "resistance_data.csv"
+            "last_saved": st.session_state.get("last_saved"),
         }
-        data_manager.save_user_data(data_to_save)
+        data_manager.save_user_data(data_to_save, "resistance_data.json")
 
     # gespeichertes Resultat laden
     r = st.session_state["result"]
