@@ -105,7 +105,7 @@ def main():
             "hints": hints,
         }
 
-        # Verlauf sofort speichern
+          # Verlauf sofort speichern
         run_id = (period, organism, antibiotic, int(total), int(resistant))
         if st.session_state.get("last_saved") != run_id:
             new_row = pd.DataFrame(
@@ -124,10 +124,12 @@ def main():
             )
             st.session_state["last_saved"] = run_id
 
-    # Verlauf als CSV speichern
-    data_manager = DataManager()
-    data_manager.save_user_data(st.session_state["data_df"], "resistance_data.csv")
-
+        # Verlauf persistent speichern
+        try:
+            data_manager = DataManager(fs_protocol="webdav")
+            data_manager.save_user_data(st.session_state["data_df"], "resistance_data.csv")
+        except Exception as e:
+            st.error(f"Fehler beim Speichern: {type(e).__name__}: {e}")
     # gespeichertes Resultat laden
     r = st.session_state["result"]
 
