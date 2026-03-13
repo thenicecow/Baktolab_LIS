@@ -124,18 +124,9 @@ def main():
             )
             st.session_state["last_saved"] = run_id
 
-        # Persistent speichern
-        data_manager = DataManager()
-
-        # Verlauf als CSV speichern
-        data_manager.save_user_data(st.session_state["data_df"], "resistance_data.csv")
-
-        # Letztes Resultat separat als JSON speichern
-        meta_to_save = {
-            "result": st.session_state.get("result"),
-            "last_saved": st.session_state.get("last_saved"),
-        }
-        data_manager.save_user_data(meta_to_save, "resistance_meta.json")
+    # Verlauf als CSV speichern
+    data_manager = DataManager()
+    data_manager.save_user_data(st.session_state["data_df"], "resistance_data.csv")
 
     # gespeichertes Resultat laden
     r = st.session_state["result"]
