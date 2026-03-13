@@ -11,15 +11,29 @@ from functions.addition import subtract, percent
 from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 
 
-# Session State initialisieren
+# DataManager für SwitchDrive / WebDAV
+data_manager = DataManager(
+    fs_protocol="webdav",
+    fs_root_folder="resistenzmonitoring_app"
+)
+
+# Session State initialisieren und gespeicherten Verlauf laden
 if "data_df" not in st.session_state:
-    st.session_state["data_df"] = pd.DataFrame(
-        columns=["Zeitpunkt", "Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
-    )
+    if st.session_state.get("username"):
+        loaded_df = data_manager.load_user_data(
+            "resistance_data.csv",
+            initial_value=pd.DataFrame(
+                columns=["Zeitpunkt", "Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
+            )
+        )
+        st.session_state["data_df"] = loaded_df
+    else:
+        st.session_state["data_df"] = pd.DataFrame(
+            columns=["Zeitpunkt", "Auswertungsperiode", "Keim", "Antibiotikum", "Resistenzrate in %"]
+        )
 
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
-
 
 def main():
     st.title("Rechner Resistenzmonitoring")
