@@ -81,14 +81,13 @@ class LoginManager:
                 self.authenticator.logout()
 
                 st.markdown("---")
-                st.caption("Passwort ändern")
-
-                try:
-                    if self.authenticator.reset_password(st.session_state.get("username")):
-                        self._save_auth_credentials()
-                        st.success("Passwort erfolgreich geändert")
-                except Exception as e:
-                    st.error(f"Fehler beim Ändern des Passworts: {e}")
+                with st.expander("Passwort zurücksetzen"):
+                    try:
+                        if self.authenticator.reset_password(st.session_state.get("username")):
+                            self._save_auth_credentials()
+                            st.success("Passwort erfolgreich geändert")
+                    except Exception as e:
+                        st.error(f"Fehler beim Ändern des Passworts: {e}")
         
         else:
             page_fn = lambda: self._login_register_page(login_title, register_title)
