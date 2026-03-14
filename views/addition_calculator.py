@@ -11,19 +11,19 @@ from functions.addition import subtract, percent
 from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 
 
-# DataManager für SwitchDrive / WebDAV
-data_manager = DataManager(
-    fs_protocol="webdav",
-    fs_root_folder="resistenzmonitoring_app"
-)
-
 DEFAULT_COLUMNS = [
     "Zeitpunkt",
     "Auswertungsperiode",
     "Keim",
     "Antibiotikum",
-    "Resistenzrate in %"
+    "Resistenzrate in %",
 ]
+
+# DataManager für SwitchDrive / WebDAV
+data_manager = DataManager(
+    fs_protocol="webdav",
+    fs_root_folder="resistenzmonitoring_app"
+)
 
 # Session State initialisieren und gespeicherten Verlauf laden
 if "data_df" not in st.session_state:
@@ -46,6 +46,7 @@ if "last_saved" not in st.session_state:
 def main():
     st.title("Rechner Resistenzmonitoring")
 
+    # Eingabeformular
     with st.form("res_form"):
         st.subheader("Auswahl")
 
@@ -85,10 +86,12 @@ def main():
         period = f"{month} {year}"
         submitted = st.form_submit_button("Berechnen")
 
+    # Noch keine Berechnung vorhanden
     if not submitted and "result" not in st.session_state:
         st.info("Werte eingeben und auf **Berechnen** klicken.")
         return
 
+    # Berechnung durchführen
     if submitted:
         if resistant > total:
             st.error("Fehler: 'resistente Isolate' darf nicht größer sein als 'gesamt'.")
@@ -122,6 +125,7 @@ def main():
             "hints": hints,
         }
 
+        # Verlauf aktualisieren
         run_id = (period, organism, antibiotic, int(total), int(resistant))
         if st.session_state.get("last_saved") != run_id:
             new_row = pd.DataFrame(
@@ -140,13 +144,19 @@ def main():
             )
             st.session_state["last_saved"] = run_id
 
-        try:
-            data_manager.save_user_data(st.session_state["data_df"], "resistance_data.csv")
-        except Exception as e:
-            st.error(f"Fehler beim Speichern: {type(e).__name__}: {e}")
+            # Verlauf persistent speichern
+            try:
+                data_manager.save_user_data(
+                    st.session_state["data_df"],
+                    "resistance_data.csv"
+                )
+            except Exception as e:
+                st.error(f"Fehler beim Speichern: {type(e).__name__}: {e}")
 
+    # Ergebnis laden
     r = st.session_state["result"]
 
+    # Ergebnisanzeige
     st.subheader("Ergebnis")
     left, right = st.columns([2, 1])
 
@@ -166,6 +176,7 @@ def main():
         if r["hints"]:
             st.info("⚠️ Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
 
+    # Zusatztexte / Interpretation
     if r["hints"]:
         with st.expander("Interpretation und Hinweise"):
             for hint_type, text in r["hints"]:
@@ -174,6 +185,7 @@ def main():
                 else:
                     st.info(text)
 
+    # Visualisierung aktuelle Auswertung
     st.subheader("Visualisierung")
 
     chart_df = pd.DataFrame(
@@ -228,88 +240,97 @@ def main():
         )
 
     st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
-    st.write("DEBUG: Verlauf-Block erreicht")
+
+    # Verlaufstabelle
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
 
-
+    # Grafischer Verlauf
     st.subheader("Grafischer Verlauf")
 
-    if not st.session_state["data_df"].empty:
-        plot_df = st.session_state["data_df"].copy()
-
-        plot_df["Zeitpunkt"] = pd.to_datetime(
-            plot_df["Zeitpunkt"],
-            format="%d.%m.%Y %H:%M",
-            errors="coerce"
-        )
-
-        # Für Altair: einfacherer Spaltenname
-        plot_df["Resistenzrate"] = pd.to_numeric(
-            plot_df["Resistenzrate in %"],
-            errors="coerce"
-        )
-
-        plot_df = plot_df.dropna(subset=["Zeitpunkt", "Resistenzrate"])
-
-        if plot_df.empty:
-            st.info("Noch keine gültigen Verlaufsdaten vorhanden.")
-        else:
-            col1, col2 = st.columns(2)
-
-            with col1:
-                selected_organism = st.selectbox(
-                    "Keim für Verlauf auswählen",
-                    sorted(plot_df["Keim"].dropna().unique())
-                )
-
-            possible_antibiotics = plot_df[
-                plot_df["Keim"] == selected_organism
-            ]["Antibiotikum"].dropna().unique()
-
-            with col2:
-                selected_antibiotic = st.selectbox(
-                    "Antibiotikum für Verlauf auswählen",
-                    sorted(possible_antibiotics)
-                )
-
-            filtered_df = plot_df[
-                (plot_df["Keim"] == selected_organism) &
-                (plot_df["Antibiotikum"] == selected_antibiotic)
-            ].sort_values("Zeitpunkt")
-
-            st.write(filtered_df)
-
-            if not filtered_df.empty:
-                if len(filtered_df) == 1:
-                    chart = alt.Chart(filtered_df).mark_point(size=120).encode(
-                        x=alt.X("Zeitpunkt:T", title="Zeitpunkt"),
-                        y=alt.Y("Resistenzrate:Q", title="Resistenzrate in %"),
-                        tooltip=[
-                            alt.Tooltip("Zeitpunkt:T", title="Zeitpunkt"),
-                            alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
-                            alt.Tooltip("Keim:N", title="Keim"),
-                            alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
-                            alt.Tooltip("Resistenzrate:Q", title="Resistenzrate in %", format=".1f")
-                        ]
-                    ).properties(height=350)
-                else:
-                    chart = alt.Chart(filtered_df).mark_line(point=True).encode(
-                        x=alt.X("Zeitpunkt:T", title="Zeitpunkt"),
-                        y=alt.Y("Resistenzrate:Q", title="Resistenzrate in %"),
-                        tooltip=[
-                            alt.Tooltip("Zeitpunkt:T", title="Zeitpunkt"),
-                            alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
-                            alt.Tooltip("Keim:N", title="Keim"),
-                            alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
-                            alt.Tooltip("Resistenzrate:Q", title="Resistenzrate in %", format=".1f")
-                        ]
-                    ).properties(height=350)
-
-                st.altair_chart(chart, use_container_width=True)
-            else:
-                st.info("Für diese Kombination sind noch keine Verlaufsdaten vorhanden.")
-    else:
+    if st.session_state["data_df"].empty:
         st.info("Noch keine Verlaufsdaten vorhanden.")
+        return
+
+    plot_df = st.session_state["data_df"].copy()
+
+    # Spalten robust aufbereiten
+    plot_df["Zeitpunkt_dt"] = pd.to_datetime(
+        plot_df["Zeitpunkt"].astype(str),
+        format="%d.%m.%Y %H:%M",
+        errors="coerce"
+    )
+    plot_df["Resistenzrate_plot"] = pd.to_numeric(
+        plot_df["Resistenzrate in %"],
+        errors="coerce"
+    )
+
+    plot_df = plot_df.dropna(subset=["Zeitpunkt_dt", "Resistenzrate_plot"])
+
+    if plot_df.empty:
+        st.info("Noch keine gültigen Verlaufsdaten vorhanden.")
+        return
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        organism_options = sorted(plot_df["Keim"].astype(str).dropna().unique())
+        selected_organism = st.selectbox(
+            "Keim für Verlauf auswählen",
+            organism_options,
+            key="trend_organism"
+        )
+
+    with col2:
+        antibiotic_options = sorted(
+            plot_df.loc[
+                plot_df["Keim"] == selected_organism,
+                "Antibiotikum"
+            ].astype(str).dropna().unique()
+        )
+        selected_antibiotic = st.selectbox(
+            "Antibiotikum für Verlauf auswählen",
+            antibiotic_options,
+            key="trend_antibiotic"
+        )
+
+    filtered_df = plot_df[
+        (plot_df["Keim"] == selected_organism) &
+        (plot_df["Antibiotikum"] == selected_antibiotic)
+    ].sort_values("Zeitpunkt_dt")
+
+    if filtered_df.empty:
+        st.info("Für diese Kombination sind noch keine Verlaufsdaten vorhanden.")
+        return
+
+    # Falls nur ein Punkt vorhanden ist -> Punktdiagramm
+    if len(filtered_df) == 1:
+        trend_chart = alt.Chart(filtered_df).mark_point(size=120).encode(
+            x=alt.X("Zeitpunkt_dt:T", title="Zeitpunkt"),
+            y=alt.Y("Resistenzrate_plot:Q", title="Resistenzrate in %"),
+            tooltip=[
+                alt.Tooltip("Zeitpunkt_dt:T", title="Zeitpunkt"),
+                alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
+                alt.Tooltip("Keim:N", title="Keim"),
+                alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
+                alt.Tooltip("Resistenzrate_plot:Q", title="Resistenzrate in %", format=".1f"),
+            ],
+        ).properties(height=350)
+    else:
+        trend_chart = alt.Chart(filtered_df).mark_line(point=True).encode(
+            x=alt.X("Zeitpunkt_dt:T", title="Zeitpunkt"),
+            y=alt.Y("Resistenzrate_plot:Q", title="Resistenzrate in %"),
+            tooltip=[
+                alt.Tooltip("Zeitpunkt_dt:T", title="Zeitpunkt"),
+                alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
+                alt.Tooltip("Keim:N", title="Keim"),
+                alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
+                alt.Tooltip("Resistenzrate_plot:Q", title="Resistenzrate in %", format=".1f"),
+            ],
+        ).properties(height=350)
+
+    st.altair_chart(trend_chart, use_container_width=True)
+
+
 if __name__ == "__main__":
     main()
