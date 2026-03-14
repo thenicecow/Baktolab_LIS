@@ -25,9 +25,15 @@ data_manager = DataManager(
     fs_root_folder="resistenzmonitoring_app"
 )
 
-# Session State initialisieren und gespeicherten Verlauf laden
-if "data_df" not in st.session_state:
-    if st.session_state.get("username"):
+current_username = st.session_state.get("username")
+
+# Verlauf neu laden, wenn kein Verlauf vorhanden ist
+# ODER wenn sich der eingeloggte Benutzer geändert hat
+if (
+    "data_df" not in st.session_state
+    or st.session_state.get("data_df_username") != current_username
+):
+    if current_username:
         loaded_df = data_manager.load_user_data(
             "resistance_data.csv",
             initial_value=pd.DataFrame(columns=DEFAULT_COLUMNS)
@@ -38,6 +44,13 @@ if "data_df" not in st.session_state:
             st.session_state["data_df"] = pd.DataFrame(columns=DEFAULT_COLUMNS)
     else:
         st.session_state["data_df"] = pd.DataFrame(columns=DEFAULT_COLUMNS)
+
+    st.session_state["data_df_username"] = current_username
+
+    # Benutzerspezifische States zurücksetzen
+    st.session_state["last_saved"] = None
+    if "result" in st.session_state:
+        del st.session_state["result"]
 
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
