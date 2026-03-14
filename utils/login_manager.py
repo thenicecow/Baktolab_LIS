@@ -78,18 +78,17 @@ class LoginManager:
             with st.sidebar:
                 st.write(f"Angemeldet als: **{st.session_state.get('name')}**")
 
+                self.authenticator.logout()
+
                 st.markdown("---")
-                st.write("**Passwort ändern**")
+                st.caption("Passwort ändern")
 
                 try:
                     if self.authenticator.reset_password(st.session_state.get("username")):
                         self._save_auth_credentials()
-                    st.success("Passwort erfolgreich geändert")
+                        st.success("Passwort erfolgreich geändert")
                 except Exception as e:
                     st.error(f"Fehler beim Ändern des Passworts: {e}")
-
-            st.markdown("---")
-            self.authenticator.logout()
         
         else:
             page_fn = lambda: self._login_register_page(login_title, register_title)
