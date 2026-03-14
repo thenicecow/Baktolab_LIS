@@ -87,7 +87,7 @@ class LoginManager:
     def _login_register_page(self, login_title, register_title):
         """Page function shown when the user is not authenticated."""
         login_tab, register_tab, forgot_pw_tab = st.tabs(
-    (login_title, register_title, "Passwort vergessen")
+            (login_title, register_title, "Passwort vergessen")
 )
         with login_tab:
             self._login()
@@ -115,8 +115,8 @@ class LoginManager:
         The password must be 8-20 characters long and include at least one uppercase letter,
         one lowercase letter, one digit, and one special character from @$!%*?&.
         """)
-        res = self.authenticator.register_user()
-        if res[1] is not None:
+        res = self.authenticator.register_user(captcha=False)
+        if res and res[1] is not None:
             st.success(f"User {res[1]} registered successfully")
             try:
                 self._save_auth_credentials()
