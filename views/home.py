@@ -12,7 +12,8 @@ Es können mehrere Auswertungen durchgeführt und in einer Tabelle gespeichert w
 
 Bitte beachte, dass die Visuelle Darstellung immer mit neuem Datum gefüttert werden muss, damit der Verlauf angezeigt wird. ein mehrfaches Klicken auf Berechnen ohne Änderung der Daten zeigt keine Veränderung der Werte an, da die Daten nicht verändert wurden.
 
-Es wurde ein Passwort vergessen hinzufügt falls der Nutzer sein Passwort vergessen hat. Es wird ein neues zufälliges Passwort erzeugt, welches der Nutzter direkt nach erneutem Einloggen geändert werden sollte. Es wird empfohlen, das neue Passwort sicher zu speichern, da es nicht erneut angezeigt wird.
+Es wurde ein Passwort vergessen hinzufügt falls der Nutzer sein Passwort vergessen hat. Es wird ein neues zufälliges Passwort erzeugt, welches der Nutzter direkt nach erneutem Einloggen geändert werden sollte. Es wird empfohlen, das neue Passwort sicher zu speichern, da es nicht erneut angezeigt wird. Anschliessend
+sollte das Passwort wieder geändert werden ein Dropdown steht dafür zur Verfügung.
 """)
 
 st.markdown("""
