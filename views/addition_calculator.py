@@ -231,7 +231,6 @@ def main():
 
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
-
     st.subheader("Grafischer Verlauf")
 
     if not st.session_state["data_df"].empty:
@@ -242,12 +241,14 @@ def main():
             format="%d.%m.%Y %H:%M",
             errors="coerce"
         )
-        plot_df["Resistenzrate in %"] = pd.to_numeric(
+
+        # Für Altair: einfacherer Spaltenname
+        plot_df["Resistenzrate"] = pd.to_numeric(
             plot_df["Resistenzrate in %"],
             errors="coerce"
         )
 
-        plot_df = plot_df.dropna(subset=["Zeitpunkt", "Resistenzrate in %"])
+        plot_df = plot_df.dropna(subset=["Zeitpunkt", "Resistenzrate"])
 
         if plot_df.empty:
             st.info("Noch keine gültigen Verlaufsdaten vorhanden.")
@@ -279,25 +280,25 @@ def main():
                 if len(filtered_df) == 1:
                     chart = alt.Chart(filtered_df).mark_point(size=120).encode(
                         x=alt.X("Zeitpunkt:T", title="Zeitpunkt"),
-                        y=alt.Y("Resistenzrate in %:Q", title="Resistenzrate in %"),
+                        y=alt.Y("Resistenzrate:Q", title="Resistenzrate in %"),
                         tooltip=[
                             alt.Tooltip("Zeitpunkt:T", title="Zeitpunkt"),
                             alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
                             alt.Tooltip("Keim:N", title="Keim"),
                             alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
-                            alt.Tooltip("Resistenzrate in %:Q", title="Resistenzrate in %", format=".1f")
+                            alt.Tooltip("Resistenzrate:Q", title="Resistenzrate in %", format=".1f")
                         ]
                     ).properties(height=350)
                 else:
                     chart = alt.Chart(filtered_df).mark_line(point=True).encode(
                         x=alt.X("Zeitpunkt:T", title="Zeitpunkt"),
-                        y=alt.Y("Resistenzrate in %:Q", title="Resistenzrate in %"),
+                        y=alt.Y("Resistenzrate:Q", title="Resistenzrate in %"),
                         tooltip=[
                             alt.Tooltip("Zeitpunkt:T", title="Zeitpunkt"),
                             alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
                             alt.Tooltip("Keim:N", title="Keim"),
                             alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
-                            alt.Tooltip("Resistenzrate in %:Q", title="Resistenzrate in %", format=".1f")
+                            alt.Tooltip("Resistenzrate:Q", title="Resistenzrate in %", format=".1f")
                         ]
                     ).properties(height=350)
 
@@ -306,7 +307,5 @@ def main():
                 st.info("Für diese Kombination sind noch keine Verlaufsdaten vorhanden.")
     else:
         st.info("Noch keine Verlaufsdaten vorhanden.")
-
-
 if __name__ == "__main__":
     main()
