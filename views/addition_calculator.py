@@ -276,6 +276,8 @@ def main():
                 (plot_df["Antibiotikum"] == selected_antibiotic)
             ].sort_values("Zeitpunkt")
 
+            st.write(filtered_df)
+
             if not filtered_df.empty:
                 if len(filtered_df) == 1:
                     chart = alt.Chart(filtered_df).mark_point(size=120).encode(
