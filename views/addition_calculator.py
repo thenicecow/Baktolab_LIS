@@ -228,9 +228,11 @@ def main():
         )
 
     st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
-
+    st.write("DEBUG: Verlauf-Block erreicht")
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
+
+
     st.subheader("Grafischer Verlauf")
 
     if not st.session_state["data_df"].empty:
