@@ -42,23 +42,6 @@ if "data_df" not in st.session_state:
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
 
-if "result" not in st.session_state and not st.session_state["data_df"].empty:
-    last_row = st.session_state["data_df"].iloc[-1]
-
-    st.session_state["result"] = {
-        "timestamp": last_row["Zeitpunkt"],
-        "organism": last_row["Keim"],
-        "period": last_row["Auswertungsperiode"],
-        "antibiotic": last_row["Antibiotikum"],
-        "ab_class": antibiotic_class(last_row["Antibiotikum"]),
-        "total": None,
-        "resistant": None,
-        "sensitive": None,
-        "rate": float(last_row["Resistenzrate in %"]),
-        "label": classify_rate(float(last_row["Resistenzrate in %"])),
-        "hints": [],
-    }
-
 
 def main():
     st.title("Rechner Resistenzmonitoring")
@@ -103,10 +86,10 @@ def main():
         period = f"{month} {year}"
         submitted = st.form_submit_button("Berechnen")
 
-    # Noch keine Berechnung vorhanden
-    if not submitted and "result" not in st.session_state:
+    has_result = "result" in st.session_state
+
+    if not submitted and not has_result:
         st.info("Werte eingeben und auf **Berechnen** klicken.")
-        return
 
     # Berechnung durchführen
     if submitted:
@@ -170,99 +153,102 @@ def main():
             except Exception as e:
                 st.error(f"Fehler beim Speichern: {type(e).__name__}: {e}")
 
-    # Ergebnis laden
-    r = st.session_state["result"]
+        has_result = True
 
-    # Ergebnisanzeige
-    st.subheader("Ergebnis")
-    left, right = st.columns([2, 1])
+    # Nur anzeigen, wenn wirklich eine aktuelle Berechnung vorliegt
+    if has_result:
+        r = st.session_state["result"]
 
-    with left:
-        st.markdown(
-            f"**Zeitpunkt:** {r['timestamp']}  \n"
-            f"**Auswertungsperiode:** {r['period']}  \n"
-            f"**Keim:** {r['organism']}  \n"
-            f"**Antibiotikum:** {r['antibiotic']}  \n"
-            f"**Klasse:** {r['ab_class']}"
-        )
-        st.metric("Resistenzrate", f"{r['rate']:.1f}%")
-        st.metric("Einstufung", r["label"])
-        st.metric("Daten (res/gesamt)", f"{r['resistant']}/{r['total']}")
+        # Ergebnisanzeige
+        st.subheader("Ergebnis")
+        left, right = st.columns([2, 1])
 
-    with right:
+        with left:
+            st.markdown(
+                f"**Zeitpunkt:** {r['timestamp']}  \n"
+                f"**Auswertungsperiode:** {r['period']}  \n"
+                f"**Keim:** {r['organism']}  \n"
+                f"**Antibiotikum:** {r['antibiotic']}  \n"
+                f"**Klasse:** {r['ab_class']}"
+            )
+            st.metric("Resistenzrate", f"{r['rate']:.1f}%")
+            st.metric("Einstufung", r["label"])
+            st.metric("Daten (res/gesamt)", f"{r['resistant']}/{r['total']}")
+
+        with right:
+            if r["hints"]:
+                st.info("⚠️ Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+
+        # Zusatztexte / Interpretation
         if r["hints"]:
-            st.info("⚠️ Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+            with st.expander("Interpretation und Hinweise"):
+                for hint_type, text in r["hints"]:
+                    if hint_type == "warning":
+                        st.warning(text)
+                    else:
+                        st.info(text)
 
-    # Zusatztexte / Interpretation
-    if r["hints"]:
-        with st.expander("Interpretation und Hinweise"):
-            for hint_type, text in r["hints"]:
-                if hint_type == "warning":
-                    st.warning(text)
-                else:
-                    st.info(text)
+        # Visualisierung aktuelle Auswertung
+        st.subheader("Visualisierung")
 
-    # Visualisierung aktuelle Auswertung
-    st.subheader("Visualisierung")
-
-    chart_df = pd.DataFrame(
-        {
-            "Kategorie": ["Sensible", "Resistent"],
-            "Anzahl": [r["sensitive"], r["resistant"]],
-        }
-    )
-
-    total_n = int(chart_df["Anzahl"].sum())
-    chart_df["Share"] = chart_df["Anzahl"] / total_n if total_n > 0 else 0.0
-
-    color_scale = alt.Scale(
-        domain=["Sensible", "Resistent"],
-        range=["#2ca02c", "#d62728"]
-    )
-
-    donut_chart = (
-        alt.Chart(chart_df)
-        .mark_arc(innerRadius=60)
-        .encode(
-            theta=alt.Theta("Anzahl:Q"),
-            color=alt.Color("Kategorie:N", scale=color_scale, legend=None),
-            tooltip=[
-                alt.Tooltip("Kategorie:N"),
-                alt.Tooltip("Anzahl:Q"),
-                alt.Tooltip("Share:Q", format=".1%"),
-            ],
-        )
-        .properties(height=300)
-    )
-
-    c1, c2 = st.columns([2, 1])
-
-    with c1:
-        st.altair_chart(donut_chart, use_container_width=True)
-
-    with c2:
-        share_s = float(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0])
-        share_r = float(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0])
-
-        abs_s = int(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Anzahl"].iloc[0])
-        abs_r = int(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Anzahl"].iloc[0])
-
-        st.markdown(
-            f"🔴 **Resistent:** {share_r:.1%}<br>({abs_r} Isolate)",
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f"🟢 **Sensibel:** {share_s:.1%}<br>({abs_s} Isolate)",
-            unsafe_allow_html=True
+        chart_df = pd.DataFrame(
+            {
+                "Kategorie": ["Sensible", "Resistent"],
+                "Anzahl": [r["sensitive"], r["resistant"]],
+            }
         )
 
-    st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
+        total_n = int(chart_df["Anzahl"].sum())
+        chart_df["Share"] = chart_df["Anzahl"] / total_n if total_n > 0 else 0.0
 
-    # Verlaufstabelle
+        color_scale = alt.Scale(
+            domain=["Sensible", "Resistent"],
+            range=["#2ca02c", "#d62728"]
+        )
+
+        donut_chart = (
+            alt.Chart(chart_df)
+            .mark_arc(innerRadius=60)
+            .encode(
+                theta=alt.Theta("Anzahl:Q"),
+                color=alt.Color("Kategorie:N", scale=color_scale, legend=None),
+                tooltip=[
+                    alt.Tooltip("Kategorie:N"),
+                    alt.Tooltip("Anzahl:Q"),
+                    alt.Tooltip("Share:Q", format=".1%"),
+                ],
+            )
+            .properties(height=300)
+        )
+
+        c1, c2 = st.columns([2, 1])
+
+        with c1:
+            st.altair_chart(donut_chart, use_container_width=True)
+
+        with c2:
+            share_s = float(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0])
+            share_r = float(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0])
+
+            abs_s = int(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Anzahl"].iloc[0])
+            abs_r = int(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Anzahl"].iloc[0])
+
+            st.markdown(
+                f"🔴 **Resistent:** {share_r:.1%}<br>({abs_r} Isolate)",
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                f"🟢 **Sensibel:** {share_s:.1%}<br>({abs_s} Isolate)",
+                unsafe_allow_html=True
+            )
+
+        st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
+
+    # Verlaufstabelle immer anzeigen
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
 
-    # Grafischer Verlauf
+    # Grafischer Verlauf immer anzeigen
     st.subheader("Grafischer Verlauf")
 
     if st.session_state["data_df"].empty:
@@ -320,7 +306,6 @@ def main():
         st.info("Für diese Kombination sind noch keine Verlaufsdaten vorhanden.")
         return
 
-    # Falls nur ein Punkt vorhanden ist -> Punktdiagramm
     if len(filtered_df) == 1:
         trend_chart = alt.Chart(filtered_df).mark_point(size=120).encode(
             x=alt.X("Zeitpunkt_dt:T", title="Zeitpunkt"),
