@@ -98,11 +98,23 @@ class LoginManager:
 
     def _login(self):
         """Renders the login form and handles authentication status messages."""
+
+        # Login-Formular anzeigen
         self.authenticator.login()
-        if st.session_state["authentication_status"] is False:
-            st.error("Username/password is incorrect")
+
+        # Login-Status aus Session State holen
+        status = st.session_state.get("authentication_status")
+
+        if status is True:
+            st.success("Login erfolgreich 😊")
+            st.markdown("🟢 **Benutzername und Passwort korrekt**")
+
+        elif status is False:
+            st.error("Login fehlgeschlagen 😞")
+            st.markdown("🔴 **Benutzername oder Passwort falsch**")
+
         else:
-            st.warning("Please enter your username and password")
+            st.info("Bitte Benutzername und Passwort eingeben.")
 
     def _register(self):
         """
