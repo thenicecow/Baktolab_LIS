@@ -87,7 +87,7 @@ class LoginManager:
     def _login_register_page(self, login_title, register_title):
         """Page function shown when the user is not authenticated."""
         login_tab, register_tab, forgot_pw_tab = st.tabs(
-            (login_title, register_title, "Passwort vergessen")
+            (login_title, register_title, "Forgot Password")
 )
         with login_tab:
             self._login()
