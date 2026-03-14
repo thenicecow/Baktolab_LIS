@@ -42,6 +42,23 @@ if "data_df" not in st.session_state:
 if "last_saved" not in st.session_state:
     st.session_state["last_saved"] = None
 
+if "result" not in st.session_state and not st.session_state["data_df"].empty:
+    last_row = st.session_state["data_df"].iloc[-1]
+
+    st.session_state["result"] = {
+        "timestamp": last_row["Zeitpunkt"],
+        "organism": last_row["Keim"],
+        "period": last_row["Auswertungsperiode"],
+        "antibiotic": last_row["Antibiotikum"],
+        "ab_class": antibiotic_class(last_row["Antibiotikum"]),
+        "total": None,
+        "resistant": None,
+        "sensitive": None,
+        "rate": float(last_row["Resistenzrate in %"]),
+        "label": classify_rate(float(last_row["Resistenzrate in %"])),
+        "hints": [],
+    }
+
 
 def main():
     st.title("Rechner Resistenzmonitoring")
