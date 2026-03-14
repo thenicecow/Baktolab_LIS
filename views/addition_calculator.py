@@ -236,6 +236,56 @@ def main():
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
 
+st.subheader("Grafischer Verlauf")
+
+if not st.session_state["data_df"].empty:
+    plot_df = st.session_state["data_df"].copy()
+
+    # Zeitpunkt in echtes Datum umwandeln
+    plot_df["Zeitpunkt"] = pd.to_datetime(
+        plot_df["Zeitpunkt"],
+        format="%d.%m.%Y %H:%M",
+        errors="coerce"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_organism = st.selectbox(
+            "Keim für Verlauf auswählen",
+            sorted(plot_df["Keim"].dropna().unique())
+        )
+
+    with col2:
+        selected_antibiotic = st.selectbox(
+            "Antibiotikum für Verlauf auswählen",
+            sorted(
+                plot_df[plot_df["Keim"] == selected_organism]["Antibiotikum"].dropna().unique()
+            )
+        )
+
+    filtered_df = plot_df[
+        (plot_df["Keim"] == selected_organism) &
+        (plot_df["Antibiotikum"] == selected_antibiotic)
+    ].sort_values("Zeitpunkt")
+
+    if not filtered_df.empty:
+        chart = alt.Chart(filtered_df).mark_line(point=True).encode(
+            x=alt.X("Zeitpunkt:T", title="Zeitpunkt"),
+            y=alt.Y("Resistenzrate in %:Q", title="Resistenzrate in %"),
+            tooltip=[
+                "Zeitpunkt:T",
+                "Auswertungsperiode:N",
+                "Keim:N",
+                "Antibiotikum:N",
+                alt.Tooltip("Resistenzrate in %:Q", format=".1f")
+            ]
+        ).properties(height=350)
+
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.info("Für diese Kombination sind noch keine Verlaufsdaten vorhanden.")
+
 
 if __name__ == "__main__":
     main()
