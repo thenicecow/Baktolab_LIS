@@ -270,18 +270,36 @@ def main():
 
     plot_df = st.session_state["data_df"].copy()
 
-    # Spalten robust aufbereiten
-    plot_df["Zeitpunkt_dt"] = pd.to_datetime(
-        plot_df["Zeitpunkt"].astype(str),
-        format="%d.%m.%Y %H:%M",
-        errors="coerce"
-    )
     plot_df["Resistenzrate_plot"] = pd.to_numeric(
         plot_df["Resistenzrate in %"],
         errors="coerce"
     )
 
-    plot_df = plot_df.dropna(subset=["Zeitpunkt_dt", "Resistenzrate_plot"])
+    # Monat + Jahr aus "Auswertungsperiode" in echtes Datum umwandeln
+    month_map = {
+        "Januar": "01",
+        "Februar": "02",
+        "März": "03",
+        "April": "04",
+        "Mai": "05",
+        "Juni": "06",
+        "Juli": "07",
+        "August": "08",
+        "September": "09",
+        "Oktober": "10",
+        "November": "11",
+        "Dezember": "12",
+    }
+
+    def parse_period(p):
+        try:
+            m, y = str(p).split()
+            return pd.to_datetime(f"{y}-{month_map[m]}-01")
+        except Exception:
+            return pd.NaT
+
+    plot_df["Periode_dt"] = plot_df["Auswertungsperiode"].astype(str).apply(parse_period)
+    plot_df = plot_df.dropna(subset=["Periode_dt", "Resistenzrate_plot"])
 
     if plot_df.empty:
         st.info("Noch keine gültigen Verlaufsdaten vorhanden.")
@@ -313,7 +331,7 @@ def main():
     filtered_df = plot_df[
         (plot_df["Keim"] == selected_organism) &
         (plot_df["Antibiotikum"] == selected_antibiotic)
-    ].sort_values("Zeitpunkt_dt")
+    ].sort_values("Periode_dt")
 
     if filtered_df.empty:
         st.info("Für diese Kombination sind noch keine Verlaufsdaten vorhanden.")
@@ -321,10 +339,13 @@ def main():
 
     if len(filtered_df) == 1:
         trend_chart = alt.Chart(filtered_df).mark_point(size=120).encode(
-            x=alt.X("Zeitpunkt_dt:T", title="Zeitpunkt"),
+            x=alt.X(
+                "Periode_dt:T",
+                title="Auswertungsperiode",
+                axis=alt.Axis(format="%b %Y")
+            ),
             y=alt.Y("Resistenzrate_plot:Q", title="Resistenzrate in %"),
             tooltip=[
-                alt.Tooltip("Zeitpunkt_dt:T", title="Zeitpunkt"),
                 alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
                 alt.Tooltip("Keim:N", title="Keim"),
                 alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
@@ -333,10 +354,13 @@ def main():
         ).properties(height=350)
     else:
         trend_chart = alt.Chart(filtered_df).mark_line(point=True).encode(
-            x=alt.X("Zeitpunkt_dt:T", title="Zeitpunkt"),
+            x=alt.X(
+                "Periode_dt:T",
+                title="Auswertungsperiode",
+                axis=alt.Axis(format="%b %Y")
+            ),
             y=alt.Y("Resistenzrate_plot:Q", title="Resistenzrate in %"),
             tooltip=[
-                alt.Tooltip("Zeitpunkt_dt:T", title="Zeitpunkt"),
                 alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
                 alt.Tooltip("Keim:N", title="Keim"),
                 alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
