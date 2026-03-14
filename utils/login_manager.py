@@ -86,11 +86,15 @@ class LoginManager:
 
     def _login_register_page(self, login_title, register_title):
         """Page function shown when the user is not authenticated."""
-        login_tab, register_tab = st.tabs((login_title, register_title))
+        login_tab, register_tab, forgot_pw_tab = st.tabs(
+    (login_title, register_title, "Passwort vergessen")
+)
         with login_tab:
             self._login()
         with register_tab:
             self._register()
+        with forgot_pw_tab:
+            self._forgot_password()
 
     def _login(self):
         """Renders the login form and handles authentication status messages."""
@@ -119,3 +123,38 @@ class LoginManager:
                 st.success("Credentials saved successfully")
             except Exception as e:
                 st.error(f"Failed to save credentials: {e}")
+
+    def _forgot_password(self):
+        """
+        Renders a forgot-password form.
+
+        streamlit-authenticator erzeugt dabei ein neues zufälliges Passwort.
+        Dieses muss danach sicher an den Benutzer übermittelt werden.
+        """
+        st.info(
+            "Falls du dein Passwort vergessen hast, kannst du hier ein neues zufälliges Passwort erzeugen."
+        )
+
+        try:
+            username, email, new_password = self.authenticator.forgot_password(
+                captcha=False,
+                send_email=False
+            )
+
+            if username:
+                st.success("Neues Passwort wurde erzeugt.")
+                st.write(f"Username: {username}")
+                st.write(f"E-Mail: {email}")
+                st.warning(f"Neues temporäres Passwort: {new_password}")
+
+                try:
+                    self._save_auth_credentials()
+                    st.success("Neue Zugangsdaten wurden gespeichert.")
+                except Exception as e:
+                    st.error(f"Fehler beim Speichern der neuen Zugangsdaten: {e}")
+
+            elif username is False:
+                st.error("Username nicht gefunden.")
+
+        except Exception as e:
+            st.error(f"Fehler beim Zurücksetzen des Passworts: {e}")
