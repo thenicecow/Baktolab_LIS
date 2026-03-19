@@ -19,6 +19,8 @@ sollte das Passwort wieder geändert werden ein Dropdown steht dafür zur Verfü
 st.markdown("""
 Diese App wurde von folgender Person entwickelt:
 - Kevin Engehausen (engehkev@students.zhaw.ch) 
+- Giuliana Cerullo (cerulgiu@students.zhaw.ch)
+- Ladina Lozza (lozzalad@students.zhaw.ch)
 
 
 Autor: Samuel Wehrli (wehs@zhaw.ch)
