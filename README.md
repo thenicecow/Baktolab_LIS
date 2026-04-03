@@ -1,15 +1,92 @@
-# BMLD-Inf2-AppV0
+# Laborinformationssystem (LIS) mit Resistenzanalyse
 
-Leistungsnachweis Informatik 2 BMLD25
+Diese Applikation dient der digitalen Erfassung, Verwaltung und Analyse mikrobiologischer Labordaten im Rahmen eines Studienprojekts.  
+Sie richtet sich an Laborpersonal (z. B. in der Mikrobiologie) und unterstützt dabei, Arbeitsprozesse effizient zu dokumentieren und Resistenzanalysen strukturiert durchzuführen.
 
-## Autor
+---
 
-Samuel Wehrli (wehs@zhaw.ch)
+## ✨ Ziel der App
 
-## Weiterentwickelt durch
+Ziel ist die Entwicklung eines benutzerfreundlichen und praxisnahen Laborinformationssystems, das:
 
-Kevin Engehausen (engehkev@students.zhaw.ch)
-Giuliana Cerullo (cerulgiu@students.zhaw.ch)
-Ladina Lozza (lozzalad@students.zhaw.ch)
+- Patientendaten, Materialien und Laboranalysen systematisch erfasst  
+- mikrobiologische Prozesse wie Identifikation und Resistenzbestimmung unterstützt  
+- komplexe Informationen verständlich und strukturiert darstellt  
+- Laborpersonal im Arbeitsalltag entlastet und Fehler reduziert  
+
+Die Anwendung ist bewusst einfach gestaltet, um auch bei neuen Technologien eine intuitive Nutzung zu ermöglichen – insbesondere für erfahrenes Laborpersonal mit geringer technischer Affinität.
+
+---
+
+## 🧭 Funktionen der App
+
+### Patientenaufnahme
+- Erfassung von Patientendaten (Name, Geburtsdatum, Geschlecht etc.)
+
+### Materialaufnahme
+- Verwaltung von Probenmaterialien (z. B. Blut, Urin, Agarplatten)
+
+### Resistenzrechner (Kernfunktion)
+- Eingabe von Hemmhofdurchmessern  
+- Interpretation nach EUCAST (Sensibel / Resistenz / Intermediär)  
+
+### MALDI-TOF Ergebnis-Eingabe
+- Erfassung von Identifikationsergebnissen inkl. Score-Werten  
+- Anzeige möglicher Keime  
+
+### Plattenansatz & Inkubation (Übersicht)
+- Anzeige von:
+  - Medium (z. B. Agarplatte)  
+  - Temperatur  
+  - Inkubationsdauer  
+  - Atmosphäre  
+
+### Ergebnisse / Befund
+- Übersicht der Analyseergebnisse  
+- Darstellung von Resistenzprofilen  
+
+### Dashboard
+- Übersicht über aktuelle Aktivitäten und Schnellzugriff auf Funktionen  
+
+---
+
+## 🚀 Nutzungshinweise
+
+- Öffne die Anwendung (lokal oder im Deployment)
+
+- Wähle im Dashboard den gewünschten Bereich:
+  - **Patientenaufnahme** → neuen Patienten erfassen  
+  - **Materialaufnahme** → Material oder Probe erfassen  
+  - **Resistenzrechner** → Antibiogramm berechnen  
+  - **MALDI-TOF** → Identifikationsergebnis eingeben  
+
+- Gib die Daten über die Eingabemasken ein  
+
+- Klicke auf **„Speichern“** oder **„Berechnen“**, um die Eingaben zu verarbeiten  
+
+- Wechsel zur **Ergebnis-/Übersichtsseite**, um Resultate und Analysen einzusehen  
+
+---
+
+## 🧪 Technische Umsetzung (optional)
+
+- Entwicklung mit **Python & Streamlit**  
+- Modulare Struktur:
+  - `pages/` → einzelne Funktionsbereiche (Patient, Material, Analyse etc.)  
+  - `utils/` → Datenverarbeitung, Berechnungen (z. B. EUCAST), UI-Komponenten  
+
+---
+
+## 👥 Autoren
+
+- Kevin Engehausen (engehkev@students.zhaw.ch)
+- David Hascher (haschdav@students.zhaw.ch)
+- Léa Grandchamnp (grandlea@students.zhaw.ch)
+- Brigit Marxer (marxebri@students.zhaw.ch)
 
 
+---
+
+## 🧾 Projektkontext
+
+Dieses Projekt entstand im Rahmen eines Studienprojekts und dient der praktischen Umsetzung eines digitalen Laborinformationssystems mit Fokus auf mikrobiologische Diagnostik und Resistenzanalyse.
