@@ -1,27 +1,39 @@
 import streamlit as st
 
-st.title("Rechner Resistenzmonitoring")
+st.title("Laborinformationssystem (LIS)")
 
 st.markdown("""
-Diese App berechnet die Antibiotika-Resistenzrate ausgewählter bakterieller Erreger anhand der Anzahl getesteter und resistenter Isolate einer Asuwertungsperiode (bspw. April 2023). 
+Diese App dient der Erfassung und Verwaltung mikrobiologischer Labordaten.
 
-Die Resistenzrate wird in Prozent dargestellt und mit einem einfachen Ampelsystem bewertet. 
-             
-Zusätzlich werden bei bestimmten Kombinationen von Erreger und Antibiotikaklasse Hinweise zu möglichen multiresistenten Erregern angezeigt. 
-Es können mehrere Auswertungen durchgeführt und in einer Tabelle gespeichert werden, um Trends über die Zeit zu verfolgen mittels eines Liniendiagramms.
+Sie unterstützt Laborpersonal bei der Aufnahme von Patientendaten, der Erfassung von Materialien sowie bei der Dokumentation und Auswertung von Analyseergebnissen.
 
-Bitte beachte, dass die Visuelle Darstellung immer mit neuem Datum gefüttert werden muss, damit der Verlauf angezeigt wird. ein mehrfaches Klicken auf Berechnen ohne Änderung der Daten zeigt keine Veränderung der Werte an, da die Daten nicht verändert wurden.
+Zusätzlich können Resistenzdaten und MALDI-TOF Resultate eingegeben und übersichtlich dargestellt werden.
 
-Es wurde ein Passwort vergessen hinzufügt falls der Nutzer sein Passwort vergessen hat. Es wird ein neues zufälliges Passwort erzeugt, welches der Nutzter direkt nach erneutem Einloggen geändert werden sollte. Es wird empfohlen, das neue Passwort sicher zu speichern, da es nicht erneut angezeigt wird. Anschliessend
-sollte das Passwort wieder geändert werden ein Dropdown steht dafür zur Verfügung.
+Mehrere Einträge können gespeichert werden, um Resultate strukturiert zu verwalten und Laborabläufe digital abzubilden.
+
+---
+
+## Hinweise zur Nutzung
+
+- Neue Daten können über die einzelnen Eingabemasken erfasst werden  
+- Ergebnisse und Analysen werden nach dem Speichern in der Übersicht angezeigt  
+
+---
+
+## Benutzerfunktionen
+
+- Login-System mit Benutzername und Passwort  
+- „Passwort vergessen“-Funktion:
+  - Generiert ein neues zufälliges Passwort  
+  - Passwort sollte nach dem Login direkt geändert werden  
 """)
 
 st.markdown("""
 Diese App wurde von folgenden Personen entwickelt:
-- Kevin Engehausen (engehkev@students.zhaw.ch) 
-- Giuliana Cerullo (cerulgiu@students.zhaw.ch)
-- Ladina Lozza (lozzalad@students.zhaw.ch)
-
+- Kevin Engehausen (engehkev@students.zhaw.ch)
+- David Hascher (haschdav@students.zhaw.ch)
+- Léa Grandchamp (grandlea@students.zhaw.ch)
+- Brigit Marxer (marxebri@students.zhaw.ch)
 
 Autor: Samuel Wehrli (wehs@zhaw.ch)
 """)
