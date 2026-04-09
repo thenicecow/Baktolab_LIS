@@ -26,13 +26,9 @@ Die Anwendung ist bewusst einfach gestaltet, um auch bei neuen Technologien eine
 ### Materialaufnahme
 - Verwaltung von Probenmaterialien (z. B. Blut, Urin, Agarplatten)
 
-### Resistenzrechner (Kernfunktion)
+### Resistenzrechner
 - Eingabe von Hemmhofdurchmessern  
 - Interpretation nach EUCAST (Sensibel / Resistenz / Intermediär)  
-
-### MALDI-TOF Ergebnis-Eingabe
-- Erfassung von Identifikationsergebnissen inkl. Score-Werten  
-- Anzeige möglicher Keime  
 
 ### Plattenansatz & Inkubation (Übersicht)
 - Anzeige von:
@@ -40,6 +36,15 @@ Die Anwendung ist bewusst einfach gestaltet, um auch bei neuen Technologien eine
   - Temperatur  
   - Inkubationsdauer  
   - Atmosphäre  
+
+### Wachstum/ Keimzahl Resultierung
+- Eingabe von:
+  - Identifikationsnummer
+  - Anzahl der verschiedenen Kolonien
+  - Gesamtkeimzahl
+  - Keimzahl einzelner Resultate
+- Anzeige von:
+  - MALDI-TOF Eingabefelderen entsprechend verschiedener Kolonien
 
 ### Ergebnisse / Befund
 - Übersicht der Analyseergebnisse  
