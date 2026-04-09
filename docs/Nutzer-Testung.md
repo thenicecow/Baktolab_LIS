@@ -1,4 +1,4 @@
-### Nutzer-Testung
+# Nutzer-Testung Mikrobiologie LIS
 
 1.	Hypothesenbildung
 Die Hypothesenbildung erfolgt grundsätzlich vor jeder Testung.
@@ -66,13 +66,13 @@ Die Interpretation von Resultaten ist fachlich kritisch. Wenn Resultat und näch
 - Der Übergang zwischen Resultat, Resistenzrechner und Antibiogramm wirkt logisch.
 
 ## 2.	Nutzertest durchführen (mit Wireframe)
-    - Den Prototyp nicht erklären
-    - Der Prototyp muss selbsterklärend sein
-    - Wir scheitern so früh und so viel wie möglich
-    - “Kill your Darling“-Mindset
-    - Den Prototyp niemals verteidigen
-    - Fragen mit Fragen beantworten
-    - Wir brauchen nicht viele Testpersonen
+- Den Prototyp nicht erklären
+- Der Prototyp muss selbsterklärend sein
+- Wir scheitern so früh und so viel wie möglich
+- “Kill your Darling“-Mindset
+- Den Prototyp niemals verteidigen
+- Fragen mit Fragen beantworten
+- Wir brauchen nicht viele Testpersonen
 
 ### Protokoll Nutzertest
 
