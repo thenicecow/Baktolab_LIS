@@ -1,7 +1,7 @@
 ### Wireframe Version 0
 ![Wireframe V0](images/Wireframes_V0.jpeg)
 
-### Wire4frame Version 1
+### Wireframe Version 1
 ![Wireframe V1](images/Wireframes_v1.jpeg)
 
 ### Wireframes Version 2
