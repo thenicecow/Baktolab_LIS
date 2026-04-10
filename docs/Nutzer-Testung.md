@@ -2,7 +2,7 @@
 
 ## Einordnung
 
-Dieser Test ist ein Nutzertest mit einer erfahrenen mikrobiologie BMA auf Basis des vorhandenen Wireframes.
+Dieser Test ist ein Nutzertest mit einer erfahrenen Mikrobiologielaborantin auf Basis des vorhandenen Wireframes.
 
 ---
 
@@ -63,7 +63,7 @@ Ein Test ist aus Produktsicht erfolgreich, wenn eine Testperson:
 
 ### Testperson
 
-**Rolle:** langjärige Mitarbeiterin, BMA
+**Rolle:** langjährige Mitarbeiterin, BMA
 **Digitales Niveau:** durchschnittlich
 **Domänenwissen:** teilweise vorhanden, aber nicht tief projektspezifisch
 **Ziel:** möglichst rasch Patient, Probe und Ergebnis korrekt erfassen
@@ -351,7 +351,7 @@ Das Wireframe zeigt eine erkennbare fachliche Struktur, aber der Prototyp ist no
 
 Die grössten Schwächen liegen nicht in der Idee der Anwendung, sondern in:
 
-* fehlender Klarheit des End-to-End-Workflows
+* fehlender Klarheit wie der Ablauf vom Start bis zum Ende einer Aufgabe ist
 * unklaren oder zu fachlichen Begriffen
 * fehlenden Abschluss- und Feedbacksignalen
 * einer besonders schwachen Verständlichkeit der Keim-/Resultateseite
