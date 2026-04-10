@@ -1,6 +1,6 @@
 # Persona: Susi Sommer
 
-![Susi Sommer](susi_sommer.png)
+![Susi Sommer](images/susi_sommer.png)
 
 ## Allgemeine Informationen
 - **Alter:** 61 Jahre  
