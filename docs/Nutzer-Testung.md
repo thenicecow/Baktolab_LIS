@@ -90,7 +90,7 @@ Das grösste Problem ist, dass der gesamte Ablauf noch nicht klar genug ist. Man
 
 ### Wir ergänzen folgende Punkte:
 
-* Bei der Patientenaufnahme soll ein klarer Button wie **Speichern** oder **Patient anlegen** ergänzt werden.
+* Bei der Patientenaufnahme soll ein klarer Button wie Speichern oder Patient anlegen ergänzt werden.
 * Der Ablauf soll logischer dargestellt werden.
 * Die Begriffe auf dem Dashboard und auf der Resultateseite sollen verständlicher gemacht werden.
 * Nach wichtigen Aktionen soll eine Rückmeldung erscheinen.
