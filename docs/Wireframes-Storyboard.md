@@ -5,4 +5,4 @@
 ![Wireframe V1](images/Wireframes_v1.jpeg)
 
 ### Wireframes Version 2
-![Wireframe V2](images/Wireframes_V2.jpeg)
+![Wireframe V2](images/WireframesV2.jpeg)
