@@ -1,122 +1,357 @@
-# Nutzer-Testung Mikrobiologie LIS
+# Nutzertest Mikrobiologie LIS
 
-1.	Hypothesenbildung
-Die Hypothesenbildung erfolgt grundsätzlich vor jeder Testung.
-Was wissen wir?
-Was wissen wir nicht?
-Was möchten wir testen?
-Wie bewerten wir den Test?
-Was ist ein Erfolg?
+## Einordnung
 
-## 1. Hypothesen
+Dieser Test ist ein Nutzertest mit einer erfahrenen mikrobiologie BMA auf Basis des vorhandenen Wireframes.
 
-### Hypothese 1: Nutzer findet vom Dashboard aus das richtige Modul für ihre Aufgabe.
+---
 
-**Warum?**  
-Wenn die Navigation nicht klar ist, scheitert der ganze Ablauf schon vor der eigentlichen Facharbeit.
+## 1. Hypothesenbildung
 
-**Erfolgs- und Beobachtungssignale**
-- Der erste Klick geht direkt oder fast direkt ins passende Modul.
-- Die Testperson kann benennen, was die Kacheln ungefähr bedeuten.
-- Es gibt keine Nachfrage wie: „Wo muss ich überhaupt hin?“
-- Die Testperson wirkt bei der Auswahl sicher und zögert nicht lange.
+### Was wir zu wissen glauben
 
-### Hypothese 2: Die Patientenaufnahme ist selbsterklärend genug, um einen neuen Patienten ohne Hilfe anzulegen.
+* Das Produkt dient der **Erfassung und Verarbeitung von Patienten-, Proben- und Laborinformationen**.
+* Die wichtigsten Aufgaben sind:
 
-**Warum?**  
-Patientendaten sind oft der Startpunkt für alle weiteren Schritte. Wenn hier Unklarheit entsteht, zieht sich das durch den ganzen Prozess.
+  * neues Konto erstellen
+  * neuen Patienten anlegen
+  * Material zu einer Probe erfassen
+  * Keime und Resultate erfassen
+  * Auswertungen oder Übersichten aufrufen
+* Das **Dashboard** ist der zentrale Einstiegspunkt nach dem Login.
 
-**Erfolgs- und Beobachtungssignale**
-- Die Testperson findet die Patientenaufnahme ohne Hilfe.
-- Die Felder werden in einer sinnvollen Reihenfolge genutzt.
-- Proben-ID, Geburtsdatum, Geschlecht und Material werden richtig verstanden.
-- Es gibt keine dauerhafte Verwechslung von Feldbedeutungen.
+### Was wir nicht wissen
 
-### Hypothese 3: Die Materialaufnahme ist verständlich und vollständig genug, damit eine Probe erfasst werden kann.
+* Ob die **Registrierung** überhaupt Teil des realen Alltags ist oder nur ein technischer Einstieg.
+* Welche Felder **Pflichtfelder** sind.
+* Ob die Reihenfolge **Patient zuerst, dann Material, dann Resultat** der echten Arbeitslogik entspricht.
+* Ob Begriffe wie **Fragestellung**, **Plattenanzahl**, **Resistenzrechner**, **Wachstum / Keimzahl** und **Ergebnisse / Befund** für die Zielgruppe unmittelbar klar sind.
+* Wie der Nutzer nach dem Speichern erkennt, dass ein Schritt erfolgreich abgeschlossen wurde.
 
-**Warum?**  
-Wenn Material- oder Probendaten unklar sind, entstehen Fehler früh im Laborprozess und diese wirken später weiter.
+### Was wir testen wollen
 
-**Erfolgs- und Beobachtungssignale**
-- Die Testperson versteht die Bedeutung von Material, Fragestellung, Proben-ID und Datumsfeldern.
-- Speichern und Abbruch werden korrekt interpretiert.
-- Die Testperson erkennt, welche Angaben für die Erfassung relevant sind.
-- Es entsteht keine deutliche Unsicherheit, ob etwas fehlt oder doppelt erfasst wird.
+* Versteht die Testperson ohne Erklärung, **wo sie beginnen muss**?
+* Findet sie die richtige Funktion, um einen **neuen Patienten anzulegen**?
+* Versteht sie die Felder zur **Materialaufnahme**?
+* Versteht sie die Seite zur **Keim- bzw. Resultaterfassung**?
+* Erkennt sie die **primären Aktionen** wie Speichern, Weitergehen oder Abbrechen?
+* Ist der Ablauf für die Testperson **selbsterklärend genug**, um ohne Hilfe voranzukommen?
 
-### Hypothese 4: Die Übersicht Plattenansatz hilft dabei, alle erforderlichen Platten anzusetzen und korrekt zu inkubieren.
+### Wie wir den Test bewerten
 
-**Warum?**  
-Es dürfen keine Plattern vergessen oder falsch inkubiert werden.
+Wir bewerten den Test danach,
 
-**Erfolgs- und Beobachtungssignale**
-- Die Testperson versteht Tabelle, Suchfeld und Filter grob richtig.
-- Die Proben-ID wird als wichtiger Anker erkannt.
-- Die Testperson kann sagen, wie sie bei einer gefundenen Probe weiterarbeiten würde.
-- Die Übersicht wird als nachvollziehbar und nicht als überfordernd erlebt.
+* ob die Testperson die Aufgabe **ohne Erklärung** starten kann,
+* ob sie die **richtigen Klickziele** findet,
+* ob die Begriffe und Felder **verständlich** sind,
+* ob Unsicherheiten oder Fehlinterpretationen auftreten,
+* ob sie den Ablauf als **logisch** erlebt.
 
-### Hypothese 5: Resultatseiten und Resistenzrechner machen den nächsten fachlichen Schritt nachvollziehbar
+### Was ein Erfolg ist
 
-**Warum?**  
-Die Interpretation von Resultaten ist fachlich kritisch. Wenn Resultat und nächste Handlung nicht klar zusammenhängen, steigt das Fehlerrisiko.
+Ein Test ist aus Produktsicht erfolgreich, wenn eine Testperson:
 
-**Erfolgs- und Beobachtungssignale**
-- Die Testperson kann erklären, was das Resultat aussagt.
-- Die Eingaben im Resistenzrechner werden grundsätzlich verstanden.
-- Die Begriffe sensibel, intermediär und resistent werden als Ergebniszustände verstanden.
-- Der Übergang zwischen Resultat, Resistenzrechner und Antibiogramm wirkt logisch.
+* den Einstieg versteht,
+* die Kernaufgaben ohne viel Hilfe findet,
+* die Formulare logisch einordnen kann,
+* die wichtigsten Begriffe richtig interpretiert,
+* und ohne grössere Unsicherheit von einem Schritt zum nächsten kommt.
 
-## 2.	Nutzertest durchführen (mit Wireframe)
-- Den Prototyp nicht erklären
-- Der Prototyp muss selbsterklärend sein
-- Wir scheitern so früh und so viel wie möglich
-- “Kill your Darling“-Mindset
-- Den Prototyp niemals verteidigen
-- Fragen mit Fragen beantworten
-- Wir brauchen nicht viele Testpersonen
+---
 
-### Protokoll Nutzertest
+## 2. Testsetup für diesen Test
 
-Testperson: Stefanie Frey
-Datum: 10.04.2026
-Moderator: Léa Grandchamp
+### Testperson
 
-| Task | Beobachtung | Zitat | Problem | Schweregrad | Idee |
-|------|-------------|-------|---------|-------------|------|
-| 1    |             |       |         | 1/2/3       |      |
-| 2    |             |       |         | 1/2/3       |      |
-| 3    |             |       |         | 1/2/3       |      |
-| 4    |             |       |         | 1/2/3       |      |
-| 5    |             |       |         | 1/2/3       |      |
+**Rolle:** langjärige Mitarbeiterin, BMA
+**Digitales Niveau:** durchschnittlich
+**Domänenwissen:** teilweise vorhanden, aber nicht tief projektspezifisch
+**Ziel:** möglichst rasch Patient, Probe und Ergebnis korrekt erfassen
 
-Schweregrad
-1 = gering, kurze Irritation, kein echter Blocker
-2 = mittel, verlangsamt oder führt zu Fehlweg
-3 = hoch, verhindert Aufgabe oder erzeugt hohes Fehlerrisiko
+### Testaufgaben
 
-## 3.	Nutzertest auswerten (mit Test-Raster)
-Test-Grid. Testperson: Stefanie   Datum: 10.04.2026
+1. Ein neues Konto erstellen
+2. Auf dem Dashboard die richtige Funktion für einen neuen Patienten finden
+3. Einen neuen Patienten anlegen
+4. Material zu einer Probe erfassen
+5. Eine Keim- bzw. Resultaterfassung für eine Probe verstehen und ausfüllen
 
-WAS WAR GUT?
-- 
-- 
-- 
-- 
+---
 
-WAS WAR SCHLECHT?
-- 
-- 
-- 
-- 
+## 3. Grundregeln für die Durchführung
 
-NEUE IDEEN?
-- 
-- 
-- 
-- 
+Diese Regeln sollen beim Test eingehalten werden:
 
-NEUE PROBLEME?
-- 
-- 
-- 
-- 
+1. Den Prototyp nicht erklären
+2. Der Prototyp muss selbsterklärend sein
+3. So früh und so oft wie möglich scheitern
+4. Kill-your-Darling-Mindset
+5. Den Prototyp niemals verteidigen
+6. Fragen mit Fragen beantworten
+7. Es braucht nicht viele Testpersonen
 
+### Beispiel für Moderationsverhalten
+
+Wenn die Testperson fragt:
+**„Was bedeutet das hier?“**
+
+Nicht antworten mit:
+**„Das ist für die Resistenzangabe.“**
+
+Sondern zurückfragen:
+**„Was würdest du darunter verstehen?“**
+oder
+**„Was würdest du als Nächstes tun?“**
+
+---
+
+## 4. Testdurchlauf
+
+## Aufgabe 1: Konto erstellen
+
+### Erwartung
+
+Die Testperson erkennt sofort, dass sie ein neues Konto anlegen kann und welche Angaben nötig sind.
+
+### Beobachtung als Testnutzer
+
+* Die Seite ist klar als **Registrierung / Neues Konto erstellen** erkennbar.
+* Die Felder **Name**, **Benutzername**, **Passwort** und **Passwort bestätigen** sind grundsätzlich verständlich.
+* Der Button **Konto erstellen** ist als Hauptaktion erkennbar.
+* Der Link **zurück zum Login** ist sinnvoll.
+
+### Probleme
+
+* Es ist nicht ersichtlich, welche Felder **Pflichtfelder** sind.
+* Es fehlen Hinweise zu Passwortregeln.
+* Es fehlt jede Form von Fehler- oder Erfolgskommunikation.
+* Es ist unklar, ob mit **Name** der Klarname oder etwas anderes gemeint ist.
+
+### Bewertung
+
+**Grundsätzlich verständlich**, aber noch zu roh für einen sicheren und selbsterklärenden Produktfluss.
+
+---
+
+## Aufgabe 2: Auf dem Dashboard die richtige Funktion finden
+
+### Erwartung
+
+Die Testperson erkennt, wo sie als Erstes klicken muss, wenn sie einen neuen Fall erfassen will.
+
+### Beobachtung als Testnutzer
+
+* Das Dashboard vermittelt klar: Hier gibt es mehrere Hauptfunktionen.
+* **Patientenaufnahme** und **Materialaufnahme** springen als erste sinnvolle Arbeitsbereiche ins Auge.
+* Die Kachelstruktur ist leicht erfassbar.
+* Suche, Profil und Logout sind grundsätzlich als globale Navigation erkennbar.
+
+### Probleme
+
+* Es ist nicht klar, **was der empfohlene Startpunkt** im Alltag ist.
+* Einige Begriffe wirken fachlich, aber nicht selbsterklärend, z. B.:
+
+  * Übersicht Plattenanzahl
+  * Resistenzrechner
+  * Wachstum / Keimzahl
+  * Ergebnisse / Befund
+* Die Zeile links oben mit dem Namen bzw. Nutzereintrag wirkt unklar.
+* Die Suchfunktion ist sichtbar, aber ihr Zweck bleibt offen.
+
+### Bewertung
+
+**Orientierung okay**, aber die Informationsarchitektur wirkt noch **modulartig statt prozessorientiert**.
+
+---
+
+## Aufgabe 3: Neuen Patienten anlegen
+
+### Erwartung
+
+Die Testperson kann einen neuen Patienten vollständig erfassen und speichern.
+
+### Beobachtung als Testnutzer
+
+* Der Titel **Patientenaufnahme** ist klar.
+* **Neuen Patienten anlegen** macht den Zweck eindeutig.
+* Die Felder **Proben-ID**, **Name**, **Geb. Dat.**, **Geschlecht** und **Station** sind grundsätzlich plausibel.
+* Das Datumsfeld und das Dropdown signalisieren den Eingabetyp gut.
+
+### Probleme
+
+* Es gibt **keinen klar sichtbaren Speichern- oder Erstellen-Button**.
+* Damit ist die Aufgabe faktisch **nicht sauber abschliessbar**.
+* Es ist unklar, ob **Proben-ID** hier manuell vergeben wird oder aus einem anderen Schritt stammt.
+* Es ist unklar, ob der Nutzer zuerst den Patienten oder zuerst die Probe anlegen soll.
+* Die kleine Karte oben rechts ist in ihrer Funktion nicht selbsterklärend.
+* **Zurück** ist sichtbar, aber eine primäre Abschlussaktion fehlt.
+
+### Bewertung
+
+**Inhaltlich teilweise verständlich, aber funktional unvollständig.**
+
+### Kritischer Befund
+
+Dies ist aus Nutzersicht ein **kritisches Problem**, weil der wichtigste Use Case nicht sauber zu Ende geführt werden kann.
+
+---
+
+## Aufgabe 4: Material zu einer Probe erfassen
+
+### Erwartung
+
+Die Testperson versteht, welches Material zu welcher Probe gehört und kann den Datensatz speichern.
+
+### Beobachtung als Testnutzer
+
+* Der Titel **Materialaufnahme** ist verständlich.
+* Die Eingabefelder wirken wie ein klassisches Erfassungsformular.
+* **Abnahmedatum** und **Eingangsdatum** sind fachlich nachvollziehbar.
+* Der Button **Speichern** ist vorhanden und als Hauptaktion erkennbar.
+
+### Probleme
+
+* Es ist unklar, ob diese Seite an einen **bereits angelegten Patienten** gekoppelt ist oder unabhängig funktioniert.
+* Die Felder **Proben-ID** und **Name** wirken redundant oder zumindest potenziell fehleranfällig, wenn der Kontext nicht automatisch übernommen wird.
+* **Fragestellung** könnte für Fachnutzer verständlich sein, für neue Nutzer aber erklärungsbedürftig bleiben.
+* **Dashboard** und **Abbruch** stehen optisch relativ nahe bei **Speichern**. Das erhöht das Risiko eines Fehlklicks.
+* Es fehlt Feedback nach dem Speichern.
+
+### Bewertung
+
+**Brauchbar, aber kontextschwach.**
+Die Seite ist verständlicher als die Patientenaufnahme, aber die Zuordnung zwischen Patient, Probe und Material ist nicht robust genug sichtbar.
+
+---
+
+## Aufgabe 5: Keim- bzw. Resultaterfassung verstehen und ausfüllen
+
+### Erwartung
+
+Die Testperson versteht schnell, wie viele Keime erfasst werden, was pro Keim einzutragen ist und was die Resistenzoptionen bedeuten.
+
+### Beobachtung als Testnutzer
+
+* Es ist erkennbar, dass sich die Seite um **Keime** und um mehrere Keim-Einträge dreht.
+* Die Spalten **Keim 1**, **Keim 2**, **Keim 3** deuten auf mehrere zu erfassende Ergebnisse hin.
+* **Proben-ID** oben links schafft grundsätzlich Kontext.
+
+### Probleme
+
+* Dies ist die **am wenigsten selbsterklärende Seite** des gesamten Wireframes.
+* Es bleibt unklar:
+
+  * was das Feld mit der **3** bedeutet
+  * was genau mit **Gesamtkeimzahl** gemeint ist
+  * wie sich **Gesamtkeimzahl** zu **Keim 1 bis 3** verhält
+  * was die einzelnen Eingabefelder pro Keim genau bedeuten
+  * was **mit Resi** und **ohne Resi** konkret auslöst
+  * ob **Medi** und **Mischflora** die korrekten Begriffe sind oder nur Platzhalter
+* Die visuelle Hierarchie hilft nicht genug, um den Ablauf zu verstehen.
+* Die Seite setzt offensichtlich **starkes Vorwissen** voraus.
+
+### Bewertung
+
+**Nicht selbsterklärend.**
+Für einen Nutzertest ist genau diese Seite sehr wertvoll, weil hier mit hoher Wahrscheinlichkeit die meisten Missverständnisse sichtbar werden.
+
+---
+
+## 5. Testprotokoll pro Screen
+
+| Screen            | Eindruck / Beobachtung                                                              |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| Registrierung     | Grundsätzlich verständlich, aber ohne Feldlogik, Validierung und Rückmeldung        |
+| Dashboard         | Module sichtbar, aber nicht klar prozessorientiert aufgebaut                        |
+| Patientenaufnahme | Felder verständlich, aber ohne klare Abschlussaktion                                |
+| Materialaufnahme  | Besser verständlich als Patientenaufnahme, aber Kontext zu Patient und Probe unklar |
+| Keime / Resultat  | Fachlich und visuell am wenigsten verständlich, stark erklärungsbedürftig           |
+
+---
+
+## 6. Auswertung im Test-Grid
+
+## Was war gut?
+
+* Die wichtigsten Bereiche sind auf dem Dashboard grundsätzlich sichtbar.
+* Registrierung, Patientenaufnahme und Materialaufnahme sind als Grundkonzepte erkennbar.
+* Datumsfelder und Dropdowns machen die erwartete Eingabeart sichtbar.
+* Das medizinisch-labornahe Setting wird deutlich.
+* Die Anwendung wirkt funktional und auf reale Arbeitsschritte ausgerichtet.
+
+## Was war schlecht?
+
+* Die **Patientenaufnahme hat keine klare primäre Abschlussaktion**.
+* Der Gesamtfluss zwischen **Patient**, **Probe**, **Material** und **Ergebnis** ist nicht klar genug.
+* Mehrere Begriffe sind nicht selbsterklärend oder zu stark domänenspezifisch.
+* Es fehlen **Hinweise, Validierungen, Statusmeldungen und Erfolgsfeedback**.
+* Die **Keim-/Resultateseite** ist ohne Erklärung kaum verständlich.
+* Das Dashboard zeigt Funktionen, aber kaum Priorisierung oder empfohlene Reihenfolge.
+
+## Neue Ideen
+
+* Den Hauptworkflow als **geführten Prozess** darstellen:
+
+  1. Patient anlegen
+  2. Material erfassen
+  3. Resultat erfassen
+* Pflichtfelder markieren.
+* Patient und Probenkontext dauerhaft oben anzeigen.
+* Fachbegriffe mit kurzen Hilfetexten oder Beispielen unterstützen.
+* Nach dem Speichern eine klare Rückmeldung geben.
+* Die Keimseite vereinfachen und in logische Abschnitte gliedern.
+
+## Neue Probleme
+
+* Hohes Risiko für **Fehlzuordnung von Daten**, wenn Patient und Probe nicht eindeutig verknüpft sind.
+* Hohes Risiko für **unvollständige Datensätze**, wenn primäre Aktionen fehlen.
+* Hohes Risiko, dass neue Nutzer nur mit Schulung statt durch UI-Verständnis arbeiten können.
+* Hohes Risiko, dass Resultaterfassung falsch verstanden oder falsch ausgefüllt wird.
+* Hohes Risiko, dass Dashboard-Module zwar sichtbar, aber im Alltag nicht intuitiv priorisiert werden.
+
+---
+
+## 7. Priorisierte Findings
+
+## Prio 1
+
+### 1. Patientenaufnahme ohne klare Abschlussaktion
+
+Die Seite wirkt unvollständig, weil das Anlegen eines Patienten nicht sichtbar abgeschlossen werden kann.
+
+### 2. Keim-/Resultateseite nicht selbsterklärend
+
+Die Begriffe, Felder und Resistenzoptionen sind ohne Vorwissen zu unklar.
+
+## Prio 2
+
+### 3. Hauptworkflow nicht klar genug
+
+Es ist nicht eindeutig, in welcher Reihenfolge Patient, Probe, Material und Resultat erfasst werden.
+
+### 4. Fehlendes Feedback
+
+Der Nutzer erhält keine klare Rückmeldung nach Eingaben oder nach dem Speichern.
+
+### 5. Fachbegriffe nicht ausreichend abgesichert
+
+Mehrere Begriffe wirken intern oder fachlich, aber nicht überall sofort verständlich.
+
+## Prio 3
+
+### 6. Dashboard eher modul- als aufgabenorientiert
+
+Es zeigt Funktionen, aber lenkt neue Nutzer nicht klar genug durch den Prozess.
+
+---
+
+## 8. Fazit
+
+Das Wireframe zeigt eine erkennbare fachliche Struktur, aber der Prototyp ist noch nicht selbsterklärend genug, um ohne Hilfe zuverlässig durch die wichtigsten Aufgaben zu führen.
+
+Die grössten Schwächen liegen nicht in der Idee der Anwendung, sondern in:
+
+* fehlender Klarheit des End-to-End-Workflows
+* unklaren oder zu fachlichen Begriffen
+* fehlenden Abschluss- und Feedbacksignalen
+* einer besonders schwachen Verständlichkeit der Keim-/Resultateseite
