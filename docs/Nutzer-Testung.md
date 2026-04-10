@@ -1,4 +1,4 @@
-# Wireframe Nutzertest
+# Wireframe Nutzertest Mikrobiologie LIS
 
 ## Hypothese
 
@@ -35,7 +35,7 @@
 
 ## Nutzertest mit einer erfahrenen Mikrobiologielaborantin
 
-## Testprotokoll pro Blatt
+## Protokoll Nutzertest
 
 | Screen            | Eindruck / Beobachtung                                                                                                                                                                                         |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -46,17 +46,16 @@
 | Keime / Resultat  | Diese Seite ist am schwierigsten zu verstehen. Es ist nicht klar, was genau eingetragen werden soll und wie die einzelnen Felder zusammenhängen. Ohne Erklärung wirkt die Seite zu kompliziert.                |
 
 
+### Test-Grid
 
-### Bewertungen in Form des Rasters mit den 4 Punkten
-
-### Was war gut?
+### ✅ Was war gut?
 
 * Die Anwendung ist in verschiedene Bereiche aufgeteilt und man erkennt recht schnell, dass es verschiedene Seiten für verschiedene Aufgaben gibt.
 * Das Dashboard gibt einen ersten Überblick über die wichtigsten Funktionen.
 * Die Patientenaufnahme und die Materialaufnahme wirken grundsätzlich verständlich, weil dort typische Felder wie Name, Geschlecht, Station, Abnahmedatum oder Eingangsdatum vorkommen.
 * Man sieht, dass der Fokus auf einem LIS für die Mikrobiologie liegt.
 
-### Was war schlecht?
+### ❌ Was war schlecht?
 
 * Es ist nicht ganz klar, in welcher Reihenfolge man alles machen soll.
 * Bei der Patientenaufnahme fehlt eine klare Abschlussaktion wie Speichern oder Patient anlegen.
@@ -65,7 +64,7 @@
 * Es fehlt eine Rückmeldung, ob etwas erfolgreich gespeichert wurde.
 * Die Befundung wird vermisst.
 
-### Neue Ideen?
+### 💡 Neue Ideen?
 
 * Den Ablauf klarer darstellen, also zum Beispiel zuerst Patient anlegen, dann Material erfassen und danach Resultat erfassen.
 * Pflichtfelder markieren.
@@ -75,7 +74,7 @@
 * Immer anzeigen, welcher Patient oder welche Probe gerade bearbeitet wird.
 * Anzeigen einer SOP beim ablesen der Platten und protokollieren der Kulturen.
 
-### Neue Probleme?
+### ⚠️ Neue Probleme?
 
 * Wenn der Ablauf nicht klar ist, könnten Nutzer falsche oder unvollständige Daten eingeben.
 * Wenn nicht eindeutig sichtbar ist, was zu welchem Patienten gehört, könnte es zu Verwechslungen kommen.
