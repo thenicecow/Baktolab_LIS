@@ -20,42 +20,42 @@ Die Anwendung ist bewusst einfach gestaltet, um auch bei neuen Technologien eine
 
 ## 🧭 Funktionen der App
 
-### Login & Registrierung
+### Login & Registrierung(V0)
 - Anmeldung bestehender Benutzer  
 - Erstellung eines neuen Benutzerkontos  
 
-### Dashboard
+### Dashboard(V0)
 - Zentrale Startseite der Anwendung  
 - Navigation zu allen Hauptfunktionen (Patienten, Material, Auswertung)  
 
-### Patientenaufnahme
+### Patientenaufnahme(V0)
 - Eingabemaske zur Erfassung von Patientendaten (ID, Name, Geburtsdatum, Geschlecht, Station)  
 
-### Materialaufnahme
+### Materialaufnahme(V0)
 - Formular zur Aufnahme und Verwaltung von Probenmaterialien (z. B. Blut, Urin, Agarplatten)  
 
-### Plattenansatz & Inkubation
-- Übersicht über angesetzte Proben  
-- Anzeige von Medium, Datum und Inkubationsbedingungen  
-
-### Wachstum / Keimzahl-Auswertung
+### Wachstum / Keimzahl-Auswertung(V0)
 - Eingabemaske zur Auswertung der Platten:
   - Identifikationsnummer  
   - Anzahl Kolonien  
   - Wachstum / Keimzahl  
 - Strukturierte Erfassung mehrerer Proben gleichzeitig  
 
-### Resistenzrechner
+### Plattenansatz & Inkubation (V1)
+- Übersicht über angesetzte Proben  
+- Anzeige von Medium, Datum und Inkubationsbedingungen  
+
+### Resistenzrechner (V2)
 - Eingabe von Keim, Antibiotikum und Hemmhofdurchmesser  
 - Interpretation nach EUCAST (Sensibel / Resistenz / Intermediär)  
 
-### Ergebnisse / Befund
+### Ergebnisse / Befund (V2)
 - Übersicht der erfassten und berechneten Resultate  
 - Zusammenführung von Keimzahl, Identifikation und Resistenzdaten  
 
 ---
 
-## 🚀 Nutzungshinweise
+## 🚀 Nutzungshinweise (Geplant noch nicht verfügbar)
 
 - Öffne die Anwendung (lokal oder im Deployment)
 
