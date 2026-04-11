@@ -2,6 +2,22 @@
 
 ## Hypothese
 
+Die Nutzer verstehen die grundlegende Struktur der Anwendung und können die wichtigsten Arbeitsschritte im Labor nachvollziehen.
+
+Insbesondere wird erwartet, dass die Nutzer:
+- sich auf dem Dashboard orientieren können  
+- einen neuen Patienten erfassen können  
+- Material korrekt eingeben können  
+- die Auswertungsseite (Keimzahl / Resultate) grundsätzlich verstehen  
+
+Zusätzlich wird angenommen, dass:
+- einfache und klar strukturierte Eingabemasken die Nutzung erleichtern  
+- komplexere Bereiche wie die Resultat- und Keimseite ohne zusätzliche Erklärung schwieriger verständlich sind  
+
+## Ziel des Nutzertests
+
+Der Nutzertest soll überprüfen, ob die Anwendung intuitiv verständlich ist und ob der geplante Workflow (Patient → Material → Auswertung) von den Nutzern korrekt erkannt und angewendet wird.
+
 ## Was wissen wir? Was wissen wir nicht?
 
 * **Was wissen wir:** Die Anwendung ist dafür da, Patienten, Proben, Material und Ergebnisse zu erfassen. Es gibt eine Anmeldung/Registrierung, ein Dashboard und verschiedene Bereiche wie Patientenaufnahme, Materialaufnahme und Proben ID. Die Nutzer sollen sich durch diese Seiten bewegen und die nötigen Daten eingeben.
