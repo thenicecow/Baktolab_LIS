@@ -28,5 +28,4 @@ Ziel dieser Version ist es, ein möglichst realistisches und praxisnahes Laborin
  
 Dies kann aber aus Zeitgründen nicht umgesetzt werden bis zur Abgabe.
 
-### Wireframes Version 2
 ![Wireframe V2](images/WireframesV2.jpeg)
