@@ -1,4 +1,4 @@
-# Laborinformationssystem (LIS) mit Resistenzanalyse
+# Laborinformationssystem (LIS) Baktolab
 
 Diese Applikation dient der digitalen Erfassung, Verwaltung und Analyse mikrobiologischer Labordaten im Rahmen eines Studienprojekts.  
 Sie richtet sich an Laborpersonal (z. B. in der Mikrobiologie) und unterstützt dabei, Arbeitsprozesse effizient zu dokumentieren und Resistenzanalysen strukturiert durchzuführen.
@@ -20,38 +20,38 @@ Die Anwendung ist bewusst einfach gestaltet, um auch bei neuen Technologien eine
 
 ## 🧭 Funktionen der App
 
-### Patientenaufnahme
-- Erfassung von Patientendaten (Name, Geburtsdatum, Geschlecht etc.)
-
-### Materialaufnahme
-- Verwaltung von Probenmaterialien (z. B. Blut, Urin, Agarplatten)
-
-### Resistenzrechner
-- Eingabe von Hemmhofdurchmessern  
-- Interpretation nach EUCAST (Sensibel / Resistenz / Intermediär)  
-
-### Plattenansatz & Inkubation (Übersicht)
-- Anzeige von:
-  - Medium (z. B. Agarplatte)  
-  - Temperatur  
-  - Inkubationsdauer  
-  - Atmosphäre  
-
-### Wachstum/ Keimzahl Resultierung
-- Eingabe von:
-  - Identifikationsnummer
-  - Anzahl der verschiedenen Kolonien
-  - Gesamtkeimzahl
-  - Keimzahl einzelner Resultate
-- Anzeige von:
-  - MALDI-TOF Eingabefelderen entsprechend verschiedener Kolonien
-
-### Ergebnisse / Befund
-- Übersicht der Analyseergebnisse  
-- Darstellung von Resistenzprofilen  
+### Login & Registrierung
+- Anmeldung bestehender Benutzer  
+- Erstellung eines neuen Benutzerkontos  
 
 ### Dashboard
-- Übersicht über aktuelle Aktivitäten und Schnellzugriff auf Funktionen  
+- Zentrale Startseite der Anwendung  
+- Navigation zu allen Hauptfunktionen (Patienten, Material, Auswertung)  
+
+### Patientenaufnahme
+- Eingabemaske zur Erfassung von Patientendaten (ID, Name, Geburtsdatum, Geschlecht, Station)  
+
+### Materialaufnahme
+- Formular zur Aufnahme und Verwaltung von Probenmaterialien (z. B. Blut, Urin, Agarplatten)  
+
+### Plattenansatz & Inkubation
+- Übersicht über angesetzte Proben  
+- Anzeige von Medium, Datum und Inkubationsbedingungen  
+
+### Wachstum / Keimzahl-Auswertung
+- Eingabemaske zur Auswertung der Platten:
+  - Identifikationsnummer  
+  - Anzahl Kolonien  
+  - Wachstum / Keimzahl  
+- Strukturierte Erfassung mehrerer Proben gleichzeitig  
+
+### Resistenzrechner
+- Eingabe von Keim, Antibiotikum und Hemmhofdurchmesser  
+- Interpretation nach EUCAST (Sensibel / Resistenz / Intermediär)  
+
+### Ergebnisse / Befund
+- Übersicht der erfassten und berechneten Resultate  
+- Zusammenführung von Keimzahl, Identifikation und Resistenzdaten  
 
 ---
 
