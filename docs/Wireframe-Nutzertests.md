@@ -72,7 +72,7 @@
 * Einige Begriffe mit kurzen Erklärungen ergänzen.
 * Die Seite mit Keimen und Resultaten einfacher und übersichtlicher machen.
 * Immer anzeigen, welcher Patient oder welche Probe gerade bearbeitet wird.
-* Anzeigen einer SOP beim ablesen der Platten und protokollieren der Kulturen.
+* Anzeige einer klaren Anleitung (SOP) beim Auswerten der Platten sowie Dokumentation der Kulturergebnisse.
 
 ### ⚠️ Neue Probleme?
 
