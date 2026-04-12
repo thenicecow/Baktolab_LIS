@@ -21,7 +21,7 @@ Zentrale Anforderungen:
 
 ---
 
-## Version 0
+## Version 0 MVP (Minimal Viable Product)
 
 Version 0 fokussiert sich auf die grundlegende Nutzbarkeit der App.
 
