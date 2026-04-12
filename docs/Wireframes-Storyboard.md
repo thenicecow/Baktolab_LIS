@@ -1,6 +1,6 @@
 ## Entwicklung der Wireframes
 
-### Version 0 (V0)
+### Version 0 (V0) MVP (Minimal Viable Product)
 
 Version 0 stellt die grundlegende Struktur der Anwendung dar. In diesem frühen Stadium liegt der Fokus auf der Planung der wichtigsten Seiten und Funktionen. Dazu gehören Login und Registrierung, ein einfaches Dashboard sowie Eingabemasken für Patientenaufnahme, Materialaufnahme und erste Untersuchungseingaben.
 
