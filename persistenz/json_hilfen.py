@@ -5,7 +5,12 @@ from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import Any
 
-from domaene import Material, Patient, ist_gueltiger_materialtyp_code
+from domaene import (
+    Material,
+    Patient,
+    ist_gueltiger_analyse_code,
+    ist_gueltiger_materialtyp_code,
+)
 from utils.data_handler import DataHandler
 
 
@@ -77,11 +82,19 @@ def material_als_dict(material: Material) -> dict[str, Any]:
             "Erlaubt sind nur: urin, blutkultur, vaginalabstrich."
         )
 
+    analyse_code = material.klinische_frage_code.strip()
+
+    if not ist_gueltiger_analyse_code(analyse_code):
+        raise ValueError(
+            "Feld 'klinische_frage_code' enthaelt eine unzulaessige Analyse. "
+            "Erlaubt sind nur: allgemeine_bakteriologie, hefen, gardnerella_vaginalis."
+        )
+
     return {
         "id": material.id.strip(),
         "patient_id": material.patient_id.strip(),
         "materialtyp_code": materialtyp_code,
-        "klinische_frage_code": material.klinische_frage_code.strip(),
+        "klinische_frage_code": analyse_code,
         "abnahmedatum": material.abnahmedatum.isoformat(),
         "eingangsdatum": material.eingangsdatum.isoformat(),
         "erstellt_am": zeitpunkt_als_iso(material.erstellt_am),
@@ -273,4 +286,3 @@ def optionaler_text(wert: str | None) -> str | None:
 
     bereinigt = wert.strip()
     return bereinigt or None
-

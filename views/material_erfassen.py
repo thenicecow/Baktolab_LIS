@@ -6,10 +6,11 @@ from uuid import uuid4
 import streamlit as st
 
 from domaene import (
-    KLINISCHE_FRAGESTELLUNGEN,
+    ANALYSEN,
     MATERIALTYPEN,
     Material,
     Patient,
+    ist_gueltiger_analyse_code,
     ist_gueltiger_materialtyp_code,
 )
 from persistenz import PatientenRepository
@@ -17,7 +18,7 @@ from ui.anzeige_hilfen import (
     baue_technische_fehlernachricht,
     formatiere_patient_label,
     hole_aktuellen_user_id,
-    loese_klinische_frage_label_auf,
+    loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
 
@@ -73,7 +74,7 @@ def speichere_material(
     repository: PatientenRepository,
     patient_id: str,
     materialtyp_code: str,
-    klinische_frage_code: str,
+    analyse_code: str,
     abnahmedatum: date,
     eingangsdatum: date,
 ) -> tuple[Patient, Material] | None:
@@ -87,7 +88,10 @@ def speichere_material(
         st.error("Bitte waehle einen gueltigen Materialtyp aus.")
         return None
 
-    klinische_frage_code_bereinigt = klinische_frage_code.strip()
+    analyse_code_bereinigt = analyse_code.strip()
+    if not ist_gueltiger_analyse_code(analyse_code_bereinigt):
+        st.error("Bitte waehle eine gueltige Analyse aus.")
+        return None
 
     try:
         patientenakte = repository.lade_patientenakte_nach_id(patient_id)
@@ -105,7 +109,7 @@ def speichere_material(
         id=erzeuge_material_id(),
         patient_id=patient.id,
         materialtyp_code=materialtyp_code_bereinigt,
-        klinische_frage_code=klinische_frage_code_bereinigt,
+        klinische_frage_code=analyse_code_bereinigt,
         abnahmedatum=abnahmedatum,
         eingangsdatum=eingangsdatum,
         erstellt_von_user_id=user_id,
@@ -163,7 +167,7 @@ def main() -> None:
 
     patient_ids = [patient.id for patient in patienten]
     materialtyp_codes = [eintrag.code for eintrag in MATERIALTYPEN]
-    klinische_frage_codes = [eintrag.code for eintrag in KLINISCHE_FRAGESTELLUNGEN]
+    analyse_codes = [eintrag.code for eintrag in ANALYSEN]
 
     with st.form("material_erfassen_formular"):
         if vorbelegter_patient is None:
@@ -190,10 +194,10 @@ def main() -> None:
             format_func=loese_materialtyp_label_auf,
         )
 
-        klinische_frage_code = st.selectbox(
-            "Klinische Fragestellung",
-            options=klinische_frage_codes,
-            format_func=loese_klinische_frage_label_auf,
+        analyse_code = st.selectbox(
+            "Analyse",
+            options=analyse_codes,
+            format_func=loese_analyse_label_auf,
         )
 
         linke_spalte, rechte_spalte = st.columns(2)
@@ -230,7 +234,7 @@ def main() -> None:
                 repository=repository,
                 patient_id=ausgewaehlte_patient_id,
                 materialtyp_code=materialtyp_code,
-                klinische_frage_code=klinische_frage_code,
+                analyse_code=analyse_code,
                 abnahmedatum=abnahmedatum,
                 eingangsdatum=eingangsdatum,
             )
@@ -272,4 +276,3 @@ def main() -> None:
 
 
 main()
-

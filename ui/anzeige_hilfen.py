@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 import streamlit as st
 
-from domaene import KLINISCHE_FRAGESTELLUNGEN_NACH_CODE, MATERIALTYPEN_NACH_CODE, Patient
+from domaene import ANALYSEN_NACH_CODE, MATERIALTYPEN_NACH_CODE, Patient
 
 
 def formatiere_datum(wert: date | None) -> str:
@@ -64,13 +64,21 @@ def loese_materialtyp_label_auf(materialtyp_code: str | None) -> str:
     return lookup_wert.label
 
 
-def loese_klinische_frage_label_auf(klinische_frage_code: str | None) -> str:
-    if klinische_frage_code is None:
+def loese_analyse_label_auf(analyse_code: str | None) -> str:
+    if analyse_code is None:
         return "-"
 
-    lookup_wert = KLINISCHE_FRAGESTELLUNGEN_NACH_CODE.get(klinische_frage_code)
+    bereinigt = analyse_code.strip()
+    if not bereinigt:
+        return "-"
+
+    lookup_wert = ANALYSEN_NACH_CODE.get(bereinigt)
     if lookup_wert is None:
-        return formatiere_text(klinische_frage_code)
+        return f"Ungueltige Analyse ({bereinigt})"
 
     return lookup_wert.label
+
+
+def loese_klinische_frage_label_auf(klinische_frage_code: str | None) -> str:
+    return loese_analyse_label_auf(klinische_frage_code)
 
