@@ -137,11 +137,29 @@ def zeige_stammdaten(patient: Patient) -> None:
             st.markdown(f"**Erstellt von:** {formatiere_text(patient.erstellt_von_user_id)}")
 
 
+def initialisiere_filterzustand(
+    materialtyp_optionen: list[str],
+    klinische_frage_optionen: list[str],
+) -> None:
+    materialtyp_wert = st.session_state.get(MATERIALTYP_FILTER_SCHLUESSEL)
+    if not isinstance(materialtyp_wert, str) or materialtyp_wert not in materialtyp_optionen:
+        st.session_state[MATERIALTYP_FILTER_SCHLUESSEL] = ALLE_FILTER_OPTION
+
+    klinische_frage_wert = st.session_state.get(KLINISCHE_FRAGE_FILTER_SCHLUESSEL)
+    if (
+        not isinstance(klinische_frage_wert, str)
+        or klinische_frage_wert not in klinische_frage_optionen
+    ):
+        st.session_state[KLINISCHE_FRAGE_FILTER_SCHLUESSEL] = ALLE_FILTER_OPTION
+
+
 def zeige_filterleiste() -> tuple[str | None, str | None]:
     materialtyp_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in MATERIALTYPEN]
     klinische_frage_optionen = [ALLE_FILTER_OPTION] + [
         eintrag.code for eintrag in KLINISCHE_FRAGESTELLUNGEN
     ]
+
+    initialisiere_filterzustand(materialtyp_optionen, klinische_frage_optionen)
 
     with st.container(border=True):
         st.markdown("**Filter**")
@@ -253,5 +271,6 @@ def main() -> None:
 
 
 main()
+
 
 

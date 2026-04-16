@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import Any
 
-from domaene import Material, Patient
+from domaene import Material, Patient, ist_gueltiger_materialtyp_code
 from utils.data_handler import DataHandler
 
 
@@ -69,10 +69,18 @@ def patient_aus_dict(daten: Mapping[str, Any]) -> Patient:
 
 
 def material_als_dict(material: Material) -> dict[str, Any]:
+    materialtyp_code = material.materialtyp_code.strip()
+
+    if not ist_gueltiger_materialtyp_code(materialtyp_code):
+        raise ValueError(
+            "Feld 'materialtyp_code' enthaelt einen unzulaessigen Materialtyp. "
+            "Erlaubt sind nur: urin, blutkultur, vaginalabstrich."
+        )
+
     return {
         "id": material.id.strip(),
         "patient_id": material.patient_id.strip(),
-        "materialtyp_code": material.materialtyp_code.strip(),
+        "materialtyp_code": materialtyp_code,
         "klinische_frage_code": material.klinische_frage_code.strip(),
         "abnahmedatum": material.abnahmedatum.isoformat(),
         "eingangsdatum": material.eingangsdatum.isoformat(),
@@ -108,8 +116,20 @@ def patientenakte_als_dict(
 ) -> dict[str, Any]:
     return {
         "patient": patient_als_dict(patient),
-        "materialien": [material_als_dict(material) for material in materialien],
+        "materialien": materialien_als_listendaten(materialien),
     }
+
+
+def materialien_als_listendaten(materialien: Sequence[Material]) -> list[dict[str, Any]]:
+    listendaten: list[dict[str, Any]] = []
+
+    for index, material in enumerate(materialien, start=1):
+        try:
+            listendaten.append(material_als_dict(material))
+        except ValueError as exc:
+            raise ValueError(f"Materialeintrag {index} ist ungueltig: {exc}") from exc
+
+    return listendaten
 
 
 def patientenakte_aus_dict(

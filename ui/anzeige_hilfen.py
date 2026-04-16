@@ -53,9 +53,13 @@ def loese_materialtyp_label_auf(materialtyp_code: str | None) -> str:
     if materialtyp_code is None:
         return "-"
 
-    lookup_wert = MATERIALTYPEN_NACH_CODE.get(materialtyp_code)
+    bereinigt = materialtyp_code.strip()
+    if not bereinigt:
+        return "-"
+
+    lookup_wert = MATERIALTYPEN_NACH_CODE.get(bereinigt)
     if lookup_wert is None:
-        return formatiere_text(materialtyp_code)
+        return f"Ungueltiger Materialtyp ({bereinigt})"
 
     return lookup_wert.label
 
@@ -69,3 +73,4 @@ def loese_klinische_frage_label_auf(klinische_frage_code: str | None) -> str:
         return formatiere_text(klinische_frage_code)
 
     return lookup_wert.label
+

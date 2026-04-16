@@ -5,7 +5,13 @@ from uuid import uuid4
 
 import streamlit as st
 
-from domaene import KLINISCHE_FRAGESTELLUNGEN, MATERIALTYPEN, Material, Patient
+from domaene import (
+    KLINISCHE_FRAGESTELLUNGEN,
+    MATERIALTYPEN,
+    Material,
+    Patient,
+    ist_gueltiger_materialtyp_code,
+)
 from persistenz import PatientenRepository
 from ui.anzeige_hilfen import (
     baue_technische_fehlernachricht,
@@ -76,6 +82,13 @@ def speichere_material(
         st.error("Es konnte kein angemeldeter Benutzer ermittelt werden.")
         return None
 
+    materialtyp_code_bereinigt = materialtyp_code.strip()
+    if not ist_gueltiger_materialtyp_code(materialtyp_code_bereinigt):
+        st.error("Bitte waehle einen gueltigen Materialtyp aus.")
+        return None
+
+    klinische_frage_code_bereinigt = klinische_frage_code.strip()
+
     try:
         patientenakte = repository.lade_patientenakte_nach_id(patient_id)
     except Exception:
@@ -91,8 +104,8 @@ def speichere_material(
     neues_material = Material(
         id=erzeuge_material_id(),
         patient_id=patient.id,
-        materialtyp_code=materialtyp_code,
-        klinische_frage_code=klinische_frage_code,
+        materialtyp_code=materialtyp_code_bereinigt,
+        klinische_frage_code=klinische_frage_code_bereinigt,
         abnahmedatum=abnahmedatum,
         eingangsdatum=eingangsdatum,
         erstellt_von_user_id=user_id,
@@ -259,3 +272,4 @@ def main() -> None:
 
 
 main()
+
