@@ -1,25 +1,17 @@
 from __future__ import annotations
 
-from datetime import date, datetime
-
 import streamlit as st
 
 from domaene import Patient
 from persistenz import PatientenRepository
+from ui.anzeige_hilfen import (
+    baue_technische_fehlernachricht,
+    formatiere_datum,
+    formatiere_zeitpunkt,
+)
 
 
 PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
-
-
-def formatiere_geburtsdatum(geburtsdatum: date) -> str:
-    return geburtsdatum.strftime("%d.%m.%Y")
-
-
-def formatiere_erstellt_am(erstellt_am: datetime | None) -> str:
-    if erstellt_am is None:
-        return "-"
-
-    return erstellt_am.strftime("%d.%m.%Y %H:%M")
 
 
 def sortiere_patienten(patienten: list[Patient]) -> list[Patient]:
@@ -31,6 +23,20 @@ def sortiere_patienten(patienten: list[Patient]) -> list[Patient]:
         ),
         reverse=True,
     )
+
+
+def filtere_patienten(patienten: list[Patient], suchtext: str) -> list[Patient]:
+    suchtext_bereinigt = suchtext.strip().casefold()
+
+    if not suchtext_bereinigt:
+        return patienten
+
+    return [
+        patient
+        for patient in patienten
+        if suchtext_bereinigt in patient.vorname.casefold()
+        or suchtext_bereinigt in patient.nachname.casefold()
+    ]
 
 
 def oeffne_patientendetail(patient_id: str) -> None:
@@ -57,6 +63,10 @@ def zeige_leermeldung() -> None:
         )
 
 
+def zeige_leermeldung_keine_treffer(suchtext: str) -> None:
+    st.info(f"Es wurden keine Patienten zur Suche '{suchtext.strip()}' gefunden.")
+
+
 def zeige_tabellenkopf() -> None:
     spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.2))
     ueberschriften = (
@@ -78,9 +88,9 @@ def zeige_patientenzeile(patient: Patient) -> None:
 
         spalten[0].write(patient.vorname)
         spalten[1].write(patient.nachname)
-        spalten[2].write(formatiere_geburtsdatum(patient.geburtsdatum))
+        spalten[2].write(formatiere_datum(patient.geburtsdatum))
         spalten[3].write(patient.geschlecht)
-        spalten[4].write(formatiere_erstellt_am(patient.erstellt_am))
+        spalten[4].write(formatiere_zeitpunkt(patient.erstellt_am))
 
         if spalten[5].button(
             "Details",
@@ -95,8 +105,8 @@ def lade_patienten() -> list[Patient] | None:
 
     try:
         patienten = repository.lade_alle_patienten()
-    except Exception as exc:
-        st.error(f"Die Patienten konnten nicht geladen werden: {exc}")
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Die Patienten konnten nicht geladen werden."))
         return None
 
     return sortiere_patienten(patienten)
@@ -128,13 +138,27 @@ def main() -> None:
         zeige_leermeldung()
         return
 
-    st.caption(f"Anzahl Patienten: {len(patienten)}")
+    suchtext = st.text_input("Suche nach Vorname oder Nachname")
+
+    gefilterte_patienten = filtere_patienten(patienten, suchtext)
+
+    if suchtext.strip():
+        st.caption(
+            f"Treffer: {len(gefilterte_patienten)} von {len(patienten)} Patienten"
+        )
+    else:
+        st.caption(f"Anzahl Patienten: {len(patienten)}")
+
+    if not gefilterte_patienten:
+        zeige_leermeldung_keine_treffer(suchtext)
+        return
 
     zeige_tabellenkopf()
     st.divider()
 
-    for patient in patienten:
+    for patient in gefilterte_patienten:
         zeige_patientenzeile(patient)
 
 
 main()
+

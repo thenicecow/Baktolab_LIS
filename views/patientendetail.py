@@ -4,51 +4,24 @@ from datetime import date, datetime
 
 import streamlit as st
 
-from domaene import KLINISCHE_FRAGESTELLUNGEN_NACH_CODE, MATERIALTYPEN_NACH_CODE, Material, Patient
+from domaene import KLINISCHE_FRAGESTELLUNGEN, MATERIALTYPEN, Material, Patient
 from persistenz import PatientenRepository
+from ui.anzeige_hilfen import (
+    baue_technische_fehlernachricht,
+    formatiere_datum,
+    formatiere_text,
+    formatiere_zeitpunkt,
+    loese_klinische_frage_label_auf,
+    loese_materialtyp_label_auf,
+)
 
 
 PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
 MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL = "material_erfassen_patient_id"
 MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL = "material_erfassen_erfolgsmeldung"
-
-
-def formatiere_datum(wert: date | None) -> str:
-    if wert is None:
-        return "-"
-
-    return wert.strftime("%d.%m.%Y")
-
-
-def formatiere_zeitpunkt(wert: datetime | None) -> str:
-    if wert is None:
-        return "-"
-
-    return wert.strftime("%d.%m.%Y %H:%M")
-
-
-def formatiere_text(wert: str | None) -> str:
-    if wert is None:
-        return "-"
-
-    bereinigt = wert.strip()
-    return bereinigt or "-"
-
-
-def loese_materialtyp_label_auf(materialtyp_code: str) -> str:
-    lookup_wert = MATERIALTYPEN_NACH_CODE.get(materialtyp_code)
-    if lookup_wert is None:
-        return formatiere_text(materialtyp_code)
-
-    return lookup_wert.label
-
-
-def loese_klinische_frage_label_auf(klinische_frage_code: str) -> str:
-    lookup_wert = KLINISCHE_FRAGESTELLUNGEN_NACH_CODE.get(klinische_frage_code)
-    if lookup_wert is None:
-        return formatiere_text(klinische_frage_code)
-
-    return lookup_wert.label
+ALLE_FILTER_OPTION = ""
+MATERIALTYP_FILTER_SCHLUESSEL = "patientendetail_filter_materialtyp"
+KLINISCHE_FRAGE_FILTER_SCHLUESSEL = "patientendetail_filter_klinische_frage"
 
 
 def material_sortierschluessel(material: Material) -> tuple[int, int, int, float]:
@@ -67,6 +40,25 @@ def sortiere_materialien(materialien: list[Material]) -> list[Material]:
     return sorted(materialien, key=material_sortierschluessel, reverse=True)
 
 
+def filtere_materialien(
+    materialien: list[Material],
+    materialtyp_code: str | None,
+    klinische_frage_code: str | None,
+) -> list[Material]:
+    gefilterte_materialien: list[Material] = []
+
+    for material in materialien:
+        if materialtyp_code and material.materialtyp_code != materialtyp_code:
+            continue
+
+        if klinische_frage_code and material.klinische_frage_code != klinische_frage_code:
+            continue
+
+        gefilterte_materialien.append(material)
+
+    return gefilterte_materialien
+
+
 def starte_material_erfassen(patient_id: str) -> None:
     st.session_state[MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL] = patient_id
     st.switch_page("views/material_erfassen.py")
@@ -83,8 +75,8 @@ def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
 
     try:
         patientenakte = repository.lade_patientenakte_nach_id(patient_id)
-    except Exception as exc:
-        st.error(f"Der ausgewaehlte Patient konnte nicht geladen werden: {exc}")
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Der ausgewaehlte Patient konnte nicht geladen werden."))
         return None
 
     if patientenakte is None:
@@ -145,6 +137,44 @@ def zeige_stammdaten(patient: Patient) -> None:
             st.markdown(f"**Erstellt von:** {formatiere_text(patient.erstellt_von_user_id)}")
 
 
+def zeige_filterleiste() -> tuple[str | None, str | None]:
+    materialtyp_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in MATERIALTYPEN]
+    klinische_frage_optionen = [ALLE_FILTER_OPTION] + [
+        eintrag.code for eintrag in KLINISCHE_FRAGESTELLUNGEN
+    ]
+
+    with st.container(border=True):
+        st.markdown("**Filter**")
+
+        linke_spalte, rechte_spalte = st.columns(2)
+
+        with linke_spalte:
+            materialtyp_code = st.selectbox(
+                "Materialtyp",
+                options=materialtyp_optionen,
+                key=MATERIALTYP_FILTER_SCHLUESSEL,
+                format_func=lambda code: (
+                    "Alle Materialtypen"
+                    if code == ALLE_FILTER_OPTION
+                    else loese_materialtyp_label_auf(code)
+                ),
+            )
+
+        with rechte_spalte:
+            klinische_frage_code = st.selectbox(
+                "Klinische Fragestellung",
+                options=klinische_frage_optionen,
+                key=KLINISCHE_FRAGE_FILTER_SCHLUESSEL,
+                format_func=lambda code: (
+                    "Alle klinischen Fragestellungen"
+                    if code == ALLE_FILTER_OPTION
+                    else loese_klinische_frage_label_auf(code)
+                ),
+            )
+
+    return materialtyp_code or None, klinische_frage_code or None
+
+
 def zeige_material_log(materialien: list[Material]) -> None:
     st.subheader("Material-Log")
 
@@ -152,7 +182,26 @@ def zeige_material_log(materialien: list[Material]) -> None:
         st.info("Fuer diesen Patienten sind noch keine Materialien erfasst.")
         return
 
-    st.caption(f"Anzahl Materialeintraege: {len(materialien)}")
+    materialtyp_filter, klinische_frage_filter = zeige_filterleiste()
+
+    gefilterte_materialien = filtere_materialien(
+        materialien,
+        materialtyp_code=materialtyp_filter,
+        klinische_frage_code=klinische_frage_filter,
+    )
+
+    sortierte_materialien = sortiere_materialien(gefilterte_materialien)
+
+    if materialtyp_filter or klinische_frage_filter:
+        st.caption(
+            f"Gefilterte Materialeintraege: {len(sortierte_materialien)} von {len(materialien)}"
+        )
+    else:
+        st.caption(f"Anzahl Materialeintraege: {len(sortierte_materialien)}")
+
+    if not sortierte_materialien:
+        st.info("Fuer die gesetzten Filter wurden keine Materialien gefunden.")
+        return
 
     spalten = st.columns((1.6, 2.0, 1.3, 1.3, 1.6, 1.4))
     ueberschriften = (
@@ -169,7 +218,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
     st.divider()
 
-    for material in sortiere_materialien(materialien):
+    for material in sortierte_materialien:
         with st.container(border=True):
             zeilen_spalten = st.columns((1.6, 2.0, 1.3, 1.3, 1.6, 1.4))
             zeilen_spalten[0].write(loese_materialtyp_label_auf(material.materialtyp_code))
@@ -204,4 +253,5 @@ def main() -> None:
 
 
 main()
+
 

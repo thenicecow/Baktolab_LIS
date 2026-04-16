@@ -7,6 +7,7 @@ import streamlit as st
 
 from domaene import Patient
 from persistenz import PatientenRepository
+from ui.anzeige_hilfen import baue_technische_fehlernachricht, hole_aktuellen_user_id
 
 
 GESCHLECHTER: tuple[str, ...] = (
@@ -42,15 +43,6 @@ def leere_formularzustand() -> None:
     st.session_state[NACHNAME_SCHLUESSEL] = ""
     st.session_state[GEBURTSDATUM_SCHLUESSEL] = date.today()
     st.session_state[GESCHLECHT_SCHLUESSEL] = GESCHLECHTER[0]
-
-
-def hole_aktuellen_user_id() -> str:
-    user_id = st.session_state.get("username")
-
-    if not isinstance(user_id, str):
-        return ""
-
-    return user_id.strip()
 
 
 def erzeuge_patient_id() -> str:
@@ -92,8 +84,8 @@ def speichere_patient() -> str | None:
     except ValueError as exc:
         st.error(str(exc))
         return None
-    except Exception as exc:
-        st.error(f"Der Patient konnte nicht gespeichert werden: {exc}")
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Der Patient konnte nicht gespeichert werden."))
         return None
 
     leere_formularzustand()

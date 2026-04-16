@@ -16,13 +16,17 @@ def lade_json_objekt(
     data_handler: DataHandler,
     relativer_pfad: str,
 ) -> dict[str, Any] | None:
-    if not data_handler.exists(relativer_pfad):
-        return None
-
     try:
+        if not data_handler.exists(relativer_pfad):
+            return None
+
         daten = data_handler.load(relativer_pfad)
     except (FileNotFoundError, OSError, TypeError, ValueError) as exc:
         logger.warning("JSON-Datei konnte nicht geladen werden (%s): %s", relativer_pfad, exc)
+        return None
+
+    if daten is None:
+        logger.warning("JSON-Datei ist leer (%s).", relativer_pfad)
         return None
 
     if not isinstance(daten, dict):
@@ -58,7 +62,7 @@ def patient_aus_dict(daten: Mapping[str, Any]) -> Patient:
         vorname=lese_textpflichtfeld(daten, "vorname"),
         nachname=lese_textpflichtfeld(daten, "nachname"),
         geburtsdatum=lese_datumpflichtfeld(daten, "geburtsdatum"),
-        geschlecht=lese_textpflichtfeld(daten, "geschlecht"),
+        geschlecht=lese_textfeld_mit_standard(daten, "geschlecht", "unbekannt"),
         erstellt_am=lese_optional_zeitpunkt(daten, "erstellt_am"),
         erstellt_von_user_id=lese_optional_textfeld(daten, "erstellt_von_user_id"),
     )
@@ -83,8 +87,16 @@ def material_aus_dict(daten: Mapping[str, Any]) -> Material:
         patient_id=lese_textpflichtfeld(daten, "patient_id"),
         materialtyp_code=lese_textpflichtfeld(daten, "materialtyp_code"),
         klinische_frage_code=lese_textpflichtfeld(daten, "klinische_frage_code"),
-        abnahmedatum=lese_datumpflichtfeld(daten, "abnahmedatum"),
-        eingangsdatum=lese_datumpflichtfeld(daten, "eingangsdatum"),
+        abnahmedatum=lese_datumpflichtfeld_mit_fallback(
+            daten,
+            schluessel="abnahmedatum",
+            fallback_schluessel="eingangsdatum",
+        ),
+        eingangsdatum=lese_datumpflichtfeld_mit_fallback(
+            daten,
+            schluessel="eingangsdatum",
+            fallback_schluessel="abnahmedatum",
+        ),
         erstellt_am=lese_optional_zeitpunkt(daten, "erstellt_am"),
         erstellt_von_user_id=lese_optional_textfeld(daten, "erstellt_von_user_id"),
     )
@@ -108,20 +120,30 @@ def patientenakte_aus_dict(
 
     if materialien_rohdaten is None:
         materialien_rohdaten = []
-
-    if not isinstance(materialien_rohdaten, list):
-        raise ValueError("Feld 'materialien' muss eine Liste sein.")
+    elif not isinstance(materialien_rohdaten, list):
+        logger.warning("Feld 'materialien' ist ungueltig und wird als leer behandelt.")
+        materialien_rohdaten = []
 
     patient = patient_aus_dict(patient_rohdaten)
     materialien: list[Material] = []
 
-    for eintrag in materialien_rohdaten:
+    for index, eintrag in enumerate(materialien_rohdaten, start=1):
         if not isinstance(eintrag, Mapping):
-            raise ValueError("Ein Materialeintrag ist ungueltig.")
+            logger.warning("Materialeintrag %s ist ungueltig und wird uebersprungen.", index)
+            continue
 
-        material = material_aus_dict(eintrag)
+        try:
+            material = material_aus_dict(eintrag)
+        except ValueError as exc:
+            logger.warning("Materialeintrag %s wird uebersprungen: %s", index, exc)
+            continue
+
         if material.patient_id != patient.id:
-            raise ValueError("Material verweist auf eine andere Patienten-ID.")
+            logger.warning(
+                "Materialeintrag %s verweist auf eine andere Patienten-ID und wird uebersprungen.",
+                index,
+            )
+            continue
 
         materialien.append(material)
 
@@ -150,6 +172,23 @@ def lese_textpflichtfeld(daten: Mapping[str, Any], schluessel: str) -> str:
     return bereinigt
 
 
+def lese_textfeld_mit_standard(
+    daten: Mapping[str, Any],
+    schluessel: str,
+    standardwert: str,
+) -> str:
+    wert = daten.get(schluessel)
+
+    if wert is None:
+        return standardwert
+
+    if not isinstance(wert, str):
+        raise ValueError(f"Feld '{schluessel}' muss Text sein.")
+
+    bereinigt = wert.strip()
+    return bereinigt or standardwert
+
+
 def lese_optional_textfeld(daten: Mapping[str, Any], schluessel: str) -> str | None:
     wert = daten.get(schluessel)
 
@@ -170,6 +209,23 @@ def lese_datumpflichtfeld(daten: Mapping[str, Any], schluessel: str) -> date:
         return date.fromisoformat(textwert)
     except ValueError as exc:
         raise ValueError(f"Feld '{schluessel}' hat kein gueltiges Datum.") from exc
+
+
+def lese_datumpflichtfeld_mit_fallback(
+    daten: Mapping[str, Any],
+    schluessel: str,
+    fallback_schluessel: str,
+) -> date:
+    try:
+        return lese_datumpflichtfeld(daten, schluessel)
+    except ValueError:
+        try:
+            return lese_datumpflichtfeld(daten, fallback_schluessel)
+        except ValueError as exc:
+            raise ValueError(
+                f"Feld '{schluessel}' oder '{fallback_schluessel}' "
+                f"muss ein gueltiges Datum enthalten."
+            ) from exc
 
 
 def lese_optional_zeitpunkt(daten: Mapping[str, Any], schluessel: str) -> datetime | None:
@@ -197,3 +253,4 @@ def optionaler_text(wert: str | None) -> str | None:
 
     bereinigt = wert.strip()
     return bereinigt or None
+

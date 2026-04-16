@@ -5,56 +5,20 @@ from uuid import uuid4
 
 import streamlit as st
 
-from domaene import (
-    KLINISCHE_FRAGESTELLUNGEN,
-    KLINISCHE_FRAGESTELLUNGEN_NACH_CODE,
-    MATERIALTYPEN,
-    MATERIALTYPEN_NACH_CODE,
-    Material,
-    Patient,
-)
+from domaene import KLINISCHE_FRAGESTELLUNGEN, MATERIALTYPEN, Material, Patient
 from persistenz import PatientenRepository
+from ui.anzeige_hilfen import (
+    baue_technische_fehlernachricht,
+    formatiere_patient_label,
+    hole_aktuellen_user_id,
+    loese_klinische_frage_label_auf,
+    loese_materialtyp_label_auf,
+)
 
 
 PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
 MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL = "material_erfassen_patient_id"
 MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL = "material_erfassen_erfolgsmeldung"
-
-
-def formatiere_datum(wert: date) -> str:
-    return wert.strftime("%d.%m.%Y")
-
-
-def formatiere_patient_label(patient: Patient) -> str:
-    return (
-        f"{patient.nachname}, {patient.vorname} "
-        f"({formatiere_datum(patient.geburtsdatum)})"
-    )
-
-
-def loese_materialtyp_label_auf(materialtyp_code: str) -> str:
-    lookup_wert = MATERIALTYPEN_NACH_CODE.get(materialtyp_code)
-    if lookup_wert is None:
-        return materialtyp_code
-
-    return lookup_wert.label
-
-
-def loese_klinische_frage_label_auf(klinische_frage_code: str) -> str:
-    lookup_wert = KLINISCHE_FRAGESTELLUNGEN_NACH_CODE.get(klinische_frage_code)
-    if lookup_wert is None:
-        return klinische_frage_code
-
-    return lookup_wert.label
-
-
-def hole_aktuellen_user_id() -> str:
-    user_id = st.session_state.get("username")
-
-    if not isinstance(user_id, str):
-        return ""
-
-    return user_id.strip()
 
 
 def hole_vorbelegte_patient_id() -> str | None:
@@ -74,8 +38,8 @@ def erzeuge_material_id() -> str:
 def lade_patienten(repository: PatientenRepository) -> list[Patient] | None:
     try:
         return repository.lade_alle_patienten()
-    except Exception as exc:
-        st.error(f"Die Patienten konnten nicht geladen werden: {exc}")
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Die Patienten konnten nicht geladen werden."))
         return None
 
 
@@ -114,8 +78,8 @@ def speichere_material(
 
     try:
         patientenakte = repository.lade_patientenakte_nach_id(patient_id)
-    except Exception as exc:
-        st.error(f"Der ausgewaehlte Patient konnte nicht geladen werden: {exc}")
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Der ausgewaehlte Patient konnte nicht geladen werden."))
         return None
 
     if patientenakte is None:
@@ -142,8 +106,8 @@ def speichere_material(
     except ValueError as exc:
         st.error(str(exc))
         return None
-    except Exception as exc:
-        st.error(f"Das Material konnte nicht gespeichert werden: {exc}")
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Das Material konnte nicht gespeichert werden."))
         return None
 
     return patient, neues_material

@@ -62,14 +62,22 @@ class PatientenRepository:
         self,
         patient_id: str,
     ) -> tuple[Patient, list[Material]] | None:
-        dateiname = patientenakten_dateiname(patient_id)
+        patient_id_bereinigt = self._bereinige_patient_id(patient_id)
+        if patient_id_bereinigt is None:
+            return None
+
+        try:
+            dateiname = patientenakten_dateiname(patient_id_bereinigt)
+        except ValueError:
+            return None
+
         patientenakte = self._lade_patientenakte_aus_datei(dateiname)
 
         if patientenakte is None:
             return None
 
         patient, materialien = patientenakte
-        if patient.id != patient_id.strip():
+        if patient.id != patient_id_bereinigt:
             return None
 
         return patient, materialien
@@ -125,9 +133,13 @@ class PatientenRepository:
         speichere_json_objekt(self.data_handler, dateiname, daten)
 
     def _liste_patientendateien(self) -> list[str]:
+        if not self._datenwurzel_verfuegbar():
+            return []
+
         try:
             eintraege = self.data_handler.filesystem.ls(self.data_handler.root_path, detail=True)
-        except (FileNotFoundError, OSError):
+        except (FileNotFoundError, OSError, ValueError) as exc:
+            logger.warning("Datenverzeichnis konnte nicht gelesen werden: %s", exc)
             return []
 
         dateinamen: list[str] = []
@@ -157,6 +169,12 @@ class PatientenRepository:
             logger.warning("Patientenakte ist ungueltig (%s): %s", dateiname, exc)
             return None
 
+    def _datenwurzel_verfuegbar(self) -> bool:
+        try:
+            return self.data_handler.filesystem.exists(self.data_handler.root_path)
+        except (FileNotFoundError, OSError, ValueError):
+            return False
+
     @staticmethod
     def _name_aus_listeneintrag(eintrag: object) -> str | None:
         if isinstance(eintrag, dict):
@@ -174,6 +192,14 @@ class PatientenRepository:
             return eintrag
 
         return None
+
+    @staticmethod
+    def _bereinige_patient_id(patient_id: str | None) -> str | None:
+        if not isinstance(patient_id, str):
+            return None
+
+        bereinigt = patient_id.strip()
+        return bereinigt or None
 
     @staticmethod
     def _uebernehme_patient_metadaten(
