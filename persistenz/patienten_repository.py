@@ -51,17 +51,28 @@ class PatientenRepository:
         )
 
     def lade_patient_nach_id(self, patient_id: str) -> Patient | None:
+        patientenakte = self.lade_patientenakte_nach_id(patient_id)
+        if patientenakte is None:
+            return None
+
+        patient, _ = patientenakte
+        return patient
+
+    def lade_patientenakte_nach_id(
+        self,
+        patient_id: str,
+    ) -> tuple[Patient, list[Material]] | None:
         dateiname = patientenakten_dateiname(patient_id)
         patientenakte = self._lade_patientenakte_aus_datei(dateiname)
 
         if patientenakte is None:
             return None
 
-        patient, _ = patientenakte
+        patient, materialien = patientenakte
         if patient.id != patient_id.strip():
             return None
 
-        return patient
+        return patient, materialien
 
     def speichere_neuen_patienten(self, patient: Patient) -> None:
         dateiname = patientenakten_dateipfad(patient.id)
