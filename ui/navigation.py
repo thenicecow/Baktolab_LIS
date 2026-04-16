@@ -19,14 +19,19 @@ def erstelle_navigation():
                     icon=":material/person_add:",
                 ),
                 st.Page(
+                    "views/patientenuebersicht.py",
+                    title="Patientenuebersicht",
+                    icon=":material/groups:",
+                ),
+                st.Page(
+                    "views/patientendetail.py",
+                    title="Patientendetail",
+                    icon=":material/badge:",
+                ),
+                st.Page(
                     "views/material_erfassen.py",
                     title="Material erfassen",
                     icon=":material/science:",
-                ),
-                st.Page(
-                    "views/patientenuebersicht.py",
-                    title="Patientenübersicht",
-                    icon=":material/groups:",
                 ),
             ],
             "Weitere Funktionen": [
