@@ -9,7 +9,7 @@ from domaene import (
     Material,
     Patient,
     ist_gueltiger_analyse_code,
-    ist_gueltiger_materialtyp_code,
+    normalisiere_materialtyp_code,
 )
 from utils.data_handler import DataHandler
 
@@ -74,13 +74,11 @@ def patient_aus_dict(daten: Mapping[str, Any]) -> Patient:
 
 
 def material_als_dict(material: Material) -> dict[str, Any]:
-    materialtyp_code = material.materialtyp_code.strip()
+    materialtyp_code_roh = material.materialtyp_code.strip()
+    materialtyp_code = normalisiere_materialtyp_code(materialtyp_code_roh)
 
-    if not ist_gueltiger_materialtyp_code(materialtyp_code):
-        raise ValueError(
-            "Feld 'materialtyp_code' enthaelt einen unzulaessigen Materialtyp. "
-            "Erlaubt sind nur: urin, blutkultur, vaginalabstrich."
-        )
+    if materialtyp_code is None:
+        materialtyp_code = materialtyp_code_roh
 
     analyse_code = material.klinische_frage_code.strip()
 
@@ -103,10 +101,16 @@ def material_als_dict(material: Material) -> dict[str, Any]:
 
 
 def material_aus_dict(daten: Mapping[str, Any]) -> Material:
+    materialtyp_code_roh = lese_textpflichtfeld(daten, "materialtyp_code")
+    materialtyp_code = normalisiere_materialtyp_code(materialtyp_code_roh)
+
+    if materialtyp_code is None:
+        materialtyp_code = materialtyp_code_roh.strip()
+
     return Material(
         id=lese_textpflichtfeld(daten, "id"),
         patient_id=lese_textpflichtfeld(daten, "patient_id"),
-        materialtyp_code=lese_textpflichtfeld(daten, "materialtyp_code"),
+        materialtyp_code=materialtyp_code,
         klinische_frage_code=lese_textpflichtfeld(daten, "klinische_frage_code"),
         abnahmedatum=lese_datumpflichtfeld_mit_fallback(
             daten,
@@ -286,3 +290,4 @@ def optionaler_text(wert: str | None) -> str | None:
 
     bereinigt = wert.strip()
     return bereinigt or None
+

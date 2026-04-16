@@ -40,12 +40,16 @@ ANALYSEN_NACH_CODE: dict[str, LookupWert] = {
 KLINISCHE_FRAGESTELLUNGEN: tuple[LookupWert, ...] = ANALYSEN
 KLINISCHE_FRAGESTELLUNGEN_NACH_CODE: dict[str, LookupWert] = ANALYSEN_NACH_CODE
 
+_MATERIALTYP_CODES_NACH_NORMALFORM: dict[str, str] = {
+    "urin": "urin",
+    "blutkultur": "blutkultur",
+    "vaginalabstrich": "vaginalabstrich",
+    "vaginalabstriche": "vaginalabstrich",
+}
+
 
 def ist_gueltiger_materialtyp_code(materialtyp_code: str | None) -> bool:
-    if not isinstance(materialtyp_code, str):
-        return False
-
-    return materialtyp_code.strip() in ERLAUBTE_MATERIALTYP_CODES
+    return normalisiere_materialtyp_code(materialtyp_code) is not None
 
 
 def ist_gueltiger_analyse_code(analyse_code: str | None) -> bool:
@@ -54,3 +58,23 @@ def ist_gueltiger_analyse_code(analyse_code: str | None) -> bool:
 
     return analyse_code.strip() in ERLAUBTE_ANALYSE_CODES
 
+
+def normalisiere_materialtyp_code(materialtyp_code: str | None) -> str | None:
+    if not isinstance(materialtyp_code, str):
+        return None
+
+    bereinigt = materialtyp_code.strip()
+    if not bereinigt:
+        return None
+
+    normalform = _normalisiere_lookup_text(bereinigt)
+    return _MATERIALTYP_CODES_NACH_NORMALFORM.get(normalform)
+
+
+def _normalisiere_lookup_text(wert: str) -> str:
+    normalisiert = wert.strip().casefold()
+
+    for zeichen in (" ", "-", "_"):
+        normalisiert = normalisiert.replace(zeichen, "")
+
+    return normalisiert

@@ -11,6 +11,7 @@ from .lookup_werte import (
     LookupWert,
     ist_gueltiger_analyse_code,
     ist_gueltiger_materialtyp_code,
+    normalisiere_materialtyp_code,
 )
 from .material import Material
 from .patient import Patient
@@ -30,5 +31,6 @@ __all__ = [
     "MATERIALTYPEN",
     "MATERIALTYPEN_NACH_CODE",
     "Material",
+    "normalisiere_materialtyp_code",
     "Patient",
 ]
