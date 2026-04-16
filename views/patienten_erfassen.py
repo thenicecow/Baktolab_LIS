@@ -42,6 +42,7 @@ GEBURTSMONAT_SCHLUESSEL = "patient_erfassen_geburtsmonat"
 GEBURTSJAHR_SCHLUESSEL = "patient_erfassen_geburtsjahr"
 GESCHLECHT_SCHLUESSEL = "patient_erfassen_geschlecht"
 ERFOLGSMELDUNG_SCHLUESSEL = "patient_erfassen_erfolgsmeldung"
+RESET_FORMULAR_SCHLUESSEL = "patient_erfassen_reset_formular"
 
 
 def setze_geburtsdatum_im_formular(geburtsdatum: date) -> None:
@@ -51,7 +52,18 @@ def setze_geburtsdatum_im_formular(geburtsdatum: date) -> None:
     st.session_state[GEBURTSJAHR_SCHLUESSEL] = geburtsdatum.year
 
 
+def setze_formular_auf_standardwerte() -> None:
+    st.session_state[VORNAME_SCHLUESSEL] = ""
+    st.session_state[NACHNAME_SCHLUESSEL] = ""
+    setze_geburtsdatum_im_formular(date.today())
+    st.session_state[GESCHLECHT_SCHLUESSEL] = GESCHLECHTER[0]
+
+
 def initialisiere_formularzustand() -> None:
+    if st.session_state.pop(RESET_FORMULAR_SCHLUESSEL, False):
+        setze_formular_auf_standardwerte()
+        return
+
     if VORNAME_SCHLUESSEL not in st.session_state:
         st.session_state[VORNAME_SCHLUESSEL] = ""
 
@@ -71,13 +83,6 @@ def initialisiere_formularzustand() -> None:
 
     if GESCHLECHT_SCHLUESSEL not in st.session_state:
         st.session_state[GESCHLECHT_SCHLUESSEL] = GESCHLECHTER[0]
-
-
-def leere_formularzustand() -> None:
-    st.session_state[VORNAME_SCHLUESSEL] = ""
-    st.session_state[NACHNAME_SCHLUESSEL] = ""
-    setze_geburtsdatum_im_formular(date.today())
-    st.session_state[GESCHLECHT_SCHLUESSEL] = GESCHLECHTER[0]
 
 
 def hole_geburtsjahre() -> list[int]:
@@ -117,7 +122,7 @@ def speichere_patient() -> str | None:
     vorname = str(st.session_state[VORNAME_SCHLUESSEL]).strip()
     nachname = str(st.session_state[NACHNAME_SCHLUESSEL]).strip()
     geburtsdatum = hole_geburtsdatum_aus_formular()
-    geschlecht = str(st.session_state[GESCHECHT_SCHLUESSEL]).strip() if "GESCHECHT_SCHLUESSEL" in globals() else str(st.session_state[GESCHLECHT_SCHLUESSEL]).strip()
+    geschlecht = str(st.session_state[GESCHLECHT_SCHLUESSEL]).strip()
 
     if not vorname or not nachname:
         st.error("Vorname und Nachname muessen ausgefuellt werden.")
@@ -151,8 +156,6 @@ def speichere_patient() -> str | None:
     except Exception:
         st.error(baue_technische_fehlernachricht("Der Patient konnte nicht gespeichert werden."))
         return None
-
-    leere_formularzustand()
 
     return (
         f"Patient {patient.vorname} {patient.nachname} wurde erfolgreich gespeichert. "
@@ -222,6 +225,7 @@ def main() -> None:
         erfolgsmeldung = speichere_patient()
         if erfolgsmeldung is not None:
             st.session_state[ERFOLGSMELDUNG_SCHLUESSEL] = erfolgsmeldung
+            st.session_state[RESET_FORMULAR_SCHLUESSEL] = True
             st.rerun()
 
     st.page_link(
@@ -232,3 +236,4 @@ def main() -> None:
 
 
 main()
+
