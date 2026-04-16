@@ -17,11 +17,38 @@ GESCHLECHTER: tuple[str, ...] = (
     "unbekannt",
 )
 
+MONATE: tuple[tuple[int, str], ...] = (
+    (1, "Januar"),
+    (2, "Februar"),
+    (3, "Maerz"),
+    (4, "April"),
+    (5, "Mai"),
+    (6, "Juni"),
+    (7, "Juli"),
+    (8, "August"),
+    (9, "September"),
+    (10, "Oktober"),
+    (11, "November"),
+    (12, "Dezember"),
+)
+
+ERSTES_GEBURTSJAHR = 1900
+
 VORNAME_SCHLUESSEL = "patient_erfassen_vorname"
 NACHNAME_SCHLUESSEL = "patient_erfassen_nachname"
 GEBURTSDATUM_SCHLUESSEL = "patient_erfassen_geburtsdatum"
+GEBURTSTAG_SCHLUESSEL = "patient_erfassen_geburtstag"
+GEBURTSMONAT_SCHLUESSEL = "patient_erfassen_geburtsmonat"
+GEBURTSJAHR_SCHLUESSEL = "patient_erfassen_geburtsjahr"
 GESCHLECHT_SCHLUESSEL = "patient_erfassen_geschlecht"
 ERFOLGSMELDUNG_SCHLUESSEL = "patient_erfassen_erfolgsmeldung"
+
+
+def setze_geburtsdatum_im_formular(geburtsdatum: date) -> None:
+    st.session_state[GEBURTSDATUM_SCHLUESSEL] = geburtsdatum
+    st.session_state[GEBURTSTAG_SCHLUESSEL] = geburtsdatum.day
+    st.session_state[GEBURTSMONAT_SCHLUESSEL] = geburtsdatum.month
+    st.session_state[GEBURTSJAHR_SCHLUESSEL] = geburtsdatum.year
 
 
 def initialisiere_formularzustand() -> None:
@@ -31,8 +58,16 @@ def initialisiere_formularzustand() -> None:
     if NACHNAME_SCHLUESSEL not in st.session_state:
         st.session_state[NACHNAME_SCHLUESSEL] = ""
 
-    if GEBURTSDATUM_SCHLUESSEL not in st.session_state:
-        st.session_state[GEBURTSDATUM_SCHLUESSEL] = date.today()
+    geburtsdatum = st.session_state.get(GEBURTSDATUM_SCHLUESSEL)
+    if not isinstance(geburtsdatum, date):
+        geburtsdatum = date.today()
+
+    if (
+        GEBURTSTAG_SCHLUESSEL not in st.session_state
+        or GEBURTSMONAT_SCHLUESSEL not in st.session_state
+        or GEBURTSJAHR_SCHLUESSEL not in st.session_state
+    ):
+        setze_geburtsdatum_im_formular(geburtsdatum)
 
     if GESCHLECHT_SCHLUESSEL not in st.session_state:
         st.session_state[GESCHLECHT_SCHLUESSEL] = GESCHLECHTER[0]
@@ -41,8 +76,37 @@ def initialisiere_formularzustand() -> None:
 def leere_formularzustand() -> None:
     st.session_state[VORNAME_SCHLUESSEL] = ""
     st.session_state[NACHNAME_SCHLUESSEL] = ""
-    st.session_state[GEBURTSDATUM_SCHLUESSEL] = date.today()
+    setze_geburtsdatum_im_formular(date.today())
     st.session_state[GESCHLECHT_SCHLUESSEL] = GESCHLECHTER[0]
+
+
+def hole_geburtsjahre() -> list[int]:
+    return list(range(date.today().year, ERSTES_GEBURTSJAHR - 1, -1))
+
+
+def hole_monatslabel(monat: int) -> str:
+    for monatsnummer, label in MONATE:
+        if monatsnummer == monat:
+            return label
+
+    return str(monat)
+
+
+def hole_geburtsdatum_aus_formular() -> date | None:
+    tag = st.session_state.get(GEBURTSTAG_SCHLUESSEL)
+    monat = st.session_state.get(GEBURTSMONAT_SCHLUESSEL)
+    jahr = st.session_state.get(GEBURTSJAHR_SCHLUESSEL)
+
+    if not isinstance(tag, int) or not isinstance(monat, int) or not isinstance(jahr, int):
+        return None
+
+    try:
+        geburtsdatum = date(jahr, monat, tag)
+    except ValueError:
+        return None
+
+    st.session_state[GEBURTSDATUM_SCHLUESSEL] = geburtsdatum
+    return geburtsdatum
 
 
 def erzeuge_patient_id() -> str:
@@ -52,14 +116,14 @@ def erzeuge_patient_id() -> str:
 def speichere_patient() -> str | None:
     vorname = str(st.session_state[VORNAME_SCHLUESSEL]).strip()
     nachname = str(st.session_state[NACHNAME_SCHLUESSEL]).strip()
-    geburtsdatum = st.session_state[GEBURTSDATUM_SCHLUESSEL]
-    geschlecht = str(st.session_state[GESCHLECHT_SCHLUESSEL]).strip()
+    geburtsdatum = hole_geburtsdatum_aus_formular()
+    geschlecht = str(st.session_state[GESCHECHT_SCHLUESSEL]).strip() if "GESCHECHT_SCHLUESSEL" in globals() else str(st.session_state[GESCHLECHT_SCHLUESSEL]).strip()
 
     if not vorname or not nachname:
         st.error("Vorname und Nachname muessen ausgefuellt werden.")
         return None
 
-    if not isinstance(geburtsdatum, date):
+    if geburtsdatum is None:
         st.error("Bitte ein gueltiges Geburtsdatum erfassen.")
         return None
 
@@ -117,12 +181,32 @@ def main() -> None:
 
         with linke_spalte:
             st.text_input("Vorname", key=VORNAME_SCHLUESSEL)
-            st.date_input(
-                "Geburtsdatum",
-                key=GEBURTSDATUM_SCHLUESSEL,
-                max_value=date.today(),
-                format="DD.MM.YYYY",
-            )
+            st.markdown("**Geburtsdatum**")
+            tag_spalte, monat_spalte, jahr_spalte = st.columns(3)
+
+            with tag_spalte:
+                st.selectbox(
+                    "Tag",
+                    options=list(range(1, 32)),
+                    key=GEBURTSTAG_SCHLUESSEL,
+                )
+
+            with monat_spalte:
+                st.selectbox(
+                    "Monat",
+                    options=[monatsnummer for monatsnummer, _ in MONATE],
+                    key=GEBURTSMONAT_SCHLUESSEL,
+                    format_func=hole_monatslabel,
+                )
+
+            with jahr_spalte:
+                st.selectbox(
+                    "Jahr",
+                    options=hole_geburtsjahre(),
+                    key=GEBURTSJAHR_SCHLUESSEL,
+                )
+
+            st.caption("Jahre bis einschliesslich 1900 sind auswaehlbar.")
 
         with rechte_spalte:
             st.text_input("Nachname", key=NACHNAME_SCHLUESSEL)
