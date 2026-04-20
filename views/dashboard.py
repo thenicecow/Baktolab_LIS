@@ -25,8 +25,8 @@ def main() -> None:
     anzeige_name = st.session_state.get("name") or st.session_state.get("username") or "Benutzer"
 
     from ui.header import show_header
-    show_header(title="Baktolab - Biomedizinische Labordiagnostik")
-    
+    show_header(title="Baktolab")
+
     st.title("Dashboard")
     st.caption(
         "Zentrale Startseite für das Laborinformationssystem im Modul "
