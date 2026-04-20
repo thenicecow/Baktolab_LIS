@@ -21,9 +21,9 @@ Zentrale Anforderungen:
 
 ---
 
-## Version 0 MVP (Minimal Viable Product)
+## Version 01 MVP (Minimal Viable Product)
 
-Version 0 fokussiert sich auf die grundlegende Nutzbarkeit der App.
+Version 01 fokussiert sich auf die grundlegende Nutzbarkeit der App.
 
 **Ziele:**
 - Verbesserung der Übersicht im Labor
@@ -42,13 +42,13 @@ Diese Grundstruktur bleibt über alle Versionen hinweg bestehen.
 - Fokus liegt vollständig auf Funktionalität
 
 **Erweiterung:**
-- Möglichkeit zur Anbindung externer Geräte (z. B. Waage, Maldi-TOF ab v2 geplant) zur Effizienzsteigerung
+- Möglichkeit zur Anbindung externer Geräte (z. B. Waage, Maldi-TOF ab v3 geplant) zur Effizienzsteigerung
 
 ---
 
-## Version 1
+## Version 02
 
-Version 1 basiert vollständig auf Version 0.
+Version 02 basiert vollständig auf Version 0.
 
 **Erweiterung:**
 - Einführung von Icons
@@ -59,9 +59,9 @@ Version 1 basiert vollständig auf Version 0.
 
 ---
 
-## Version 2
+## Version 03
 
-Version 2 erweitert Version 1 um fortgeschrittene Analysefunktionen.
+Version 03 erweitert Version 01 um fortgeschrittene Analysefunktionen.
 
 **Neue Funktionen:**
 - Identifikation von Mikroorganismen mittels MALDI-TOF
