@@ -97,6 +97,11 @@ class LoginManager:
 
     def _login_register_page(self, login_title, register_title):
         """Page function shown when the user is not authenticated."""
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            st.image("docs/images/BAKTOLABLOGO.jpeg", width=400)
+        
+        
         login_tab, register_tab, forgot_pw_tab = st.tabs(
             (login_title, register_title, "Passwort vergessen?")
 )

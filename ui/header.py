@@ -8,4 +8,4 @@ def show_header(title=None):
             st.title(title)
 
     with col2:
-        st.image("docs/images/BAKTOLABLOGO.jpeg", width=100)
+        st.image("docs/images/BAKTOLABLOGO.jpeg", width=150)
