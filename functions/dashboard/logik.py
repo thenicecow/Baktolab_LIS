@@ -70,13 +70,6 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         groesse="klein",
     ),
     DashboardAktionskarte(
-        titel="Patientendetail",
-        beschreibung="Zur Detailansicht des aktuell ausgewaehlten Patienten wechseln.",
-        button_text="Patientendetail oeffnen",
-        seitenpfad="views/patientendetail.py",
-        groesse="klein",
-    ),
-    DashboardAktionskarte(
         titel="Resistenzrechner",
         beschreibung="Berechnungen und Verlauf fuer das Resistenzmonitoring oeffnen.",
         button_text="Resistenzrechner oeffnen",

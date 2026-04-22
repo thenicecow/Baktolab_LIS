@@ -18,6 +18,7 @@ from functions.materialien.erfassung import (
     merke_erfolgreiche_materialspeicherung,
     speichere_material,
 )
+from functions.patienten.navigation import aktiviere_patientendetailansicht
 from persistenz import PatientenRepository
 
 
@@ -155,16 +156,21 @@ def main() -> None:
             if ergebnis is not None:
                 patient, material = ergebnis
                 merke_erfolgreiche_materialspeicherung(patient, material)
-                st.switch_page("views/patientendetail.py")
+
+                if not aktiviere_patientendetailansicht(patient.id):
+                    st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
+                    return
+
+                st.rerun()
 
     linke_spalte, rechte_spalte = st.columns(2)
 
     with linke_spalte:
         if vorbelegter_patient is not None:
             st.page_link(
-                "views/patientendetail.py",
-                label="Zurueck zur Patientendetailansicht",
-                icon=":material/badge:",
+                "views/patientenuebersicht.py",
+                label="Zurueck zur Patientenuebersicht",
+                icon=":material/groups:",
             )
         else:
             st.page_link(
@@ -182,3 +188,4 @@ def main() -> None:
 
 
 main()
+

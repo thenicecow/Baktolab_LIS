@@ -27,6 +27,7 @@ from functions.patienten.detail import (
     merke_patient_id_fuer_material_erfassen,
     sortiere_materialien,
 )
+from functions.patienten.navigation import deaktiviere_patientendetailansicht
 
 
 def zeige_erfolgsmeldung() -> None:
@@ -81,23 +82,36 @@ def zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien: list[Material]) 
     )
 
 
+def wechsle_zu_sichtbarer_seite(zielseite: str) -> None:
+    """Beendet die interne Detailansicht und wechselt zu einer sichtbaren Seite."""
+    deaktiviere_patientendetailansicht()
+    st.switch_page(zielseite)
+
+
+def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
+    """Oeffnet die Materialerfassung fuer den aktuellen Patienten."""
+    merke_patient_id_fuer_material_erfassen(patient_id)
+    deaktiviere_patientendetailansicht()
+    st.switch_page("views/material_erfassen.py")
+
+
 def zeige_aktionsleiste(patient: Patient | None) -> None:
     """Rendert die Aktionsleiste der Detailansicht."""
     linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
 
     with linke_spalte:
-        st.page_link(
-            "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
-            icon=":material/groups:",
-        )
+        if st.button(
+            "Zurueck zur Patientenuebersicht",
+            use_container_width=True,
+        ):
+            wechsle_zu_sichtbarer_seite("views/patientenuebersicht.py")
 
     with mittlere_spalte:
-        st.page_link(
-            "views/dashboard.py",
-            label="Zurueck zum Dashboard",
-            icon=":material/dashboard:",
-        )
+        if st.button(
+            "Zurueck zum Dashboard",
+            use_container_width=True,
+        ):
+            wechsle_zu_sichtbarer_seite("views/dashboard.py")
 
     with rechte_spalte:
         if st.button(
@@ -106,8 +120,7 @@ def zeige_aktionsleiste(patient: Patient | None) -> None:
             type="primary",
             disabled=patient is None,
         ) and patient is not None:
-            merke_patient_id_fuer_material_erfassen(patient.id)
-            st.switch_page("views/material_erfassen.py")
+            oeffne_materialerfassung_aus_detail(patient.id)
 
 
 def zeige_stammdaten(patient: Patient) -> None:

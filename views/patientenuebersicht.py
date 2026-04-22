@@ -6,6 +6,7 @@ import streamlit as st
 
 from domaene import Patient
 from functions.gemeinsam.anzeige_hilfen import formatiere_datum, formatiere_zeitpunkt
+from functions.patienten.navigation import aktiviere_patientendetailansicht
 from functions.patienten.uebersicht import (
     filtere_patienten,
     lade_patienten,
@@ -14,9 +15,14 @@ from functions.patienten.uebersicht import (
 
 
 def oeffne_patientendetail(patient_id: str) -> None:
-    """Merkt sich den Patienten und oeffnet die Detailansicht."""
+    """Merkt sich den Patienten und oeffnet die interne Detailansicht per Rerun."""
     merke_patient_fuer_detailansicht(patient_id)
-    st.switch_page("views/patientendetail.py")
+
+    if not aktiviere_patientendetailansicht(patient_id):
+        st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
+        return
+
+    st.rerun()
 
 
 def zeige_leermeldung() -> None:

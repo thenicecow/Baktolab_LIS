@@ -1,9 +1,12 @@
+"""Zentrale Streamlit-Navigation der App."""
+
 from __future__ import annotations
 
 import streamlit as st
 
 
 def erstelle_navigation():
+    """Erzeugt die sichtbare Hauptnavigation der App."""
     return st.navigation(
         {
             "Start": [
@@ -22,11 +25,6 @@ def erstelle_navigation():
                     "views/patientenuebersicht.py",
                     title="Patientenuebersicht",
                     icon=":material/groups:",
-                ),
-                st.Page(
-                    "views/patientendetail.py",
-                    title="Patientendetail",
-                    icon=":material/badge:",
                 ),
                 st.Page(
                     "views/material_erfassen.py",
