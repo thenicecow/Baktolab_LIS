@@ -1,3 +1,5 @@
+"""Oeffentliche Exporte der Domaenenmodelle und Lookup-Werte."""
+
 from .basis import BasisModell, aktuelle_zeit
 from .lookup_werte import (
     ANALYSEN,
@@ -13,7 +15,13 @@ from .lookup_werte import (
     ist_gueltiger_materialtyp_code,
     normalisiere_materialtyp_code,
 )
-from .material import Material
+from .material import (
+    ERLAUBTE_KEIMZAHL_CODES,
+    Kulturdaten,
+    KulturKeim,
+    Material,
+    ist_gueltiger_keimzahl_code,
+)
 from .patient import Patient
 
 __all__ = [
@@ -22,11 +30,15 @@ __all__ = [
     "ANALYSEN_NACH_CODE",
     "BasisModell",
     "ERLAUBTE_ANALYSE_CODES",
+    "ERLAUBTE_KEIMZAHL_CODES",
     "ERLAUBTE_MATERIALTYP_CODES",
     "ist_gueltiger_analyse_code",
+    "ist_gueltiger_keimzahl_code",
     "ist_gueltiger_materialtyp_code",
     "KLINISCHE_FRAGESTELLUNGEN",
     "KLINISCHE_FRAGESTELLUNGEN_NACH_CODE",
+    "Kulturdaten",
+    "KulturKeim",
     "LookupWert",
     "MATERIALTYPEN",
     "MATERIALTYPEN_NACH_CODE",

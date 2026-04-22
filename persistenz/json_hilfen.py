@@ -8,9 +8,12 @@ from datetime import date, datetime
 from typing import Any
 
 from domaene import (
+    Kulturdaten,
+    KulturKeim,
     Material,
     Patient,
     ist_gueltiger_analyse_code,
+    ist_gueltiger_keimzahl_code,
     normalisiere_materialtyp_code,
 )
 from utils.data_handler import DataHandler
@@ -104,6 +107,7 @@ def material_als_dict(material: Material) -> dict[str, Any]:
         "eingangsdatum": material.eingangsdatum.isoformat(),
         "erstellt_am": zeitpunkt_als_iso(material.erstellt_am),
         "erstellt_von_user_id": optionaler_text(material.erstellt_von_user_id),
+        "kulturdaten": kulturdaten_als_dict(material.kulturdaten),
     }
 
 
@@ -145,6 +149,91 @@ def material_aus_dict(daten: Mapping[str, Any]) -> Material:
         ),
         erstellt_am=lese_optional_zeitpunkt(daten, "erstellt_am"),
         erstellt_von_user_id=lese_optional_textfeld(daten, "erstellt_von_user_id"),
+        kulturdaten=kulturdaten_aus_dict(daten.get("kulturdaten")),
+    )
+
+
+def kulturdaten_als_dict(kulturdaten: Kulturdaten) -> dict[str, Any]:
+    """Serialisiert vorbereitete Kulturdaten in JSON-taugliche Daten."""
+    return {
+        "wachstum": kulturdaten.wachstum,
+        "keime": [kulturkeim_als_dict(keim) for keim in kulturdaten.keime],
+        "beurteilung": optionaler_text(kulturdaten.beurteilung),
+    }
+
+
+def kulturdaten_aus_dict(daten: object) -> Kulturdaten:
+    """Deserialisiert Kulturdaten defensiv und nutzt einen leeren Standardzustand."""
+    if daten is None:
+        return Kulturdaten()
+
+    if not isinstance(daten, Mapping):
+        logger.warning("Feld 'kulturdaten' ist ungueltig und wird leer initialisiert.")
+        return Kulturdaten()
+
+    keime_rohdaten = daten.get("keime")
+
+    if keime_rohdaten is None:
+        keime_rohdaten = []
+    elif not isinstance(keime_rohdaten, list):
+        logger.warning("Feld 'kulturdaten.keime' ist ungueltig und wird leer behandelt.")
+        keime_rohdaten = []
+
+    keime: list[KulturKeim] = []
+
+    for index, eintrag in enumerate(keime_rohdaten, start=1):
+        if not isinstance(eintrag, Mapping):
+            logger.warning(
+                "Kulturdaten-Eintrag %s ist ungueltig und wird uebersprungen.",
+                index,
+            )
+            continue
+
+        try:
+            keime.append(kulturkeim_aus_dict(eintrag))
+        except ValueError as exc:
+            logger.warning("Kulturdaten-Eintrag %s wird uebersprungen: %s", index, exc)
+
+    return Kulturdaten(
+        wachstum=lese_optional_boolfeld(daten, "wachstum"),
+        keime=keime,
+        beurteilung=lese_optional_textfeld(daten, "beurteilung"),
+    )
+
+
+def kulturkeim_als_dict(kulturkeim: KulturKeim) -> dict[str, Any]:
+    """Serialisiert einen einzelnen Keimeintrag in JSON-taugliche Daten."""
+    keimzahl_code = kulturkeim.keimzahl_code.strip()
+
+    if not ist_gueltiger_keimzahl_code(keimzahl_code):
+        raise ValueError(
+            "Feld 'keimzahl_code' enthaelt einen unzulaessigen Wert. "
+            "Erlaubt sind nur: k4, p4, p5, g5."
+        )
+
+    return {
+        "keim_id": kulturkeim.keim_id.strip(),
+        "keimzahl_code": keimzahl_code,
+        "rolle": kulturkeim.rolle.strip(),
+        "keimgruppe": kulturkeim.keimgruppe.strip(),
+    }
+
+
+def kulturkeim_aus_dict(daten: Mapping[str, Any]) -> KulturKeim:
+    """Deserialisiert einen einzelnen Keimeintrag aus Mapping-Daten."""
+    keimzahl_code = lese_textpflichtfeld(daten, "keimzahl_code")
+
+    if not ist_gueltiger_keimzahl_code(keimzahl_code):
+        raise ValueError(
+            "Feld 'keimzahl_code' enthaelt einen unzulaessigen Wert. "
+            "Erlaubt sind nur: k4, p4, p5, g5."
+        )
+
+    return KulturKeim(
+        keim_id=lese_textpflichtfeld(daten, "keim_id"),
+        keimzahl_code=keimzahl_code,
+        rolle=lese_textpflichtfeld(daten, "rolle"),
+        keimgruppe=lese_textpflichtfeld(daten, "keimgruppe"),
     )
 
 
@@ -334,6 +423,19 @@ def lese_optional_textfeld(daten: Mapping[str, Any], schluessel: str) -> str | N
     return bereinigt or None
 
 
+def lese_optional_boolfeld(daten: Mapping[str, Any], schluessel: str) -> bool | None:
+    """Liest ein optionales Bool-Feld und laesst fehlende Werte leer."""
+    wert = daten.get(schluessel)
+
+    if wert is None:
+        return None
+
+    if isinstance(wert, bool):
+        return wert
+
+    raise ValueError(f"Feld '{schluessel}' muss bool oder null sein.")
+
+
 def lese_datumpflichtfeld(daten: Mapping[str, Any], schluessel: str) -> date:
     """Liest ein Pflichtfeld als ISO-Datum."""
     textwert = lese_textpflichtfeld(daten, schluessel)
@@ -390,5 +492,6 @@ def optionaler_text(wert: str | None) -> str | None:
 
     bereinigt = wert.strip()
     return bereinigt or None
+
 
 

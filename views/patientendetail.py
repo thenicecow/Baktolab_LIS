@@ -13,6 +13,8 @@ from functions.gemeinsam.anzeige_hilfen import (
     loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
+from functions.kulturen.ablesen import ist_material_fuer_kulturen_ablesen_unterstuetzt
+from functions.kulturen.navigation import aktiviere_kulturen_ablesen
 from functions.patienten.detail import (
     ALLE_FILTER_OPTION,
     ANALYSE_FILTER_SCHLUESSEL,
@@ -93,6 +95,15 @@ def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
     merke_patient_id_fuer_material_erfassen(patient_id)
     deaktiviere_patientendetailansicht()
     st.switch_page("views/material_erfassen.py")
+
+
+def oeffne_kulturen_ablesen(material_id: str) -> None:
+    """Aktiviert die interne Seite ``Kulturen ablesen`` fuer ein Material."""
+    if not aktiviere_kulturen_ablesen(material_id):
+        st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
+        return
+
+    st.rerun()
 
 
 def zeige_aktionsleiste(patient: Patient | None) -> None:
@@ -205,13 +216,16 @@ def zeige_material_log(materialien: list[Material]) -> None:
     else:
         st.caption(f"Anzahl Materialeintraege: {len(sortierte_materialien)}")
 
-    st.caption("Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen.")
+    st.caption(
+        "Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen. "
+        "Mit 'Kulturen' gelangst du bei passenden Urinmaterialien zur neuen Seite."
+    )
 
     if not sortierte_materialien:
         st.info("Fuer die gesetzten Filter wurden keine Materialien gefunden.")
         return
 
-    spalten = st.columns((1.5, 1.9, 1.3, 1.3, 1.5, 1.3, 1.2))
+    spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
     ueberschriften = (
         "Materialtyp",
         "Analyse",
@@ -220,6 +234,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
         "Erstellt am",
         "Erstellt von",
         "Hinweis",
+        "Kulturen",
     )
 
     for spalte, ueberschrift in zip(spalten, ueberschriften):
@@ -229,7 +244,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
     for material in sortierte_materialien:
         with st.container(border=True):
-            zeilen_spalten = st.columns((1.5, 1.9, 1.3, 1.3, 1.5, 1.3, 1.2))
+            zeilen_spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
             zeilen_spalten[0].write(loese_materialtyp_label_auf(material.materialtyp_code))
             zeilen_spalten[1].write(loese_analyse_label_auf(material.klinische_frage_code))
             zeilen_spalten[2].write(formatiere_datum(material.abnahmedatum))
@@ -243,6 +258,16 @@ def zeige_material_log(materialien: list[Material]) -> None:
                 use_container_width=True,
             ):
                 merke_material_fuer_ansatzhinweis(material.id)
+
+            if ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
+                if zeilen_spalten[7].button(
+                    "Kulturen",
+                    key=f"material_kulturen_{material.id}",
+                    use_container_width=True,
+                ):
+                    oeffne_kulturen_ablesen(material.id)
+            else:
+                zeilen_spalten[7].write("-")
 
 
 def main() -> None:

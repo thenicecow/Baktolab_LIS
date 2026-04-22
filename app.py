@@ -7,6 +7,11 @@ import runpy
 
 import streamlit as st
 
+from functions.kulturen.navigation import (
+    deaktiviere_kulturen_ablesen,
+    hat_gueltige_kulturen_ablesen_route,
+    ist_kulturen_ablesen_aktiv,
+)
 from functions.patienten.navigation import (
     deaktiviere_patientendetailansicht,
     hat_gueltige_patientendetail_route,
@@ -30,6 +35,12 @@ def zeige_patientendetailansicht() -> None:
     runpy.run_path(str(detailansicht_pfad), run_name="__main__")
 
 
+def zeige_kulturen_ablesen() -> None:
+    """Fuehrt die interne Seite ``Kulturen ablesen`` aus."""
+    kulturen_ablesen_pfad = Path(__file__).parent / "views" / "kulturen_ablesen.py"
+    runpy.run_path(str(kulturen_ablesen_pfad), run_name="__main__")
+
+
 data_manager = DataManager(
     fs_protocol="webdav",
     fs_root_folder="BMLD_APP_DATA",
@@ -40,17 +51,29 @@ login_manager.login_register(
     register_title="Benutzerkonto erstellen",
 )
 
-detailansicht_aktiv = ist_patientendetailansicht_aktiv()
+kulturen_ablesen_aktiv = ist_kulturen_ablesen_aktiv()
 
-if hat_gueltige_patientendetail_route():
-    zeige_patientendetailansicht()
+if hat_gueltige_kulturen_ablesen_route():
+    zeige_kulturen_ablesen()
 else:
-    if detailansicht_aktiv:
-        deaktiviere_patientendetailansicht()
+    if kulturen_ablesen_aktiv:
+        deaktiviere_kulturen_ablesen()
         st.warning(
-            "Die Patientendetailansicht konnte nicht geoeffnet werden, "
-            "weil keine gueltige Patienten-ID vorhanden ist."
+            "Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden, "
+            "weil keine gueltige Materialreferenz vorhanden ist."
         )
 
-    navigation = erstelle_navigation()
-    navigation.run()
+    detailansicht_aktiv = ist_patientendetailansicht_aktiv()
+
+    if hat_gueltige_patientendetail_route():
+        zeige_patientendetailansicht()
+    else:
+        if detailansicht_aktiv:
+            deaktiviere_patientendetailansicht()
+            st.warning(
+                "Die Patientendetailansicht konnte nicht geoeffnet werden, "
+                "weil keine gueltige Patienten-ID vorhanden ist."
+            )
+
+        navigation = erstelle_navigation()
+        navigation.run()

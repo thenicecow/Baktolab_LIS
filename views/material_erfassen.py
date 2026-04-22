@@ -12,6 +12,11 @@ from functions.gemeinsam.anzeige_hilfen import (
     loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
+from functions.kulturen.ablesen import ist_material_fuer_kulturen_ablesen_unterstuetzt
+from functions.kulturen.navigation import (
+    aktiviere_kulturen_ablesen,
+    deaktiviere_kulturen_ablesen,
+)
 from functions.materialien.erfassung import (
     hole_vorbelegte_patient_id,
     lade_patienten,
@@ -161,6 +166,13 @@ def main() -> None:
                     st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
                     return
 
+                if ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
+                    if not aktiviere_kulturen_ablesen(material.id):
+                        st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
+                        return
+                else:
+                    deaktiviere_kulturen_ablesen()
+
                 st.rerun()
 
     linke_spalte, rechte_spalte = st.columns(2)
@@ -188,4 +200,3 @@ def main() -> None:
 
 
 main()
-
