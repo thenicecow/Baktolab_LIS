@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from domaene import ERLAUBTE_KEIMZAHL_CODES, Material, Patient
+from domaene import ERLAUBTE_KEIMZAHL_CODES, Kulturdaten, Material, Patient
 from functions.gemeinsam.anzeige_hilfen import (
     baue_technische_fehlernachricht,
     formatiere_datum,
@@ -19,6 +19,10 @@ from functions.kulturen.ablesen import (
     ist_material_fuer_kulturen_ablesen_unterstuetzt,
     lade_materialkontext_fuer_kulturen_ablesen,
     speichere_kulturdaten_fuer_material,
+)
+from functions.kulturen.beurteilung import (
+    UrinBeurteilung,
+    beurteile_urin_allgemeine_bakteriologie,
 )
 from functions.kulturen.navigation import (
     deaktiviere_kulturen_ablesen,
@@ -173,6 +177,24 @@ def hole_formularvorschau(material_id: str) -> dict[str, object]:
     }
 
 
+def baue_kulturdaten_aus_formularvorschau(
+    material: Material,
+    beurteilung: str | None,
+) -> Kulturdaten | None:
+    """Erzeugt Kulturdaten aus der aktuellen Formulareingabe."""
+    vorschau = hole_formularvorschau(material.id)
+
+    if vorschau["wachstum"] and not vorschau["keime"]:
+        st.error("Bitte erfasse mindestens einen Keim oder waehle bei Wachstum 'nein'.")
+        return None
+
+    return baue_kulturdaten_aus_formularwerten(
+        wachstum=bool(vorschau["wachstum"]),
+        keime=list(vorschau["keime"]),
+        beurteilung=beurteilung,
+    )
+
+
 def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | None:
     """Laedt und zeigt den Materialkontext fuer die Kulturseite an."""
     st.caption(f"Aktuelle Materialreferenz: {materialreferenz}")
@@ -248,22 +270,14 @@ def zeige_keimeingabe(material_id: str) -> None:
         st.rerun()
 
 
-def speichere_kulturdaten(material: Material) -> None:
-    """Speichert die aktuell erfassten Kulturdaten beim passenden Material."""
-    vorschau = hole_formularvorschau(material.id)
-
-    if vorschau["wachstum"] and not vorschau["keime"]:
-        st.error(
-            "Bitte erfasse mindestens einen Keim oder waehle bei Wachstum 'nein'."
-        )
-        return
-
-    gespeicherte_kulturdaten = hole_kulturdaten_oder_standard(material)
-    kulturdaten = baue_kulturdaten_aus_formularwerten(
-        wachstum=bool(vorschau["wachstum"]),
-        keime=list(vorschau["keime"]),
-        beurteilung=gespeicherte_kulturdaten.beurteilung,
+def speichere_kulturdaten(material: Material) -> bool:
+    """Speichert die aktuell erfassten Kulturdaten ohne berechnete Beurteilung."""
+    kulturdaten = baue_kulturdaten_aus_formularvorschau(
+        material=material,
+        beurteilung=None,
     )
+    if kulturdaten is None:
+        return False
 
     try:
         speicherergebnis = speichere_kulturdaten_fuer_material(material.id, kulturdaten)
@@ -273,13 +287,76 @@ def speichere_kulturdaten(material: Material) -> None:
                 "Die Kulturdaten konnten nicht gespeichert werden."
             )
         )
-        return
+        return False
 
     if speicherergebnis is None:
         st.error("Die Kulturdaten konnten keinem vorhandenen Material zugeordnet werden.")
-        return
+        return False
 
-    st.success("Die Kulturdaten wurden erfolgreich beim Material gespeichert.")
+    material.kulturdaten = kulturdaten
+    st.success(
+        "Die Kulturdaten wurden erfolgreich gespeichert. "
+        "Die Beurteilung muss bei geaenderten Eingaben neu berechnet werden."
+    )
+    return True
+
+
+def berechne_und_speichere_beurteilung(material: Material) -> UrinBeurteilung | None:
+    """Berechnet die Beurteilung, zeigt Eingabefehler an und speichert das Ergebnis."""
+    kulturdaten = baue_kulturdaten_aus_formularvorschau(
+        material=material,
+        beurteilung=None,
+    )
+    if kulturdaten is None:
+        return None
+
+    beurteilung = beurteile_urin_allgemeine_bakteriologie(kulturdaten)
+
+    if not beurteilung.ist_gueltig or not beurteilung.gesamtbeurteilung:
+        st.error("Die Beurteilung konnte nicht berechnet werden.")
+        for hinweis in beurteilung.hinweise:
+            st.warning(hinweis)
+        return None
+
+    kulturdaten.beurteilung = beurteilung.gesamtbeurteilung
+
+    try:
+        speicherergebnis = speichere_kulturdaten_fuer_material(material.id, kulturdaten)
+    except Exception:
+        st.error(
+            baue_technische_fehlernachricht(
+                "Die Beurteilung konnte nicht gespeichert werden."
+            )
+        )
+        return None
+
+    if speicherergebnis is None:
+        st.error("Die Beurteilung konnte keinem vorhandenen Material zugeordnet werden.")
+        return None
+
+    material.kulturdaten = kulturdaten
+    st.success("Die Beurteilung wurde erfolgreich berechnet und beim Material gespeichert.")
+    return beurteilung
+
+
+def hole_gespeicherte_beurteilung(material: Material) -> UrinBeurteilung | None:
+    """Liefert eine vorhandene, gespeicherte Beurteilung fuer das Material."""
+    kulturdaten = hole_kulturdaten_oder_standard(material)
+
+    if not kulturdaten.beurteilung:
+        return None
+
+    beurteilung = beurteile_urin_allgemeine_bakteriologie(kulturdaten)
+
+    if beurteilung.ist_gueltig and beurteilung.gesamtbeurteilung:
+        return beurteilung
+
+    return UrinBeurteilung(
+        gesamtbeurteilung=kulturdaten.beurteilung,
+        ist_gueltig=True,
+        keimbeurteilungen=[],
+        hinweise=["Die gespeicherte Gesamtbeurteilung konnte nur vereinfacht angezeigt werden."],
+    )
 
 
 def zeige_vorschau(material_id: str) -> None:
@@ -307,13 +384,50 @@ def zeige_vorschau(material_id: str) -> None:
         )
 
 
+def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
+    """Zeigt das aktuell vorhandene Beurteilungsergebnis uebersichtlich an."""
+    st.subheader("Beurteilung")
+
+    if beurteilung is None:
+        st.info("Fuer dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
+        return
+
+    with st.container(border=True):
+        st.markdown(f"**Gesamtbeurteilung:** {beurteilung.gesamtbeurteilung}")
+
+        if beurteilung.hinweise:
+            for hinweis in beurteilung.hinweise:
+                st.caption(hinweis)
+
+        if not beurteilung.keimbeurteilungen:
+            return
+
+        tabellendaten = [
+            {
+                "Keim-ID": keim.keim_id,
+                "Keimzahl": keim.keimzahl_code,
+                "Rolle": keim.rolle,
+                "Effektive Rolle": keim.effektive_rolle,
+                "Ergebnis": keim.ergebnis or "",
+                "Begruendung": keim.begruendung,
+            }
+            for keim in beurteilung.keimbeurteilungen
+        ]
+
+        st.dataframe(
+            pd.DataFrame(tabellendaten),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+
 def main() -> None:
     """Rendert die Seite ``Kulturen ablesen`` mit speicherbarer Eingabemaske."""
     st.title("Kulturen ablesen")
     st.info(
         "Diese Seite gilt aktuell nur fuer Urin mit der Analyse "
-        "Allgemeine Bakteriologie. Die Kulturdaten koennen in diesem Schritt "
-        "materialbezogen gespeichert und erneut geladen werden."
+        "Allgemeine Bakteriologie. Kulturdaten und berechnete Beurteilung "
+        "werden materialbezogen gespeichert."
     )
 
     zeige_aktionsleiste()
@@ -339,6 +453,8 @@ def main() -> None:
 
     initialisiere_formularzustand(material)
 
+    aktuelle_beurteilung = hole_gespeicherte_beurteilung(material)
+
     st.subheader("Kulturdaten")
     st.radio(
         "Wachstum",
@@ -350,14 +466,30 @@ def main() -> None:
     if hole_wachstum(material.id):
         zeige_keimeingabe(material.id)
 
-    if st.button(
-        "Kulturdaten speichern",
-        type="primary",
-        use_container_width=True,
-    ):
-        speichere_kulturdaten(material)
+    button_spalte_links, button_spalte_rechts = st.columns(2)
+
+    with button_spalte_links:
+        if st.button(
+            "Kulturdaten speichern",
+            type="secondary",
+            use_container_width=True,
+        ):
+            if speichere_kulturdaten(material):
+                aktuelle_beurteilung = None
+
+    with button_spalte_rechts:
+        if st.button(
+            "Beurteilung berechnen",
+            type="primary",
+            use_container_width=True,
+        ):
+            berechnete_beurteilung = berechne_und_speichere_beurteilung(material)
+            if berechnete_beurteilung is not None:
+                aktuelle_beurteilung = berechnete_beurteilung
 
     zeige_vorschau(material.id)
+    zeige_beurteilung(aktuelle_beurteilung)
 
 
 main()
+
