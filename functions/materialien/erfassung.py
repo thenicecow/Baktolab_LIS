@@ -16,14 +16,44 @@ from domaene import (
 from functions.gemeinsam.anzeige_hilfen import (
     baue_technische_fehlernachricht,
     hole_aktuellen_user_id,
+    loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
 from persistenz import PatientenRepository
 
 
 PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
+PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL = (
+    "patientendetail_ausgewaehltes_material_id"
+)
 MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL = "material_erfassen_patient_id"
 MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL = "material_erfassen_erfolgsmeldung"
+MATERIAL_ERFASSEN_ANSATZHINWEIS_SCHLUESSEL = "material_erfassen_ansatzhinweis"
+
+ANSATZHINWEISE_NACH_KOMBINATION: dict[tuple[str, str], tuple[tuple[str, str], ...]] = {
+    ("urin", "allgemeine_bakteriologie"): (
+        ("SBA", "37 Grad C mit CO2"),
+        ("CNA", "37 Grad C mit CO2"),
+        ("CPS", "35 Grad C Luft"),
+    ),
+    ("blutkultur", "allgemeine_bakteriologie"): (
+        ("BACTEC", "Inkubation im BACTEC"),
+    ),
+    ("vaginalabstrich", "allgemeine_bakteriologie"): (
+        ("SBA", "37 Grad C mit CO2"),
+        ("CNA", "37 Grad C mit CO2"),
+        ("CAND", "35 Grad C Luft"),
+        ("GARD", "37 Grad C anaerob"),
+    ),
+    ("vaginalabstrich", "gardnerella_vaginalis"): (
+        ("SBA", "37 Grad C mit CO2"),
+        ("GARD", "37 Grad C anaerob"),
+    ),
+    ("vaginalabstrich", "hefen"): (
+        ("SBA", "37 Grad C mit CO2"),
+        ("CAND", "35 Grad C Luft"),
+    ),
+}
 
 
 def hole_vorbelegte_patient_id() -> str | None:
@@ -78,7 +108,11 @@ def speichere_material(
     try:
         patientenakte = repository.lade_patientenakte_nach_id(patient_id)
     except Exception:
-        st.error(baue_technische_fehlernachricht("Der ausgewaehlte Patient konnte nicht geladen werden."))
+        st.error(
+            baue_technische_fehlernachricht(
+                "Der ausgewaehlte Patient konnte nicht geladen werden."
+            )
+        )
         return None
 
     if patientenakte is None:
@@ -112,11 +146,50 @@ def speichere_material(
     return patient, neues_material
 
 
+def hole_ansatzhinweis_zeilen(
+    materialtyp_code: str,
+    analyse_code: str,
+) -> list[dict[str, str]]:
+    """Liefert die Tabellenzeilen fuer den material- und analyseabhaengigen Hinweis."""
+    kombination = (materialtyp_code.strip(), analyse_code.strip())
+    rohdaten = ANSATZHINWEISE_NACH_KOMBINATION.get(kombination, ())
+
+    return [
+        {"Ansatz": ansatz, "Inkubation": inkubation}
+        for ansatz, inkubation in rohdaten
+    ]
+
+
+def baue_ansatzhinweis(material: Material) -> dict[str, object]:
+    """Erzeugt die Anzeigedaten fuer den Ansatzhinweis eines Materials."""
+    material_label = loese_materialtyp_label_auf(material.materialtyp_code)
+    analyse_label = loese_analyse_label_auf(material.klinische_frage_code)
+    zeilen = hole_ansatzhinweis_zeilen(
+        material.materialtyp_code,
+        material.klinische_frage_code,
+    )
+
+    ansatzhinweis: dict[str, object] = {
+        "titel": f"Ansatzhinweis fuer {material_label} und {analyse_label}",
+        "zeilen": zeilen,
+    }
+
+    if not zeilen:
+        ansatzhinweis["hinweistext"] = "Fuer diese Kombination ist kein Ansatzhinweis definiert."
+
+    return ansatzhinweis
+
+
 def merke_erfolgreiche_materialspeicherung(patient: Patient, material: Material) -> None:
-    """Merkt sich die Zielnavigation und Erfolgsmeldung nach dem Speichern."""
+    """Merkt sich Zielnavigation, Erfolgsmeldung und Ansatzhinweis nach dem Speichern."""
     st.session_state[PATIENTENDETAIL_ID_SCHLUESSEL] = patient.id
     st.session_state[MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL] = (
         f"Material {loese_materialtyp_label_auf(material.materialtyp_code)} "
         f"wurde erfolgreich gespeichert."
     )
+    st.session_state[MATERIAL_ERFASSEN_ANSATZHINWEIS_SCHLUESSEL] = (
+        baue_ansatzhinweis(material)
+    )
+    st.session_state.pop(PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL, None)
     st.session_state.pop(MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL, None)
+

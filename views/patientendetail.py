@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from domaene import ANALYSEN, MATERIALTYPEN, Material, Patient
@@ -16,10 +17,13 @@ from functions.patienten.detail import (
     ALLE_FILTER_OPTION,
     ANALYSE_FILTER_SCHLUESSEL,
     MATERIALTYP_FILTER_SCHLUESSEL,
+    baue_ansatzhinweis_fuer_ausgewaehltes_material,
     filtere_materialien,
+    hole_und_entferne_ansatzhinweis,
     hole_und_entferne_erfolgsmeldung,
     initialisiere_filterzustand,
     lade_patientenakte,
+    merke_material_fuer_ansatzhinweis,
     merke_patient_id_fuer_material_erfassen,
     sortiere_materialien,
 )
@@ -31,6 +35,50 @@ def zeige_erfolgsmeldung() -> None:
 
     if erfolgsmeldung:
         st.success(erfolgsmeldung)
+
+
+def zeige_ansatzhinweistabelle(
+    ansatzhinweis: dict[str, object] | None,
+    ueberschrift: str,
+) -> None:
+    """Zeigt einen Ansatzhinweis als Tabelle oder neutrale Info an."""
+    if ansatzhinweis is None:
+        return
+
+    titel = ansatzhinweis.get("titel")
+    zeilen = ansatzhinweis.get("zeilen")
+    hinweistext = ansatzhinweis.get("hinweistext")
+
+    with st.container(border=True):
+        st.markdown(f"**{ueberschrift}**")
+
+        if isinstance(titel, str) and titel.strip():
+            st.caption(titel.strip())
+
+        if isinstance(zeilen, list) and zeilen:
+            st.table(pd.DataFrame(zeilen, columns=["Ansatz", "Inkubation"]))
+            return
+
+        if isinstance(hinweistext, str) and hinweistext.strip():
+            st.info(hinweistext.strip())
+
+
+def zeige_ansatzhinweis_nach_speicherung() -> None:
+    """Zeigt den Hinweis fuer ein soeben erfolgreich gespeichertes Material an."""
+    ansatzhinweis = hole_und_entferne_ansatzhinweis()
+    zeige_ansatzhinweistabelle(
+        ansatzhinweis,
+        "Ansatzhinweis zum neu erfassten Material",
+    )
+
+
+def zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien: list[Material]) -> None:
+    """Zeigt den Hinweis fuer das in der Materialliste ausgewaehlte Material an."""
+    ansatzhinweis = baue_ansatzhinweis_fuer_ausgewaehltes_material(materialien)
+    zeige_ansatzhinweistabelle(
+        ansatzhinweis,
+        "Ansatzhinweis zum ausgewaehlten Material",
+    )
 
 
 def zeige_aktionsleiste(patient: Patient | None) -> None:
@@ -144,11 +192,13 @@ def zeige_material_log(materialien: list[Material]) -> None:
     else:
         st.caption(f"Anzahl Materialeintraege: {len(sortierte_materialien)}")
 
+    st.caption("Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen.")
+
     if not sortierte_materialien:
         st.info("Fuer die gesetzten Filter wurden keine Materialien gefunden.")
         return
 
-    spalten = st.columns((1.6, 2.0, 1.3, 1.3, 1.6, 1.4))
+    spalten = st.columns((1.5, 1.9, 1.3, 1.3, 1.5, 1.3, 1.2))
     ueberschriften = (
         "Materialtyp",
         "Analyse",
@@ -156,6 +206,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
         "Eingangsdatum",
         "Erstellt am",
         "Erstellt von",
+        "Hinweis",
     )
 
     for spalte, ueberschrift in zip(spalten, ueberschriften):
@@ -165,7 +216,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
     for material in sortierte_materialien:
         with st.container(border=True):
-            zeilen_spalten = st.columns((1.6, 2.0, 1.3, 1.3, 1.6, 1.4))
+            zeilen_spalten = st.columns((1.5, 1.9, 1.3, 1.3, 1.5, 1.3, 1.2))
             zeilen_spalten[0].write(loese_materialtyp_label_auf(material.materialtyp_code))
             zeilen_spalten[1].write(loese_analyse_label_auf(material.klinische_frage_code))
             zeilen_spalten[2].write(formatiere_datum(material.abnahmedatum))
@@ -173,11 +224,19 @@ def zeige_material_log(materialien: list[Material]) -> None:
             zeilen_spalten[4].write(formatiere_zeitpunkt(material.erstellt_am))
             zeilen_spalten[5].write(formatiere_text(material.erstellt_von_user_id))
 
+            if zeilen_spalten[6].button(
+                "Anzeigen",
+                key=f"material_hinweis_{material.id}",
+                use_container_width=True,
+            ):
+                merke_material_fuer_ansatzhinweis(material.id)
+
 
 def main() -> None:
     """Rendert die Patientendetailansicht."""
     st.title("Patientendetail")
     zeige_erfolgsmeldung()
+    zeige_ansatzhinweis_nach_speicherung()
 
     patientenakte = lade_patientenakte()
     patient = None
@@ -194,8 +253,7 @@ def main() -> None:
     zeige_stammdaten(patient)
     st.divider()
     zeige_material_log(materialien)
+    zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien)
 
 
 main()
-
-

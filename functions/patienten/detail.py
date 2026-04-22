@@ -8,12 +8,17 @@ import streamlit as st
 
 from domaene import Material, Patient
 from functions.gemeinsam.anzeige_hilfen import baue_technische_fehlernachricht
+from functions.materialien.erfassung import baue_ansatzhinweis
 from persistenz import PatientenRepository
 
 
 PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
+PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL = (
+    "patientendetail_ausgewaehltes_material_id"
+)
 MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL = "material_erfassen_patient_id"
 MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL = "material_erfassen_erfolgsmeldung"
+MATERIAL_ERFASSEN_ANSATZHINWEIS_SCHLUESSEL = "material_erfassen_ansatzhinweis"
 ALLE_FILTER_OPTION = ""
 MATERIALTYP_FILTER_SCHLUESSEL = "patientendetail_filter_materialtyp"
 ANALYSE_FILTER_SCHLUESSEL = "patientendetail_filter_analyse"
@@ -62,6 +67,16 @@ def merke_patient_id_fuer_material_erfassen(patient_id: str) -> None:
     st.session_state[MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL] = patient_id
 
 
+def merke_material_fuer_ansatzhinweis(material_id: str) -> None:
+    """Merkt sich ein Material fuer die erneute Anzeige des Ansatzhinweises."""
+    bereinigt = material_id.strip()
+
+    if not bereinigt:
+        return
+
+    st.session_state[PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL] = bereinigt
+
+
 def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
     """Laedt die aktuell ausgewaehlte Patientenakte."""
     patient_id = st.session_state.get(PATIENTENDETAIL_ID_SCHLUESSEL)
@@ -75,7 +90,11 @@ def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
     try:
         patientenakte = repository.lade_patientenakte_nach_id(patient_id)
     except Exception:
-        st.error(baue_technische_fehlernachricht("Der ausgewaehlte Patient konnte nicht geladen werden."))
+        st.error(
+            baue_technische_fehlernachricht(
+                "Der ausgewaehlte Patient konnte nicht geladen werden."
+            )
+        )
         return None
 
     if patientenakte is None:
@@ -94,6 +113,47 @@ def hole_und_entferne_erfolgsmeldung() -> str | None:
 
     bereinigt = erfolgsmeldung.strip()
     return bereinigt or None
+
+
+def hole_und_entferne_ansatzhinweis() -> dict[str, object] | None:
+    """Liest einen gespeicherten Ansatzhinweis aus dem Session State."""
+    ansatzhinweis = st.session_state.pop(MATERIAL_ERFASSEN_ANSATZHINWEIS_SCHLUESSEL, None)
+
+    if not isinstance(ansatzhinweis, dict):
+        return None
+
+    return ansatzhinweis
+
+
+def hole_ausgewaehltes_material(materialien: list[Material]) -> Material | None:
+    """Liefert das aktuell fuer den Ansatzhinweis ausgewaehlte Material."""
+    material_id = st.session_state.get(PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL)
+
+    if not isinstance(material_id, str):
+        return None
+
+    bereinigt = material_id.strip()
+    if not bereinigt:
+        return None
+
+    for material in materialien:
+        if material.id == bereinigt:
+            return material
+
+    st.session_state.pop(PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL, None)
+    return None
+
+
+def baue_ansatzhinweis_fuer_ausgewaehltes_material(
+    materialien: list[Material],
+) -> dict[str, object] | None:
+    """Erzeugt den Ansatzhinweis fuer das aktuell ausgewaehlte Material."""
+    material = hole_ausgewaehltes_material(materialien)
+
+    if material is None:
+        return None
+
+    return baue_ansatzhinweis(material)
 
 
 def initialisiere_filterzustand(
