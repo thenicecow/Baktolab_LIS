@@ -38,9 +38,9 @@ KEIMZAHL_CODES: tuple[str, ...] = tuple(
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
-    """Beendet die Kulturseite und kehrt per Rerun zur vorherigen internen Ansicht zurueck."""
+    """Beendet die Kulturseite und wechselt zur sichtbaren Patientenuebersicht zurueck."""
     deaktiviere_kulturen_ablesen()
-    st.rerun()
+    st.switch_page("views/patientenuebersicht.py")
 
 
 def zeige_aktionsleiste() -> None:

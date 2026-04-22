@@ -170,10 +170,11 @@ def main() -> None:
                     if not aktiviere_kulturen_ablesen(material.id):
                         st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
                         return
+
+                    st.switch_page("views/kulturen_ablesen.py")
                 else:
                     deaktiviere_kulturen_ablesen()
-
-                st.rerun()
+                    st.switch_page("views/patientenuebersicht.py")
 
     linke_spalte, rechte_spalte = st.columns(2)
 

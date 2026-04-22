@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+import runpy
+
 import streamlit as st
 
 from domaene import Patient
 from functions.gemeinsam.anzeige_hilfen import formatiere_datum, formatiere_zeitpunkt
-from functions.patienten.navigation import aktiviere_patientendetailansicht
+from functions.patienten.navigation import (
+    aktiviere_patientendetailansicht,
+    deaktiviere_patientendetailansicht,
+    hat_gueltige_patientendetail_route,
+    ist_patientendetailansicht_aktiv,
+)
 from functions.patienten.uebersicht import (
     filtere_patienten,
     lade_patienten,
@@ -15,7 +23,7 @@ from functions.patienten.uebersicht import (
 
 
 def oeffne_patientendetail(patient_id: str) -> None:
-    """Merkt sich den Patienten und oeffnet die interne Detailansicht per Rerun."""
+    """Merkt sich den Patienten und oeffnet die Detailansicht innerhalb der Uebersicht."""
     merke_patient_fuer_detailansicht(patient_id)
 
     if not aktiviere_patientendetailansicht(patient_id):
@@ -23,6 +31,12 @@ def oeffne_patientendetail(patient_id: str) -> None:
         return
 
     st.rerun()
+
+
+def zeige_patientendetailansicht_innerhalb_der_uebersicht() -> None:
+    """Rendert die bestehende Patientendetailansicht innerhalb der sichtbaren Uebersichtsseite."""
+    detailansicht_pfad = Path(__file__).with_name("patientendetail.py")
+    runpy.run_path(str(detailansicht_pfad), run_name="__main__")
 
 
 def zeige_leermeldung() -> None:
@@ -87,6 +101,17 @@ def zeige_patientenzeile(patient: Patient) -> None:
 
 def main() -> None:
     """Rendert die Patientenuebersicht und bindet die Fachlogik ein."""
+    if hat_gueltige_patientendetail_route():
+        zeige_patientendetailansicht_innerhalb_der_uebersicht()
+        return
+
+    if ist_patientendetailansicht_aktiv():
+        deaktiviere_patientendetailansicht()
+        st.warning(
+            "Die Patientendetailansicht konnte nicht geoeffnet werden, "
+            "weil keine gueltige Patienten-ID vorhanden ist."
+        )
+
     st.title("Patientenuebersicht")
     st.write("Hier siehst du alle erfassten Patienten.")
 

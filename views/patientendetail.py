@@ -98,12 +98,12 @@ def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
 
 
 def oeffne_kulturen_ablesen(material_id: str) -> None:
-    """Aktiviert die interne Seite ``Kulturen ablesen`` fuer ein Material."""
+    """Aktiviert die Seite ``Kulturen ablesen`` fuer ein Material."""
     if not aktiviere_kulturen_ablesen(material_id):
         st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
         return
 
-    st.rerun()
+    st.switch_page("views/kulturen_ablesen.py")
 
 
 def zeige_aktionsleiste(patient: Patient | None) -> None:
@@ -294,4 +294,5 @@ def main() -> None:
     zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien)
 
 
-main()
+if __name__ == "__main__":
+    main()

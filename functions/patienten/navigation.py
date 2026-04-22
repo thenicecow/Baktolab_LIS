@@ -39,6 +39,7 @@ def aktiviere_patientendetailansicht(patient_id: str) -> bool:
 def deaktiviere_patientendetailansicht() -> None:
     """Beendet die interne Patientendetailansicht und bereinigt detailspezifischen Zustand."""
     st.session_state.pop(PATIENTENDETAIL_AKTIV_SCHLUESSEL, None)
+    st.session_state.pop(PATIENTENDETAIL_ID_SCHLUESSEL, None)
     st.session_state.pop(PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL, None)
 
 
