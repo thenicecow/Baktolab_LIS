@@ -97,9 +97,29 @@ class LoginManager:
 
     def _login_register_page(self, login_title, register_title):
         """Page function shown when the user is not authenticated."""
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #7CABDE;
+                background-image: radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px);
+                background-size: 15px 15px;
+            }
+            .stTabs {
+                background-color: white;
+                border-radius: 10px;
+                padding: 20px;
+                margin: 20px 0;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
             st.image("docs/images/BAKTOLABLOGO.jpeg", width=400)
+        with col3:
+            st.image("docs/images/ZHAW.png", width=500)
         
         
         login_tab, register_tab, forgot_pw_tab = st.tabs(
