@@ -6,7 +6,7 @@ import logging
 import posixpath
 from collections.abc import Sequence
 
-from domaene import Material, Patient
+from domaene import Kulturdaten, Material, Patient
 from persistenz.datei_ablage import (
     baue_datenwurzel,
     ist_patientenakten_datei,
@@ -73,6 +73,22 @@ class PatientenRepository:
 
         return None
 
+    def lade_materialkontext_nach_id(
+        self,
+        material_id: str,
+    ) -> tuple[Patient, Material, list[Material]] | None:
+        """Laedt Patient, Material und Materialliste anhand einer Material-ID."""
+        material_id_bereinigt = self._bereinige_material_id(material_id)
+        if material_id_bereinigt is None:
+            return None
+
+        for patient, materialien in self._lade_patientenakten():
+            for material in materialien:
+                if material.id == material_id_bereinigt:
+                    return patient, material, materialien
+
+        return None
+
     def speichere_neuen_patienten(self, patient: Patient) -> None:
         """Speichert einen neuen Patienten in der zentralen JSON-Datei."""
         patientenakten = self._lade_patientenakten()
@@ -125,6 +141,37 @@ class PatientenRepository:
 
         patientenakten[ziel_index] = (patient, materialliste)
         self._speichere_patientenakten(patientenakten)
+
+    def speichere_kulturdaten_fuer_material(
+        self,
+        material_id: str,
+        kulturdaten: Kulturdaten,
+    ) -> tuple[Patient, Material] | None:
+        """Speichert Kulturdaten gezielt beim passenden Material."""
+        material_id_bereinigt = self._bereinige_material_id(material_id)
+        if material_id_bereinigt is None:
+            return None
+
+        materialkontext = self.lade_materialkontext_nach_id(material_id_bereinigt)
+        if materialkontext is None:
+            return None
+
+        patient, _zielmaterial, materialien = materialkontext
+        aktualisierte_materialien: list[Material] = []
+        gespeichertes_material: Material | None = None
+
+        for material in materialien:
+            if material.id == material_id_bereinigt:
+                material.kulturdaten = kulturdaten
+                gespeichertes_material = material
+
+            aktualisierte_materialien.append(material)
+
+        if gespeichertes_material is None:
+            return None
+
+        self.speichere_patient_mit_materialien(patient, aktualisierte_materialien)
+        return patient, gespeichertes_material
 
     def _lade_patientenakten(self) -> list[tuple[Patient, list[Material]]]:
         """Laedt Patientenakten aus der zentralen Datei oder faellt auf Legacy-Dateien zurueck."""
@@ -245,6 +292,15 @@ class PatientenRepository:
             return None
 
         bereinigt = patient_id.strip()
+        return bereinigt or None
+
+    @staticmethod
+    def _bereinige_material_id(material_id: str | None) -> str | None:
+        """Bereinigt eine optionale Material-ID fuer Suchzugriffe."""
+        if not isinstance(material_id, str):
+            return None
+
+        bereinigt = material_id.strip()
         return bereinigt or None
 
     @staticmethod

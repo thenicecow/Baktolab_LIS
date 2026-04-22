@@ -7,6 +7,7 @@ import streamlit as st
 
 KULTUREN_ABLESEN_AKTIV_SCHLUESSEL = "kulturen_ablesen_aktiv"
 KULTUREN_ABLESEN_MATERIAL_ID_SCHLUESSEL = "kulturen_ablesen_material_id"
+KULTUREN_ABLESEN_FORMULAR_PREFIX = "kulturen_ablesen_"
 
 
 def hole_material_id_fuer_kulturen_ablesen() -> str | None:
@@ -34,8 +35,9 @@ def aktiviere_kulturen_ablesen(material_id: str) -> bool:
 
 def deaktiviere_kulturen_ablesen() -> None:
     """Beendet die interne Seite ``Kulturen ablesen`` und bereinigt ihren Zustand."""
-    st.session_state.pop(KULTUREN_ABLESEN_AKTIV_SCHLUESSEL, None)
-    st.session_state.pop(KULTUREN_ABLESEN_MATERIAL_ID_SCHLUESSEL, None)
+    for schluessel in list(st.session_state.keys()):
+        if schluessel.startswith(KULTUREN_ABLESEN_FORMULAR_PREFIX):
+            st.session_state.pop(schluessel, None)
 
 
 def ist_kulturen_ablesen_aktiv() -> bool:
