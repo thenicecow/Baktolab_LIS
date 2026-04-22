@@ -8,6 +8,7 @@ from typing import Literal
 
 
 ButtonTyp = Literal["primary", "secondary"]
+Aktionsgroesse = Literal["gross", "klein"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +20,7 @@ class DashboardAktionskarte:
     button_text: str
     seitenpfad: str
     button_typ: ButtonTyp = "secondary"
+    groesse: Aktionsgroesse = "klein"
 
 
 DASHBOARD_UNTERTITEL = (
@@ -37,6 +39,52 @@ DASHBOARD_STANDPUNKTE: tuple[str, ...] = (
     "Domaenenmodell und Persistenz sind strukturell vorbereitet, aber noch ohne Fachlogik.",
 )
 
+_DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
+    DashboardAktionskarte(
+        titel="Patienten erfassen",
+        beschreibung=(
+            "Neue Patienten anlegen. Die eigentliche Eingabemaske wird in einem "
+            "spaeteren Schritt ergaenzt."
+        ),
+        button_text="Patienten erfassen oeffnen",
+        seitenpfad="views/patienten_erfassen.py",
+        button_typ="primary",
+        groesse="gross",
+    ),
+    DashboardAktionskarte(
+        titel="Material erfassen",
+        beschreibung=(
+            "Neue Materialien und Proben erfassen. Die fachliche Erfassung "
+            "folgt in einem spaeteren Schritt."
+        ),
+        button_text="Material erfassen oeffnen",
+        seitenpfad="views/material_erfassen.py",
+        button_typ="primary",
+        groesse="gross",
+    ),
+    DashboardAktionskarte(
+        titel="Patientenuebersicht",
+        beschreibung="Alle bereits erfassten Patienten anzeigen und durchsuchen.",
+        button_text="Patientenuebersicht oeffnen",
+        seitenpfad="views/patientenuebersicht.py",
+        groesse="klein",
+    ),
+    DashboardAktionskarte(
+        titel="Patientendetail",
+        beschreibung="Zur Detailansicht des aktuell ausgewaehlten Patienten wechseln.",
+        button_text="Patientendetail oeffnen",
+        seitenpfad="views/patientendetail.py",
+        groesse="klein",
+    ),
+    DashboardAktionskarte(
+        titel="Resistenzrechner",
+        beschreibung="Berechnungen und Verlauf fuer das Resistenzmonitoring oeffnen.",
+        button_text="Resistenzrechner oeffnen",
+        seitenpfad="views/addition_calculator.py",
+        groesse="klein",
+    ),
+)
+
 
 def hole_anzeige_name(session_state: Mapping[str, object]) -> str:
     """Ermittelt den bevorzugten Anzeigenamen des angemeldeten Benutzers."""
@@ -52,34 +100,19 @@ def hole_anzeige_name(session_state: Mapping[str, object]) -> str:
 
 
 def hole_dashboard_aktionskarten() -> tuple[DashboardAktionskarte, ...]:
-    """Liefert die fachlichen Aktionskarten fuer das Dashboard."""
-    return (
-        DashboardAktionskarte(
-            titel="Patienten erfassen",
-            beschreibung=(
-                "Neue Patienten anlegen. Die eigentliche Eingabemaske wird in einem "
-                "spaeteren Schritt ergaenzt."
-            ),
-            button_text="Patienten erfassen oeffnen",
-            seitenpfad="views/patienten_erfassen.py",
-            button_typ="primary",
-        ),
-        DashboardAktionskarte(
-            titel="Material erfassen",
-            beschreibung=(
-                "Neue Materialien und Proben erfassen. Die fachliche Erfassung "
-                "folgt in einem spaeteren Schritt."
-            ),
-            button_text="Material erfassen oeffnen",
-            seitenpfad="views/material_erfassen.py",
-        ),
-        DashboardAktionskarte(
-            titel="Patientenuebersicht",
-            beschreibung=(
-                "Zukuenftige Uebersicht ueber alle Patienten. Dieser Bereich ist so "
-                "vorbereitet, dass spaeter alle Benutzer denselben Bestand sehen."
-            ),
-            button_text="Patientenuebersicht oeffnen",
-            seitenpfad="views/patientenuebersicht.py",
-        ),
+    """Liefert alle fachlichen Aktionskarten fuer das Dashboard."""
+    return _DASHBOARD_AKTIONSKARTEN
+
+
+def hole_hauptaktionskarten() -> tuple[DashboardAktionskarte, ...]:
+    """Liefert die gross dargestellten Hauptaktionen des Dashboards."""
+    return tuple(
+        karte for karte in _DASHBOARD_AKTIONSKARTEN if karte.groesse == "gross"
+    )
+
+
+def hole_nebenaktionskarten() -> tuple[DashboardAktionskarte, ...]:
+    """Liefert die kleiner dargestellten Nebenaktionen des Dashboards."""
+    return tuple(
+        karte for karte in _DASHBOARD_AKTIONSKARTEN if karte.groesse == "klein"
     )
