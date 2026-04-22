@@ -1,3 +1,5 @@
+"""Repository fuer zentrale Patientenpersistenz mit Legacy-Fallback beim Laden."""
+
 from __future__ import annotations
 
 import logging
@@ -8,12 +10,12 @@ from domaene import Material, Patient
 from persistenz.datei_ablage import (
     baue_datenwurzel,
     ist_patientenakten_datei,
-    patientenakten_dateiname,
-    patientenakten_dateipfad,
+    patientendaten_dateipfad,
 )
 from persistenz.json_hilfen import (
     lade_json_objekt,
-    patientenakte_als_dict,
+    patientendaten_als_dict,
+    patientendaten_aus_dict,
     patientenakte_aus_dict,
     speichere_json_objekt,
 )
@@ -25,21 +27,18 @@ logger = logging.getLogger(__name__)
 
 
 class PatientenRepository:
+    """Laedt und speichert Patienten und Materialien in einer zentralen JSON-Datei."""
+
     def __init__(self, data_manager: DataManager | None = None) -> None:
+        """Initialisiert das Repository fuer die konfigurierte Datenwurzel."""
         self.data_manager = data_manager or DataManager()
         datenwurzel = baue_datenwurzel(self.data_manager.fs_root_folder)
         self.data_handler = DataHandler(self.data_manager.fs, datenwurzel)
+        self.patientendatei = patientendaten_dateipfad()
 
     def lade_alle_patienten(self) -> list[Patient]:
-        patienten: list[Patient] = []
-
-        for dateiname in self._liste_patientendateien():
-            patientenakte = self._lade_patientenakte_aus_datei(dateiname)
-            if patientenakte is None:
-                continue
-
-            patient, _ = patientenakte
-            patienten.append(patient)
+        """Laedt alle Patienten und sortiert sie wie bisher alphabetisch."""
+        patienten = [patient for patient, _ in self._lade_patientenakten()]
 
         return sorted(
             patienten,
@@ -51,6 +50,7 @@ class PatientenRepository:
         )
 
     def lade_patient_nach_id(self, patient_id: str) -> Patient | None:
+        """Laedt einen Patienten anhand seiner ID."""
         patientenakte = self.lade_patientenakte_nach_id(patient_id)
         if patientenakte is None:
             return None
@@ -62,56 +62,50 @@ class PatientenRepository:
         self,
         patient_id: str,
     ) -> tuple[Patient, list[Material]] | None:
+        """Laedt eine Patientenakte anhand der Patienten-ID."""
         patient_id_bereinigt = self._bereinige_patient_id(patient_id)
         if patient_id_bereinigt is None:
             return None
 
-        try:
-            dateiname = patientenakten_dateiname(patient_id_bereinigt)
-        except ValueError:
-            return None
+        for patient, materialien in self._lade_patientenakten():
+            if patient.id == patient_id_bereinigt:
+                return patient, materialien
 
-        patientenakte = self._lade_patientenakte_aus_datei(dateiname)
-
-        if patientenakte is None:
-            return None
-
-        patient, materialien = patientenakte
-        if patient.id != patient_id_bereinigt:
-            return None
-
-        return patient, materialien
+        return None
 
     def speichere_neuen_patienten(self, patient: Patient) -> None:
-        dateiname = patientenakten_dateipfad(patient.id)
+        """Speichert einen neuen Patienten in der zentralen JSON-Datei."""
+        patientenakten = self._lade_patientenakten()
 
-        if self.data_handler.exists(dateiname):
-            raise ValueError(f"Patient mit ID '{patient.id}' existiert bereits.")
+        for bestehender_patient, _ in patientenakten:
+            if bestehender_patient.id == patient.id:
+                raise ValueError(f"Patient mit ID '{patient.id}' existiert bereits.")
 
         self._uebernehme_patient_metadaten(patient, None)
-        daten = patientenakte_als_dict(patient, [])
-        speichere_json_objekt(self.data_handler, dateiname, daten)
+        patientenakten.append((patient, []))
+        self._speichere_patientenakten(patientenakten)
 
     def speichere_patient_mit_materialien(
         self,
         patient: Patient,
         materialien: Sequence[Material],
     ) -> None:
-        dateiname = patientenakten_dateipfad(patient.id)
+        """Aktualisiert einen bestehenden Patienten mitsamt seiner Materialliste."""
+        patientenakten = self._lade_patientenakten()
 
-        if not self.data_handler.exists(dateiname):
+        ziel_index: int | None = None
+        bestehender_patient: Patient | None = None
+        bestehende_materialien: list[Material] = []
+
+        for index, (vorhandener_patient, vorhandene_materialien) in enumerate(patientenakten):
+            if vorhandener_patient.id == patient.id:
+                ziel_index = index
+                bestehender_patient = vorhandener_patient
+                bestehende_materialien = vorhandene_materialien
+                break
+
+        if ziel_index is None or bestehender_patient is None:
             raise ValueError(f"Patient mit ID '{patient.id}' existiert noch nicht.")
-
-        bestehende_patientenakte = self._lade_patientenakte_aus_datei(dateiname)
-        if bestehende_patientenakte is None:
-            raise ValueError(
-                f"Die bestehende Patientenakte fuer '{patient.id}' konnte nicht gelesen werden."
-            )
-
-        bestehender_patient, bestehende_materialien = bestehende_patientenakte
-
-        if bestehender_patient.id != patient.id:
-            raise ValueError("Die geladene Patientenakte passt nicht zur uebergebenen Patienten-ID.")
 
         self._uebernehme_patient_metadaten(patient, bestehender_patient)
 
@@ -129,10 +123,58 @@ class PatientenRepository:
             bestehendes_material = bestehende_materialien_nach_id.get(material.id)
             self._uebernehme_material_metadaten(material, bestehendes_material)
 
-        daten = patientenakte_als_dict(patient, materialliste)
-        speichere_json_objekt(self.data_handler, dateiname, daten)
+        patientenakten[ziel_index] = (patient, materialliste)
+        self._speichere_patientenakten(patientenakten)
+
+    def _lade_patientenakten(self) -> list[tuple[Patient, list[Material]]]:
+        """Laedt Patientenakten aus der zentralen Datei oder faellt auf Legacy-Dateien zurueck."""
+        patientenakten = self._lade_patientenakten_aus_zentraler_datei()
+        if patientenakten is not None:
+            return patientenakten
+
+        return self._lade_patientenakten_aus_legacy_dateien()
+
+    def _lade_patientenakten_aus_zentraler_datei(
+        self,
+    ) -> list[tuple[Patient, list[Material]]] | None:
+        """Laedt Patientenakten aus der zentralen Datei oder ``None`` bei fehlender Datei."""
+        rohdaten = lade_json_objekt(self.data_handler, self.patientendatei)
+        if rohdaten is None:
+            return None
+
+        try:
+            return patientendaten_aus_dict(rohdaten)
+        except ValueError as exc:
+            logger.warning(
+                "Zentrale Patientendatei ist ungueltig (%s): %s",
+                self.patientendatei,
+                exc,
+            )
+            return None
+
+    def _lade_patientenakten_aus_legacy_dateien(self) -> list[tuple[Patient, list[Material]]]:
+        """Laedt alte Einzeldateien defensiv als Fallback."""
+        patientenakten: list[tuple[Patient, list[Material]]] = []
+
+        for dateiname in self._liste_patientendateien():
+            patientenakte = self._lade_patientenakte_aus_datei(dateiname)
+            if patientenakte is None:
+                continue
+
+            patientenakten.append(patientenakte)
+
+        return patientenakten
+
+    def _speichere_patientenakten(
+        self,
+        patientenakten: Sequence[tuple[Patient, Sequence[Material]]],
+    ) -> None:
+        """Schreibt alle Patientenakten in die zentrale JSON-Datei."""
+        daten = patientendaten_als_dict(patientenakten)
+        speichere_json_objekt(self.data_handler, self.patientendatei, daten)
 
     def _liste_patientendateien(self) -> list[str]:
+        """Liest die Legacy-Einzeldateien der Patientenakten aus der Datenwurzel."""
         if not self._datenwurzel_verfuegbar():
             return []
 
@@ -159,6 +201,7 @@ class PatientenRepository:
         self,
         dateiname: str,
     ) -> tuple[Patient, list[Material]] | None:
+        """Laedt und validiert eine Legacy-Einzeldatei einer Patientenakte."""
         rohdaten = lade_json_objekt(self.data_handler, dateiname)
         if rohdaten is None:
             return None
@@ -170,6 +213,7 @@ class PatientenRepository:
             return None
 
     def _datenwurzel_verfuegbar(self) -> bool:
+        """Prueft, ob die konfigurierte Datenwurzel erreichbar ist."""
         try:
             return self.data_handler.filesystem.exists(self.data_handler.root_path)
         except (FileNotFoundError, OSError, ValueError):
@@ -177,6 +221,7 @@ class PatientenRepository:
 
     @staticmethod
     def _name_aus_listeneintrag(eintrag: object) -> str | None:
+        """Extrahiert einen Dateinamen aus einem Filesystem-Listeneintrag."""
         if isinstance(eintrag, dict):
             eintragstyp = str(eintrag.get("type", "")).lower()
             if eintragstyp and eintragstyp != "file":
@@ -195,6 +240,7 @@ class PatientenRepository:
 
     @staticmethod
     def _bereinige_patient_id(patient_id: str | None) -> str | None:
+        """Bereinigt eine optionale Patienten-ID fuer Suchzugriffe."""
         if not isinstance(patient_id, str):
             return None
 
@@ -206,6 +252,7 @@ class PatientenRepository:
         patient: Patient,
         bestehender_patient: Patient | None,
     ) -> None:
+        """Ergaenzt fehlende Erstellmetadaten eines Patienten aus bestehenden Daten."""
         if bestehender_patient is not None:
             if patient.erstellt_am is None:
                 patient.erstellt_am = bestehender_patient.erstellt_am
@@ -220,6 +267,7 @@ class PatientenRepository:
         material: Material,
         bestehendes_material: Material | None,
     ) -> None:
+        """Ergaenzt fehlende Erstellmetadaten eines Materials aus bestehenden Daten."""
         if bestehendes_material is not None:
             if material.erstellt_am is None:
                 material.erstellt_am = bestehendes_material.erstellt_am

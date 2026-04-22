@@ -1,3 +1,5 @@
+"""Hilfen fuer JSON-Serialisierung und defensives Laden von Patientendaten."""
+
 from __future__ import annotations
 
 import logging
@@ -21,6 +23,7 @@ def lade_json_objekt(
     data_handler: DataHandler,
     relativer_pfad: str,
 ) -> dict[str, Any] | None:
+    """Laedt ein JSON-Objekt und gibt bei Problemen ``None`` zurueck."""
     try:
         if not data_handler.exists(relativer_pfad):
             return None
@@ -46,10 +49,12 @@ def speichere_json_objekt(
     relativer_pfad: str,
     daten: Mapping[str, Any],
 ) -> None:
+    """Speichert ein Mapping als JSON-Objekt."""
     data_handler.save(relativer_pfad, dict(daten))
 
 
 def patient_als_dict(patient: Patient) -> dict[str, Any]:
+    """Serialisiert einen Patienten in JSON-taugliche Daten."""
     return {
         "id": patient.id.strip(),
         "vorname": patient.vorname.strip(),
@@ -62,6 +67,7 @@ def patient_als_dict(patient: Patient) -> dict[str, Any]:
 
 
 def patient_aus_dict(daten: Mapping[str, Any]) -> Patient:
+    """Deserialisiert einen Patienten aus Mapping-Daten."""
     return Patient(
         id=lese_textpflichtfeld(daten, "id"),
         vorname=lese_textpflichtfeld(daten, "vorname"),
@@ -74,6 +80,7 @@ def patient_aus_dict(daten: Mapping[str, Any]) -> Patient:
 
 
 def material_als_dict(material: Material) -> dict[str, Any]:
+    """Serialisiert ein Material in JSON-taugliche Daten."""
     materialtyp_code_roh = material.materialtyp_code.strip()
     materialtyp_code = normalisiere_materialtyp_code(materialtyp_code_roh)
 
@@ -92,7 +99,7 @@ def material_als_dict(material: Material) -> dict[str, Any]:
         "id": material.id.strip(),
         "patient_id": material.patient_id.strip(),
         "materialtyp_code": materialtyp_code,
-        "klinische_frage_code": analyse_code,
+        "analyse_code": analyse_code,
         "abnahmedatum": material.abnahmedatum.isoformat(),
         "eingangsdatum": material.eingangsdatum.isoformat(),
         "erstellt_am": zeitpunkt_als_iso(material.erstellt_am),
@@ -101,17 +108,31 @@ def material_als_dict(material: Material) -> dict[str, Any]:
 
 
 def material_aus_dict(daten: Mapping[str, Any]) -> Material:
+    """Deserialisiert ein Material aus Mapping-Daten."""
     materialtyp_code_roh = lese_textpflichtfeld(daten, "materialtyp_code")
     materialtyp_code = normalisiere_materialtyp_code(materialtyp_code_roh)
 
     if materialtyp_code is None:
         materialtyp_code = materialtyp_code_roh.strip()
 
+    analyse_code_roh = daten.get("analyse_code")
+    if analyse_code_roh is None:
+        analyse_code_roh = daten.get("klinische_frage_code")
+
+    if not isinstance(analyse_code_roh, str):
+        raise ValueError(
+            "Feld 'analyse_code' oder 'klinische_frage_code' fehlt oder ist kein Text."
+        )
+
+    analyse_code = analyse_code_roh.strip()
+    if not analyse_code:
+        raise ValueError("Feld 'analyse_code' oder 'klinische_frage_code' darf nicht leer sein.")
+
     return Material(
         id=lese_textpflichtfeld(daten, "id"),
         patient_id=lese_textpflichtfeld(daten, "patient_id"),
         materialtyp_code=materialtyp_code,
-        klinische_frage_code=lese_textpflichtfeld(daten, "klinische_frage_code"),
+        klinische_frage_code=analyse_code,
         abnahmedatum=lese_datumpflichtfeld_mit_fallback(
             daten,
             schluessel="abnahmedatum",
@@ -127,10 +148,33 @@ def material_aus_dict(daten: Mapping[str, Any]) -> Material:
     )
 
 
+def patient_mit_materialien_als_dict(
+    patient: Patient,
+    materialien: Sequence[Material],
+) -> dict[str, Any]:
+    """Serialisiert einen Patienten mit seiner Materialliste fuer die Zieldatei."""
+    patientendaten = patient_als_dict(patient)
+    patientendaten["materialien"] = materialien_als_listendaten(materialien)
+    return patientendaten
+
+
+def patientendaten_als_dict(
+    patientenakten: Sequence[tuple[Patient, Sequence[Material]]],
+) -> dict[str, Any]:
+    """Serialisiert alle Patientenakten in das zentrale JSON-Format."""
+    return {
+        "patienten": [
+            patient_mit_materialien_als_dict(patient, materialien)
+            for patient, materialien in patientenakten
+        ]
+    }
+
+
 def patientenakte_als_dict(
     patient: Patient,
     materialien: Sequence[Material],
 ) -> dict[str, Any]:
+    """Serialisiert eine einzelne Patientenakte im bisherigen Dateiformat."""
     return {
         "patient": patient_als_dict(patient),
         "materialien": materialien_als_listendaten(materialien),
@@ -138,6 +182,7 @@ def patientenakte_als_dict(
 
 
 def materialien_als_listendaten(materialien: Sequence[Material]) -> list[dict[str, Any]]:
+    """Serialisiert mehrere Materialien in eine JSON-Liste."""
     listendaten: list[dict[str, Any]] = []
 
     for index, material in enumerate(materialien, start=1):
@@ -149,19 +194,65 @@ def materialien_als_listendaten(materialien: Sequence[Material]) -> list[dict[st
     return listendaten
 
 
+def patient_mit_materialien_aus_dict(
+    daten: Mapping[str, Any],
+) -> tuple[Patient, list[Material]]:
+    """Liest einen Patienten mit Materialliste aus einem Eintrag der Zieldatei."""
+    patient = patient_aus_dict(daten)
+    materialien = _lese_materialien_aus_rohdaten(patient, daten.get("materialien", []))
+    return patient, materialien
+
+
+def patientendaten_aus_dict(
+    daten: Mapping[str, Any],
+) -> list[tuple[Patient, list[Material]]]:
+    """Liest alle Patientenakten aus dem zentralen JSON-Format."""
+    if "patienten" not in daten:
+        raise ValueError("Feld 'patienten' fehlt.")
+
+    patienten_rohdaten = daten.get("patienten")
+
+    if patienten_rohdaten is None:
+        patienten_rohdaten = []
+    elif not isinstance(patienten_rohdaten, list):
+        raise ValueError("Feld 'patienten' ist ungueltig.")
+
+    patientenakten: list[tuple[Patient, list[Material]]] = []
+
+    for index, eintrag in enumerate(patienten_rohdaten, start=1):
+        if not isinstance(eintrag, Mapping):
+            logger.warning("Patienteneintrag %s ist ungueltig und wird uebersprungen.", index)
+            continue
+
+        try:
+            patientenakten.append(patient_mit_materialien_aus_dict(eintrag))
+        except ValueError as exc:
+            logger.warning("Patienteneintrag %s wird uebersprungen: %s", index, exc)
+
+    return patientenakten
+
+
 def patientenakte_aus_dict(
     daten: Mapping[str, Any],
 ) -> tuple[Patient, list[Material]]:
+    """Liest eine einzelne Patientenakte aus dem bisherigen Dateiformat."""
     patient_rohdaten = lese_dict(daten, "patient")
-    materialien_rohdaten = daten.get("materialien", [])
+    patient = patient_aus_dict(patient_rohdaten)
+    materialien = _lese_materialien_aus_rohdaten(patient, daten.get("materialien", []))
+    return patient, materialien
 
+
+def _lese_materialien_aus_rohdaten(
+    patient: Patient,
+    materialien_rohdaten: object,
+) -> list[Material]:
+    """Liest Materialrohdaten defensiv fuer einen bestimmten Patienten."""
     if materialien_rohdaten is None:
         materialien_rohdaten = []
     elif not isinstance(materialien_rohdaten, list):
         logger.warning("Feld 'materialien' ist ungueltig und wird als leer behandelt.")
         materialien_rohdaten = []
 
-    patient = patient_aus_dict(patient_rohdaten)
     materialien: list[Material] = []
 
     for index, eintrag in enumerate(materialien_rohdaten, start=1):
@@ -184,10 +275,11 @@ def patientenakte_aus_dict(
 
         materialien.append(material)
 
-    return patient, materialien
+    return materialien
 
 
 def lese_dict(daten: Mapping[str, Any], schluessel: str) -> Mapping[str, Any]:
+    """Liest ein Pflichtfeld als Mapping."""
     wert = daten.get(schluessel)
 
     if not isinstance(wert, Mapping):
@@ -197,6 +289,7 @@ def lese_dict(daten: Mapping[str, Any], schluessel: str) -> Mapping[str, Any]:
 
 
 def lese_textpflichtfeld(daten: Mapping[str, Any], schluessel: str) -> str:
+    """Liest ein Pflichtfeld als nichtleeren Text."""
     wert = daten.get(schluessel)
 
     if not isinstance(wert, str):
@@ -214,6 +307,7 @@ def lese_textfeld_mit_standard(
     schluessel: str,
     standardwert: str,
 ) -> str:
+    """Liest ein Textfeld und nutzt bei fehlendem Wert einen Standard."""
     wert = daten.get(schluessel)
 
     if wert is None:
@@ -227,6 +321,7 @@ def lese_textfeld_mit_standard(
 
 
 def lese_optional_textfeld(daten: Mapping[str, Any], schluessel: str) -> str | None:
+    """Liest ein optionales Textfeld und normalisiert Leerwerte zu ``None``."""
     wert = daten.get(schluessel)
 
     if wert is None:
@@ -240,6 +335,7 @@ def lese_optional_textfeld(daten: Mapping[str, Any], schluessel: str) -> str | N
 
 
 def lese_datumpflichtfeld(daten: Mapping[str, Any], schluessel: str) -> date:
+    """Liest ein Pflichtfeld als ISO-Datum."""
     textwert = lese_textpflichtfeld(daten, schluessel)
 
     try:
@@ -253,6 +349,7 @@ def lese_datumpflichtfeld_mit_fallback(
     schluessel: str,
     fallback_schluessel: str,
 ) -> date:
+    """Liest ein Pflichtdatum und faellt bei Bedarf auf einen Alternativschluessel zurueck."""
     try:
         return lese_datumpflichtfeld(daten, schluessel)
     except ValueError:
@@ -266,6 +363,7 @@ def lese_datumpflichtfeld_mit_fallback(
 
 
 def lese_optional_zeitpunkt(daten: Mapping[str, Any], schluessel: str) -> datetime | None:
+    """Liest ein optionales Feld als ISO-Zeitpunkt."""
     textwert = lese_optional_textfeld(daten, schluessel)
 
     if textwert is None:
@@ -278,6 +376,7 @@ def lese_optional_zeitpunkt(daten: Mapping[str, Any], schluessel: str) -> dateti
 
 
 def zeitpunkt_als_iso(zeitpunkt: datetime | None) -> str | None:
+    """Wandelt einen optionalen Zeitpunkt in ISO-Text um."""
     if zeitpunkt is None:
         return None
 
@@ -285,9 +384,11 @@ def zeitpunkt_als_iso(zeitpunkt: datetime | None) -> str | None:
 
 
 def optionaler_text(wert: str | None) -> str | None:
+    """Bereinigt optionalen Text und gibt Leerwerte als ``None`` zurueck."""
     if wert is None:
         return None
 
     bereinigt = wert.strip()
     return bereinigt or None
+
 
