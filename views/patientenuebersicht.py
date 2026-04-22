@@ -1,50 +1,26 @@
+"""Streamlit-Seite fuer die Uebersicht aller Patienten."""
+
 from __future__ import annotations
 
 import streamlit as st
 
 from domaene import Patient
-from persistenz import PatientenRepository
-from ui.anzeige_hilfen import (
-    baue_technische_fehlernachricht,
-    formatiere_datum,
-    formatiere_zeitpunkt,
+from functions.gemeinsam.anzeige_hilfen import formatiere_datum, formatiere_zeitpunkt
+from functions.patienten.uebersicht import (
+    filtere_patienten,
+    lade_patienten,
+    merke_patient_fuer_detailansicht,
 )
 
 
-PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
-
-
-def sortiere_patienten(patienten: list[Patient]) -> list[Patient]:
-    return sorted(
-        patienten,
-        key=lambda patient: (
-            patient.erstellt_am is not None,
-            patient.erstellt_am.timestamp() if patient.erstellt_am is not None else float("-inf"),
-        ),
-        reverse=True,
-    )
-
-
-def filtere_patienten(patienten: list[Patient], suchtext: str) -> list[Patient]:
-    suchtext_bereinigt = suchtext.strip().casefold()
-
-    if not suchtext_bereinigt:
-        return patienten
-
-    return [
-        patient
-        for patient in patienten
-        if suchtext_bereinigt in patient.vorname.casefold()
-        or suchtext_bereinigt in patient.nachname.casefold()
-    ]
-
-
 def oeffne_patientendetail(patient_id: str) -> None:
-    st.session_state[PATIENTENDETAIL_ID_SCHLUESSEL] = patient_id
+    """Merkt sich den Patienten und oeffnet die Detailansicht."""
+    merke_patient_fuer_detailansicht(patient_id)
     st.switch_page("views/patientendetail.py")
 
 
 def zeige_leermeldung() -> None:
+    """Zeigt eine Leermeldung an, wenn noch keine Patienten vorhanden sind."""
     st.info("Es sind noch keine Patienten erfasst.")
     linke_spalte, rechte_spalte = st.columns(2)
 
@@ -64,10 +40,12 @@ def zeige_leermeldung() -> None:
 
 
 def zeige_leermeldung_keine_treffer(suchtext: str) -> None:
+    """Zeigt eine Meldung an, wenn die Suche keine Treffer liefert."""
     st.info(f"Es wurden keine Patienten zur Suche '{suchtext.strip()}' gefunden.")
 
 
 def zeige_tabellenkopf() -> None:
+    """Rendert den Tabellenkopf der Patientenliste."""
     spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.2))
     ueberschriften = (
         "Vorname",
@@ -83,6 +61,7 @@ def zeige_tabellenkopf() -> None:
 
 
 def zeige_patientenzeile(patient: Patient) -> None:
+    """Rendert eine einzelne Zeile der Patientenliste."""
     with st.container(border=True):
         spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.2))
 
@@ -100,19 +79,8 @@ def zeige_patientenzeile(patient: Patient) -> None:
             oeffne_patientendetail(patient.id)
 
 
-def lade_patienten() -> list[Patient] | None:
-    repository = PatientenRepository()
-
-    try:
-        patienten = repository.lade_alle_patienten()
-    except Exception:
-        st.error(baue_technische_fehlernachricht("Die Patienten konnten nicht geladen werden."))
-        return None
-
-    return sortiere_patienten(patienten)
-
-
 def main() -> None:
+    """Rendert die Patientenuebersicht und bindet die Fachlogik ein."""
     st.title("Patientenuebersicht")
     st.write("Hier siehst du alle erfassten Patienten.")
 
@@ -161,4 +129,3 @@ def main() -> None:
 
 
 main()
-

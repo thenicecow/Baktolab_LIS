@@ -1,99 +1,40 @@
-from __future__ import annotations
+"""Streamlit-Seite fuer die Detailansicht eines Patienten."""
 
-from datetime import date, datetime
+from __future__ import annotations
 
 import streamlit as st
 
 from domaene import ANALYSEN, MATERIALTYPEN, Material, Patient
-from persistenz import PatientenRepository
-from ui.anzeige_hilfen import (
-    baue_technische_fehlernachricht,
+from functions.gemeinsam.anzeige_hilfen import (
     formatiere_datum,
     formatiere_text,
     formatiere_zeitpunkt,
     loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
-
-
-PATIENTENDETAIL_ID_SCHLUESSEL = "patientendetail_patient_id"
-MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL = "material_erfassen_patient_id"
-MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL = "material_erfassen_erfolgsmeldung"
-ALLE_FILTER_OPTION = ""
-MATERIALTYP_FILTER_SCHLUESSEL = "patientendetail_filter_materialtyp"
-ANALYSE_FILTER_SCHLUESSEL = "patientendetail_filter_analyse"
-
-
-def material_sortierschluessel(material: Material) -> tuple[int, int, int, float]:
-    abnahmedatum = material.abnahmedatum if isinstance(material.abnahmedatum, date) else None
-    erstellt_am = material.erstellt_am if isinstance(material.erstellt_am, datetime) else None
-
-    return (
-        1 if abnahmedatum is not None else 0,
-        abnahmedatum.toordinal() if abnahmedatum is not None else -1,
-        1 if erstellt_am is not None else 0,
-        erstellt_am.timestamp() if erstellt_am is not None else float("-inf"),
-    )
-
-
-def sortiere_materialien(materialien: list[Material]) -> list[Material]:
-    return sorted(materialien, key=material_sortierschluessel, reverse=True)
-
-
-def filtere_materialien(
-    materialien: list[Material],
-    materialtyp_code: str | None,
-    analyse_code: str | None,
-) -> list[Material]:
-    gefilterte_materialien: list[Material] = []
-
-    for material in materialien:
-        if materialtyp_code and material.materialtyp_code != materialtyp_code:
-            continue
-
-        if analyse_code and material.klinische_frage_code != analyse_code:
-            continue
-
-        gefilterte_materialien.append(material)
-
-    return gefilterte_materialien
-
-
-def starte_material_erfassen(patient_id: str) -> None:
-    st.session_state[MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL] = patient_id
-    st.switch_page("views/material_erfassen.py")
-
-
-def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
-    patient_id = st.session_state.get(PATIENTENDETAIL_ID_SCHLUESSEL)
-
-    if not isinstance(patient_id, str) or not patient_id.strip():
-        st.info("Es wurde noch kein Patient ausgewaehlt.")
-        return None
-
-    repository = PatientenRepository()
-
-    try:
-        patientenakte = repository.lade_patientenakte_nach_id(patient_id)
-    except Exception:
-        st.error(baue_technische_fehlernachricht("Der ausgewaehlte Patient konnte nicht geladen werden."))
-        return None
-
-    if patientenakte is None:
-        st.warning("Der ausgewaehlte Patient wurde nicht gefunden.")
-        return None
-
-    return patientenakte
+from functions.patienten.detail import (
+    ALLE_FILTER_OPTION,
+    ANALYSE_FILTER_SCHLUESSEL,
+    MATERIALTYP_FILTER_SCHLUESSEL,
+    filtere_materialien,
+    hole_und_entferne_erfolgsmeldung,
+    initialisiere_filterzustand,
+    lade_patientenakte,
+    merke_patient_id_fuer_material_erfassen,
+    sortiere_materialien,
+)
 
 
 def zeige_erfolgsmeldung() -> None:
-    erfolgsmeldung = st.session_state.pop(MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL, None)
+    """Zeigt eine gespeicherte Erfolgsmeldung an."""
+    erfolgsmeldung = hole_und_entferne_erfolgsmeldung()
 
     if erfolgsmeldung:
         st.success(erfolgsmeldung)
 
 
 def zeige_aktionsleiste(patient: Patient | None) -> None:
+    """Rendert die Aktionsleiste der Detailansicht."""
     linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
 
     with linke_spalte:
@@ -117,10 +58,12 @@ def zeige_aktionsleiste(patient: Patient | None) -> None:
             type="primary",
             disabled=patient is None,
         ) and patient is not None:
-            starte_material_erfassen(patient.id)
+            merke_patient_id_fuer_material_erfassen(patient.id)
+            st.switch_page("views/material_erfassen.py")
 
 
 def zeige_stammdaten(patient: Patient) -> None:
+    """Zeigt die Stammdaten des Patienten an."""
     st.subheader("Stammdaten")
 
     with st.container(border=True):
@@ -137,20 +80,8 @@ def zeige_stammdaten(patient: Patient) -> None:
             st.markdown(f"**Erstellt von:** {formatiere_text(patient.erstellt_von_user_id)}")
 
 
-def initialisiere_filterzustand(
-    materialtyp_optionen: list[str],
-    analyse_optionen: list[str],
-) -> None:
-    materialtyp_wert = st.session_state.get(MATERIALTYP_FILTER_SCHLUESSEL)
-    if not isinstance(materialtyp_wert, str) or materialtyp_wert not in materialtyp_optionen:
-        st.session_state[MATERIALTYP_FILTER_SCHLUESSEL] = ALLE_FILTER_OPTION
-
-    analyse_wert = st.session_state.get(ANALYSE_FILTER_SCHLUESSEL)
-    if not isinstance(analyse_wert, str) or analyse_wert not in analyse_optionen:
-        st.session_state[ANALYSE_FILTER_SCHLUESSEL] = ALLE_FILTER_OPTION
-
-
 def zeige_filterleiste() -> tuple[str | None, str | None]:
+    """Rendert die Filter fuer Materialtyp und Analyse."""
     materialtyp_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in MATERIALTYPEN]
     analyse_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in ANALYSEN]
 
@@ -189,6 +120,7 @@ def zeige_filterleiste() -> tuple[str | None, str | None]:
 
 
 def zeige_material_log(materialien: list[Material]) -> None:
+    """Zeigt das Material-Log des Patienten an."""
     st.subheader("Material-Log")
 
     if not materialien:
@@ -243,6 +175,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
 
 def main() -> None:
+    """Rendert die Patientendetailansicht."""
     st.title("Patientendetail")
     zeige_erfolgsmeldung()
 
@@ -264,6 +197,5 @@ def main() -> None:
 
 
 main()
-
 
 
