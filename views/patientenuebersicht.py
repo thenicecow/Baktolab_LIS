@@ -9,7 +9,12 @@ import streamlit as st
 
 from domaene import Patient
 from functions.gemeinsam.anzeige_hilfen import formatiere_datum, formatiere_zeitpunkt
-from functions.patienten.loeschen import hole_und_entferne_erfolgsmeldung
+from functions.patienten.loeschen import (
+    bereinige_patientbezogenen_zustand_nach_loeschung,
+    hole_und_entferne_erfolgsmeldung,
+    loesche_patient,
+    merke_erfolgreiche_loeschung,
+)
 from functions.patienten.navigation import (
     aktiviere_patientenbearbeitung,
     aktiviere_patientendetailansicht,
@@ -46,6 +51,18 @@ def oeffne_patientbearbeitung(patient_id: str) -> None:
         st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
         return
 
+    st.rerun()
+
+
+def bestaetige_und_loesche_patient(patient: Patient) -> None:
+    """Loescht einen Patienten ueber die bestehende Loeschlogik und aktualisiert die Uebersicht."""
+    erfolgsmeldung = loesche_patient(patient.id)
+
+    if erfolgsmeldung is None:
+        return
+
+    bereinige_patientbezogenen_zustand_nach_loeschung()
+    merke_erfolgreiche_loeschung(erfolgsmeldung)
     st.rerun()
 
 
@@ -96,7 +113,7 @@ def zeige_leermeldung_keine_treffer(suchtext: str) -> None:
 
 def zeige_tabellenkopf() -> None:
     """Rendert den Tabellenkopf der Patientenliste."""
-    spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.1, 1.3))
+    spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.1, 1.3, 1.3))
     ueberschriften = (
         "Vorname",
         "Nachname",
@@ -105,16 +122,35 @@ def zeige_tabellenkopf() -> None:
         "Erstellt am",
         "Details",
         "Bearbeiten",
+        "Loeschen",
     )
 
     for spalte, ueberschrift in zip(spalten, ueberschriften):
         spalte.markdown(f"**{ueberschrift}**")
 
 
+def zeige_loeschaktion(patient: Patient) -> None:
+    """Zeigt die abgesicherte Loeschaktion fuer einen Patienten in der Uebersicht an."""
+    with st.popover("Loeschen", use_container_width=True):
+        st.warning(
+            f"Patient {patient.vorname} {patient.nachname} wird mit allen "
+            "zugehoerigen Materialien und Kulturdaten dauerhaft geloescht."
+        )
+        st.caption("Diese Aktion kann nicht rueckgaengig gemacht werden.")
+
+        if st.button(
+            "Loeschen bestaetigen",
+            key=f"patient_loeschen_{patient.id}",
+            type="primary",
+            use_container_width=True,
+        ):
+            bestaetige_und_loesche_patient(patient)
+
+
 def zeige_patientenzeile(patient: Patient) -> None:
     """Rendert eine einzelne Zeile der Patientenliste."""
     with st.container(border=True):
-        spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.1, 1.3))
+        spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.1, 1.3, 1.3))
 
         spalten[0].write(patient.vorname)
         spalten[1].write(patient.nachname)
@@ -135,6 +171,9 @@ def zeige_patientenzeile(patient: Patient) -> None:
             use_container_width=True,
         ):
             oeffne_patientbearbeitung(patient.id)
+
+        with spalten[7]:
+            zeige_loeschaktion(patient)
 
 
 def main() -> None:
@@ -210,3 +249,4 @@ def main() -> None:
 
 
 main()
+
