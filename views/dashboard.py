@@ -6,7 +6,6 @@ import streamlit as st
 
 from functions.dashboard.logik import (
     DASHBOARD_HINWEIS,
-    DASHBOARD_STANDPUNKTE,
     DASHBOARD_UNTERTITEL,
     DashboardAktionskarte,
     hole_anzeige_name,
@@ -72,9 +71,7 @@ def main() -> None:
             with spalte:
                 zeige_nebenaktionskarte(karte)
 
-    st.markdown("### Aktueller Stand")
-    for standpunkt in DASHBOARD_STANDPUNKTE:
-        st.markdown(f"- {standpunkt}")
+
 
 
 main()

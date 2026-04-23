@@ -33,11 +33,6 @@ DASHBOARD_HINWEIS = (
     "und anschliessend in der Patientenuebersicht weiterarbeiten."
 )
 
-DASHBOARD_STANDPUNKTE: tuple[str, ...] = (
-    "Dashboard und Kernnavigation sind vorbereitet.",
-    "Die Bereiche Patienten, Material und Uebersicht sind bewusst als Platzhalter angelegt.",
-    "Domaenenmodell und Persistenz sind strukturell vorbereitet, aber noch ohne Fachlogik.",
-)
 
 _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
     DashboardAktionskarte(
@@ -74,6 +69,13 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         beschreibung="Berechnungen und Verlauf fuer das Resistenzmonitoring oeffnen.",
         button_text="Resistenzrechner oeffnen",
         seitenpfad="views/addition_calculator.py",
+        groesse="klein",
+    ),
+    DashboardAktionskarte(
+        titel="Kulturen ablesen",
+        beschreibung="Kulturdaten und berechnete Beurteilung werden materialbezogen angezeigt.",
+        button_text="Kulturen ablesen oeffnen",
+        seitenpfad="views/kulturen_ablesen.py",
         groesse="klein",
     ),
 )
