@@ -1,97 +1,116 @@
 # Laborinformationssystem (LIS) Baktolab
 
-Diese Applikation dient der digitalen Erfassung, Verwaltung und Analyse mikrobiologischer Labordaten im Rahmen eines Studienprojekts.  
-Sie richtet sich an Laborpersonal (z. B. in der Mikrobiologie) und unterstützt dabei, Arbeitsprozesse effizient zu dokumentieren und Resistenzanalysen strukturiert durchzuführen.
+Diese Applikation dient der digitalen Erfassung, Verwaltung und Auswertung mikrobiologischer Labordaten im Rahmen eines Studienprojekts.
+Sie richtet sich an Laborpersonal und unterstützt dabei, Patientendaten, Materialien und erste Auswertungsschritte strukturiert zu dokumentieren.
 
 ---
 
-## ✨ Ziel der App
+## Ziel der App
 
-Ziel ist die Entwicklung eines benutzerfreundlichen und praxisnahen Laborinformationssystems, das:
+Ziel ist die Entwicklung eines verständlichen und praxisnahen Laborinformationssystems, das:
 
-- Patientendaten, Materialien und Laboranalysen systematisch erfasst  
-- mikrobiologische Prozesse wie Identifikation und Resistenzbestimmung unterstützt  
-- komplexe Informationen verständlich und strukturiert darstellt  
-- Laborpersonal im Arbeitsalltag entlastet und Fehler reduziert  
+- Patientendaten zentral erfasst
+- Materialien patientenbezogen dokumentiert
+- Kulturdaten für ausgewählte Materialien speicherbar macht
+- ein einfaches Resistenzmonitoring mit Verlauf und Visualisierung unterstützt
+- den geplanten Laborablauf in einer klaren Benutzerführung abbildet
 
-Die Anwendung ist bewusst einfach gestaltet, um auch bei neuen Technologien eine intuitive Nutzung zu ermöglichen – insbesondere für erfahrenes Laborpersonal mit geringer technischer Affinität.
-
----
-
-## 🧭 Funktionen der App
-
-### Login & Registrierung(V0)
-- Anmeldung bestehender Benutzer  
-- Erstellung eines neuen Benutzerkontos  
-
-### Dashboard(V0)
-- Zentrale Startseite der Anwendung  
-- Navigation zu allen Hauptfunktionen (Patienten, Material, Auswertung)  
-
-### Patientenaufnahme(V0)
-- Eingabemaske zur Erfassung von Patientendaten (ID, Name, Geburtsdatum, Geschlecht, Station)  
-
-### Materialaufnahme(V0)
-- Formular zur Aufnahme und Verwaltung von Probenmaterialien (z. B. Blut, Urin, Agarplatten)  
-
-### Wachstum / Keimzahl-Auswertung(V0)
-- Eingabemaske zur Auswertung der Platten:
-  - Identifikationsnummer  
-  - Anzahl Kolonien  
-  - Wachstum / Keimzahl  
-- Strukturierte Erfassung mehrerer Proben gleichzeitig  
-
-### Plattenansatz & Inkubation (V1)
-- Übersicht über angesetzte Proben  
-- Anzeige von Medium, Datum und Inkubationsbedingungen  
-
-### Resistenzrechner (V2)
-- Eingabe von Keim, Antibiotikum und Hemmhofdurchmesser  
-- Interpretation nach EUCAST (Sensibel / Resistenz / Intermediär)  
-
-### Ergebnisse / Befund (V2)
-- Übersicht der erfassten und berechneten Resultate  
-- Zusammenführung von Keimzahl, Identifikation und Resistenzdaten  
+Die Anwendung ist bewusst einfach gestaltet, damit auch Nutzerinnen und Nutzer mit geringer technischer Affinität sicher damit arbeiten können.
 
 ---
 
-## 🚀 Nutzungshinweise (Geplant noch nicht verfügbar)
+## Aktueller Funktionsstand
 
-- Öffne die Anwendung (lokal oder im Deployment)
+### Login und Benutzerkonto
+- Anmeldung bestehender Benutzer
+- Erstellung eines neuen Benutzerkontos
+- Passwort-Zurücksetzen mit temporärem Passwort
 
-- Wähle im Dashboard den gewünschten Bereich:
-  - **Patientenaufnahme** → neuen Patienten erfassen  
-  - **Materialaufnahme** → Material oder Probe erfassen  
-  - **Resistenzrechner** → Antibiogramm berechnen  
-  - **MALDI-TOF** → Identifikationsergebnis eingeben  
+### Dashboard
+- Zentrale Startseite der Anwendung
+- Direkter Einstieg in die wichtigsten Arbeitsbereiche
 
-- Gib die Daten über die Eingabemasken ein  
+### Patienten erfassen
+- Erfassung neuer Patienten
+- Automatische Vergabe einer Patienten-ID
 
-- Klicke auf **„Speichern“** oder **„Berechnen“**, um die Eingaben zu verarbeiten  
+### Patientenübersicht
+- Übersicht aller erfassten Patienten
+- Suche nach Vorname oder Nachname
+- Öffnen der Patientendetails
+- Bearbeiten und Löschen von Patienten
 
-- Wechsel zur **Ergebnis-/Übersichtsseite**, um Resultate und Analysen einzusehen  
+### Patientendetails
+- Anzeige der Stammdaten
+- Übersicht der zugehörigen Materialien
+- Filter nach Materialtyp und Analyse
+- Anzeige von Ansatzhinweisen
+
+### Material erfassen
+- Erfassung neuer Materialien für bestehende Patienten
+- Auswahl von Materialtyp, Analyse, Abnahmedatum und Eingangsdatum
+
+### Kulturen ablesen
+- Erfassung von Kulturdaten für unterstützte Materialien
+- Aktuell unterstützt für Urin mit der Analyse "Allgemeine Bakteriologie"
+- Speicherung und Berechnung einer materialbezogenen Beurteilung
+
+### Resistenzmonitoring
+- Eingabe von Keim, Antibiotikum und Fallzahlen
+- Berechnung der Resistenzrate
+- Speicherung benutzerspezifischer Verlaufsdaten
+- Tabellarische und grafische Darstellung
 
 ---
 
-## 🧪 Technische Umsetzung (optional)
+## Nutzung
 
-- Entwicklung mit **Python & Streamlit**  
-- Modulare Struktur:
-  - `pages/` → einzelne Funktionsbereiche (Patient, Material, Analyse etc.)  
-  - `utils/` → Datenverarbeitung, Berechnungen (z. B. EUCAST), UI-Komponenten  
-
----
-
-## 👥 Autoren
-
-- Kevin Engehausen (engehkev@students.zhaw.ch)
-- David Hascher (haschdav@students.zhaw.ch)
-- Léa Grandchamnp (grandlea@students.zhaw.ch)
-- Brigit Marxer (marxebri@students.zhaw.ch)
-
+1. Anwendung starten und anmelden.
+2. Im Dashboard einen Bereich auswählen.
+3. Zuerst einen Patienten erfassen.
+4. Danach Material für diesen Patienten erfassen.
+5. In den Patientendetails weiterarbeiten.
+6. Bei unterstützten Materialien optional die Seite **Kulturen ablesen** öffnen.
+7. Für Resistenzauswertungen die Seite **Resistenzmonitoring** verwenden.
 
 ---
 
-## 🧾 Projektkontext
+## Technische Umsetzung
 
-Dieses Projekt entstand im Rahmen eines Studienprojekts und dient der praktischen Umsetzung eines digitalen Laborinformationssystems mit Fokus auf mikrobiologische Diagnostik und Resistenzanalyse.
+- Entwicklung mit `Python` und `Streamlit`
+- Dateibasierte Datenablage über WebDAV in Switchdrive
+- Modulare Struktur mit getrennten Bereichen für:
+  - `views/` für Seiten
+  - `functions/` für Fachlogik
+  - `persistenz/` für Datenzugriff
+  - `domaene/` für Modelle und Lookup-Werte
+  - `ui/` für wiederverwendbare Oberflächenelemente
+
+---
+
+## Dokumentation im Repository
+
+Zusätzliche Projektartefakte befinden sich im Ordner `docs/`, unter anderem:
+
+- Persona
+- Produkt-Roadmap
+- Wireframes
+- Reflexion zum MVP
+- Dokumentation eines frühen Wireframe-Nutzertests
+
+Diese Dokumente zeigen den Entwicklungsprozess. Nicht alle dort beschriebenen Ideen sind im aktuellen Projektstand umgesetzt.
+
+---
+
+## Autorinnen und Autoren
+
+- Kevin Engehausen (`engehkev@students.zhaw.ch`)
+- David Hascher (`haschdav@students.zhaw.ch`)
+- Léa Grandchamp (`grandlea@students.zhaw.ch`)
+- Brigit Marxer (`marxebri@students.zhaw.ch`)
+
+---
+
+## Projektkontext
+
+Dieses Projekt entstand im Rahmen eines Informatik-Moduls im Studiengang Biomedizinische Labordiagnostik und verfolgt das Ziel, einen praxisnahen Laborworkflow digital und verständlich abzubilden.
