@@ -34,7 +34,7 @@ def erstelle_navigation():
             ),
             st.Page(
                 "views/patientenuebersicht.py",
-                title="Patientenuebersicht",
+                title="Patientenübersicht",
                 icon=":material/groups:",
                 url_path=PATIENTENUEBERSICHT_URL_PFAD,
             ),
@@ -52,7 +52,7 @@ def erstelle_navigation():
             ),
             st.Page(
                 "views/addition_calculator.py",
-                title="Rechner Resistenzmonitoring",
+                title="Resistenzmonitoring",
                 icon=":material/functions:",
                 url_path=RESISTENZRECHNER_URL_PFAD,
             ),
@@ -61,7 +61,7 @@ def erstelle_navigation():
 
 
 def hole_sichtbare_navigation_url(navigationseintrag: object) -> str | None:
-    """Liest den URL-Pfad der aktuell in der Seitenleiste gewaehlten sichtbaren Seite."""
+    """Liest den URL-Pfad der aktuell in der Seitenleiste gewählten sichtbaren Seite."""
     url_path = getattr(navigationseintrag, "url_path", None)
 
     if not isinstance(url_path, str):

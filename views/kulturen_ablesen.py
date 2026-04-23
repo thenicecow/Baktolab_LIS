@@ -1,4 +1,4 @@
-"""Streamlit-Seite fuer die vorbereitete Funktion ``Kulturen ablesen``."""
+"""Streamlit-Seite für die Funktion ``Kulturen ablesen``."""
 
 from __future__ import annotations
 
@@ -38,18 +38,18 @@ KEIMZAHL_CODES: tuple[str, ...] = tuple(
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
-    """Beendet die Kulturseite und wechselt zur sichtbaren Patientenuebersicht zurueck."""
+    """Beendet die Kulturseite und wechselt zur sichtbaren Patientenübersicht zurück."""
     deaktiviere_kulturen_ablesen()
     st.switch_page("views/patientenuebersicht.py")
 
 
 def zeige_aktionsleiste() -> None:
-    """Rendert die wichtigsten Ruecksprung- und Navigationsaktionen."""
+    """Rendert die wichtigsten Rücksprung- und Navigationsaktionen."""
     linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
 
     with linke_spalte:
         if st.button(
-            "Zurueck zur Patientendetailansicht",
+            "Zurück zur Patientendetailansicht",
             use_container_width=True,
         ):
             kehre_zur_patientendetailansicht_zurueck()
@@ -57,20 +57,20 @@ def zeige_aktionsleiste() -> None:
     with mittlere_spalte:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
+            label="Zurück zur Patientenübersicht",
             icon=":material/groups:",
         )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurueck zum Dashboard",
+            label="Zurück zum Dashboard",
             icon=":material/dashboard:",
         )
 
 
 def baue_formularschluessel(material_id: str, feldname: str) -> str:
-    """Erzeugt einen stabilen Session-State-Schluessel fuer das lokale Kulturformular."""
+    """Erzeugt einen stabilen Session-State-Schlüssel für das lokale Kulturformular."""
     return f"kulturen_ablesen_{material_id}_{feldname}"
 
 
@@ -103,7 +103,7 @@ def initialisiere_formularzustand(material: Material) -> None:
 
 
 def hole_keimanzahl(material_id: str) -> int:
-    """Liest die aktuell lokale Anzahl vorbereiteter Keime fuer das Material."""
+    """Liest die aktuell lokale Anzahl vorbereiteter Keime für das Material."""
     schluessel = baue_formularschluessel(material_id, "keimanzahl")
     wert = st.session_state.get(schluessel, 1)
 
@@ -114,13 +114,13 @@ def hole_keimanzahl(material_id: str) -> int:
 
 
 def erhoehe_keimanzahl(material_id: str) -> None:
-    """Erhoeht lokal die Anzahl sichtbarer Keimeingaenge um eins."""
+    """Erhöht lokal die Anzahl sichtbarer Keimeingänge um eins."""
     schluessel = baue_formularschluessel(material_id, "keimanzahl")
     st.session_state[schluessel] = hole_keimanzahl(material_id) + 1
 
 
 def hole_wachstum(material_id: str) -> bool:
-    """Liest, ob lokal Wachstum fuer das Material ausgewaehlt ist."""
+    """Liest, ob lokal Wachstum für das Material ausgewählt ist."""
     schluessel = baue_formularschluessel(material_id, "wachstum")
     return st.session_state.get(schluessel, "ja") == "ja"
 
@@ -185,7 +185,7 @@ def baue_kulturdaten_aus_formularvorschau(
     vorschau = hole_formularvorschau(material.id)
 
     if vorschau["wachstum"] and not vorschau["keime"]:
-        st.error("Bitte erfasse mindestens einen Keim oder waehle bei Wachstum 'nein'.")
+        st.error("Bitte erfasse mindestens einen Keim oder wähle bei Wachstum 'nein'.")
         return None
 
     return baue_kulturdaten_aus_formularwerten(
@@ -196,7 +196,7 @@ def baue_kulturdaten_aus_formularvorschau(
 
 
 def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | None:
-    """Laedt und zeigt den Materialkontext fuer die Kulturseite an."""
+    """Lädt und zeigt den Materialkontext für die Kulturseite an."""
     st.caption(f"Aktuelle Materialreferenz: {materialreferenz}")
 
     try:
@@ -204,7 +204,7 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Das ausgewaehlte Material konnte nicht geladen werden."
+                "Das ausgewählte Material konnte nicht geladen werden."
             )
         )
         return None
@@ -229,7 +229,7 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
 
 
 def zeige_keimeingabe(material_id: str) -> None:
-    """Rendert die Eingabemaske fuer eine variable Anzahl Keime."""
+    """Rendert die Eingabemaske für eine variable Anzahl Keime."""
     st.markdown("**Keime erfassen**")
 
     for index in range(hole_keimanzahl(material_id)):
@@ -239,7 +239,7 @@ def zeige_keimeingabe(material_id: str) -> None:
             st.text_input(
                 "Keim-ID",
                 key=baue_formularschluessel(material_id, f"keim_id_{index}"),
-                placeholder="z.B. Escherichia coli",
+                placeholder="z. B. Escherichia coli",
             )
 
             linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
@@ -265,7 +265,7 @@ def zeige_keimeingabe(material_id: str) -> None:
                     key=baue_formularschluessel(material_id, f"keimgruppe_{index}"),
                 )
 
-    if st.button("Weiteren Keim hinzufuegen", use_container_width=True):
+    if st.button("Weiteren Keim hinzufügen", use_container_width=True):
         erhoehe_keimanzahl(material_id)
         st.rerun()
 
@@ -296,7 +296,7 @@ def speichere_kulturdaten(material: Material) -> bool:
     material.kulturdaten = kulturdaten
     st.success(
         "Die Kulturdaten wurden erfolgreich gespeichert. "
-        "Die Beurteilung muss bei geaenderten Eingaben neu berechnet werden."
+        "Die Beurteilung muss bei geänderten Eingaben neu berechnet werden."
     )
     return True
 
@@ -340,7 +340,7 @@ def berechne_und_speichere_beurteilung(material: Material) -> UrinBeurteilung | 
 
 
 def hole_gespeicherte_beurteilung(material: Material) -> UrinBeurteilung | None:
-    """Liefert eine vorhandene, gespeicherte Beurteilung fuer das Material."""
+    """Liefert eine vorhandene, gespeicherte Beurteilung für das Material."""
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if not kulturdaten.beurteilung:
@@ -372,9 +372,9 @@ def zeige_vorschau(material_id: str) -> None:
 
         if not keime:
             if vorschau["wachstum"]:
-                st.info("Aktuell sind noch keine vollstaendigen Keimeintraege erfasst.")
+                st.info("Aktuell sind noch keine vollständigen Keimeinträge erfasst.")
             else:
-                st.info("Es ist aktuell 'kein Wachstum' ausgewaehlt.")
+                st.info("Es ist aktuell 'kein Wachstum' ausgewählt.")
             return
 
         st.dataframe(
@@ -385,11 +385,11 @@ def zeige_vorschau(material_id: str) -> None:
 
 
 def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
-    """Zeigt das aktuell vorhandene Beurteilungsergebnis uebersichtlich an."""
+    """Zeigt das aktuell vorhandene Beurteilungsergebnis übersichtlich an."""
     st.subheader("Beurteilung")
 
     if beurteilung is None:
-        st.info("Fuer dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
+        st.info("Für dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
         return
 
     with st.container(border=True):
@@ -409,7 +409,7 @@ def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
                 "Rolle": keim.rolle,
                 "Effektive Rolle": keim.effektive_rolle,
                 "Ergebnis": keim.ergebnis or "",
-                "Begruendung": keim.begruendung,
+                "Begründung": keim.begruendung,
             }
             for keim in beurteilung.keimbeurteilungen
         ]
@@ -425,9 +425,9 @@ def main() -> None:
     """Rendert die Seite ``Kulturen ablesen`` mit speicherbarer Eingabemaske."""
     st.title("Kulturen ablesen")
     st.info(
-        "Diese Seite gilt aktuell nur fuer Urin mit der Analyse "
-        "Allgemeine Bakteriologie. Kulturdaten und berechnete Beurteilung "
-        "werden materialbezogen gespeichert."
+        "Diese Seite ist aktuell nur für Urin mit der Analyse "
+        "'Allgemeine Bakteriologie' vorgesehen. Kulturdaten und berechnete "
+        "Beurteilungen werden materialbezogen gespeichert."
     )
 
     zeige_aktionsleiste()
@@ -435,7 +435,7 @@ def main() -> None:
     materialreferenz = hole_material_id_fuer_kulturen_ablesen()
 
     if materialreferenz is None:
-        st.info("Es ist aktuell kein Material fuer 'Kulturen ablesen' ausgewaehlt.")
+        st.info("Es ist aktuell kein Material für 'Kulturen ablesen' ausgewählt.")
         return
 
     materialkontext = zeige_materialkontext(materialreferenz)
@@ -446,8 +446,8 @@ def main() -> None:
 
     if not ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
         st.warning(
-            "Diese Beurteilung wird aktuell nur fuer Material 'Urin' "
-            "mit der Analyse 'Allgemeine Bakteriologie' unterstuetzt."
+            "Diese Beurteilung wird aktuell nur für Material vom Typ 'Urin' "
+            "mit der Analyse 'Allgemeine Bakteriologie' unterstützt."
         )
         return
 
@@ -492,4 +492,3 @@ def main() -> None:
 
 
 main()
-

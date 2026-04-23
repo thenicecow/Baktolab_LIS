@@ -43,7 +43,7 @@ def zeige_leermeldung() -> None:
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurueck zum Dashboard",
+            label="Zurück zum Dashboard",
             icon=":material/dashboard:",
         )
 
@@ -51,7 +51,7 @@ def zeige_leermeldung() -> None:
 def main() -> None:
     """Rendert die Materialerfassung und bindet die Fachlogik ein."""
     st.title("Material erfassen")
-    st.write("Hier kannst du ein neues Material fuer einen bestehenden Patienten erfassen.")
+    st.write("Hier kannst du ein neues Material für einen bestehenden Patienten erfassen.")
 
     repository = PatientenRepository()
     patienten = lade_patienten(repository)
@@ -74,12 +74,12 @@ def main() -> None:
         if vorbelegter_patient is None:
             st.warning(
                 "Der vorbelegte Patient wurde nicht gefunden. "
-                "Bitte waehle einen Patienten aus."
+                "Bitte wähle einen Patienten aus."
             )
 
     if vorbelegter_patient is not None:
         st.info(
-            f"Material wird fuer {vorbelegter_patient.vorname} "
+            f"Material wird für {vorbelegter_patient.vorname} "
             f"{vorbelegter_patient.nachname} erfasst."
         )
         st.caption(f"Patienten-ID: {vorbelegter_patient.id}")
@@ -94,7 +94,7 @@ def main() -> None:
                 "Patient",
                 options=patient_ids,
                 index=None,
-                placeholder="Patient auswaehlen",
+                placeholder="Patient auswählen",
                 format_func=lambda patient_id: formatiere_patient_label(
                     patienten_nach_id[patient_id]
                 ),
@@ -145,9 +145,9 @@ def main() -> None:
 
     if speichern:
         if ausgewaehlte_patient_id is None:
-            st.error("Bitte waehle einen Patienten aus.")
+            st.error("Bitte wähle einen Patienten aus.")
         elif not isinstance(abnahmedatum, date) or not isinstance(eingangsdatum, date):
-            st.error("Bitte gib gueltige Datumswerte ein.")
+            st.error("Bitte gib gültige Datumswerte ein.")
         else:
             ergebnis = speichere_material(
                 repository=repository,
@@ -163,12 +163,12 @@ def main() -> None:
                 merke_erfolgreiche_materialspeicherung(patient, material)
 
                 if not aktiviere_patientendetailansicht(patient.id):
-                    st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
+                    st.error("Die Patientendetailansicht konnte nicht geöffnet werden.")
                     return
 
                 if ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
                     if not aktiviere_kulturen_ablesen(material.id):
-                        st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
+                        st.error("Die Seite 'Kulturen ablesen' konnte nicht geöffnet werden.")
                         return
 
                     st.switch_page("views/kulturen_ablesen.py")
@@ -179,23 +179,16 @@ def main() -> None:
     linke_spalte, rechte_spalte = st.columns(2)
 
     with linke_spalte:
-        if vorbelegter_patient is not None:
-            st.page_link(
-                "views/patientenuebersicht.py",
-                label="Zurueck zur Patientenuebersicht",
-                icon=":material/groups:",
-            )
-        else:
-            st.page_link(
-                "views/patientenuebersicht.py",
-                label="Zurueck zur Patientenuebersicht",
-                icon=":material/groups:",
-            )
+        st.page_link(
+            "views/patientenuebersicht.py",
+            label="Zurück zur Patientenübersicht",
+            icon=":material/groups:",
+        )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurueck zum Dashboard",
+            label="Zurück zum Dashboard",
             icon=":material/dashboard:",
         )
 

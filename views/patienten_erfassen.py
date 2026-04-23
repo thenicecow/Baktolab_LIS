@@ -64,7 +64,7 @@ def main() -> None:
                     key=GEBURTSJAHR_SCHLUESSEL,
                 )
 
-            st.caption("Jahre bis einschliesslich 1900 sind auswaehlbar.")
+            st.caption("Jahre bis einschliesslich 1900 sind auswählbar.")
 
         with rechte_spalte:
             st.text_input("Nachname", key=NACHNAME_SCHLUESSEL)
@@ -84,7 +84,7 @@ def main() -> None:
 
     st.page_link(
         "views/dashboard.py",
-        label="Zurueck zum Dashboard",
+        label="Zurück zum Dashboard",
         icon=":material/dashboard:",
     )
 

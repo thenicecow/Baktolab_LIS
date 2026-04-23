@@ -1,43 +1,45 @@
+"""Verwaltet Anmeldung, Registrierung und Passwortfunktionen der App."""
+
+from __future__ import annotations
+
 import secrets
+
 import streamlit as st
 import streamlit_authenticator as stauth
+
 from utils.data_manager import DataManager
 
 
 class LoginManager:
-    """
-    Singleton class that manages user authentication for the application.
+    """Verwaltet die Benutzerauthentisierung der Anwendung.
 
-    Handles user login, registration, and session management using
-    streamlit-authenticator. Credentials are stored in a YAML file via
-    the DataManager.
+    Die Klasse kapselt Anmeldung, Registrierung und Sitzungsverwaltung mit
+    `streamlit-authenticator`. Zugangsdaten werden über den `DataManager`
+    in einer YAML-Datei gespeichert.
     """
 
     def __new__(cls, *args, **kwargs):
-        """
-        Singleton: returns existing instance from session state if available.
-
-        Returns:
-            LoginManager: The singleton instance, either existing or newly created.
-        """
-        if 'login_manager' in st.session_state:
+        """Liefert eine Singleton-Instanz aus dem Session State zurück."""
+        if "login_manager" in st.session_state:
             return st.session_state.login_manager
         instance = super(LoginManager, cls).__new__(cls)
         st.session_state.login_manager = instance
         return instance
 
-    def __init__(self, data_manager: DataManager = None,
-                 auth_credentials_file: str = 'credentials.yaml',
-                 auth_cookie_name: str = 'bmld_inf2_streamlit_app'):
-        """
-        Initializes authentication components if not already initialized.
+    def __init__(
+        self,
+        data_manager: DataManager = None,
+        auth_credentials_file: str = "credentials.yaml",
+        auth_cookie_name: str = "bmld_inf2_streamlit_app",
+    ):
+        """Initialisiert die Authentisierung, falls sie noch nicht aufgebaut wurde.
 
         Args:
-            data_manager (DataManager): The DataManager instance to use for credential storage.
-            auth_credentials_file (str): Filename for storing user credentials.
-            auth_cookie_name (str): Cookie name for session management.
+            data_manager: Datenmanager für das Speichern der Zugangsdaten.
+            auth_credentials_file: Dateiname für gespeicherte Zugangsdaten.
+            auth_cookie_name: Name des Session-Cookies.
         """
-        if hasattr(self, 'authenticator'):
+        if hasattr(self, "authenticator"):
             return
         if data_manager is None:
             return
@@ -48,31 +50,36 @@ class LoginManager:
         self.auth_cookie_key = secrets.token_urlsafe(32)
         self.auth_credentials = self._load_auth_credentials()
         self.authenticator = stauth.Authenticate(
-            self.auth_credentials, self.auth_cookie_name, self.auth_cookie_key
+            self.auth_credentials,
+            self.auth_cookie_name,
+            self.auth_cookie_key,
         )
 
     def _load_auth_credentials(self):
-        """
-        Loads user credentials from the configured credentials file.
-
-        Returns:
-            dict: User credentials, defaulting to empty usernames dict if file not found.
-        """
-        return self.data_manager.load_app_data(self.auth_credentials_file, initial_value={"usernames": {}})
+        """Lädt die gespeicherten Zugangsdaten."""
+        return self.data_manager.load_app_data(
+            self.auth_credentials_file,
+            initial_value={"usernames": {}},
+        )
 
     def _save_auth_credentials(self):
-        """Saves current user credentials to the credentials file."""
-        self.data_manager.save_app_data(self.auth_credentials, self.auth_credentials_file)
+        """Speichert die aktuellen Zugangsdaten."""
+        self.data_manager.save_app_data(
+            self.auth_credentials,
+            self.auth_credentials_file,
+        )
 
-    def login_register(self, login_title='Login', register_title='Register new user'):
-        """
-        Handles authentication. When not logged in, shows the login/register page
-        and stops further execution. When logged in, adds the logout button to the
-        sidebar and returns, allowing app.py to set up its own navigation.
+    def login_register(
+        self,
+        login_title: str = "Anmelden",
+        register_title: str = "Benutzerkonto erstellen",
+    ):
+        """Steuert Anmeldung und Registrierung.
 
-        Args:
-            login_title (str): Label for the login tab.
-            register_title (str): Label for the registration tab.
+        Wenn noch keine Anmeldung besteht, wird die Login-/Registrierungsseite
+        angezeigt und die weitere Ausführung gestoppt. Wenn bereits eine
+        Anmeldung besteht, wird in der Sidebar die Abmeldung sowie die
+        Passwortänderung eingeblendet.
         """
         if st.session_state.get("authentication_status") is True:
             with st.sidebar:
@@ -83,20 +90,22 @@ class LoginManager:
                 st.markdown("---")
                 with st.expander("Passwort zurücksetzen"):
                     try:
-                        if self.authenticator.reset_password(st.session_state.get("username")):
+                        if self.authenticator.reset_password(
+                            st.session_state.get("username")
+                        ):
                             self._save_auth_credentials()
-                            st.success("Passwort erfolgreich geändert")
+                            st.success("Passwort erfolgreich geändert.")
                     except Exception as e:
                         st.error(f"Fehler beim Ändern des Passworts: {e}")
-        
+
         else:
             page_fn = lambda: self._login_register_page(login_title, register_title)
-            pg = st.navigation([st.Page(page_fn, title="Login", icon=":material/login:")])
+            pg = st.navigation([st.Page(page_fn, title="Anmelden", icon=":material/login:")])
             pg.run()
             st.stop()
 
     def _login_register_page(self, login_title, register_title):
-        """Page function shown when the user is not authenticated."""
+        """Zeigt die Seite für Anmeldung, Registrierung und Passwort vergessen."""
         st.markdown(
             """
             <style>
@@ -105,22 +114,19 @@ class LoginManager:
                 background-image: radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px);
                 background-size: 15px 15px;
             }
-
-            }
             </style>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
             st.image("docs/images/BAKTOLABLOGO.jpeg", width=400)
         with col3:
             st.image("docs/images/ZHAW.png", width=500)
-        
-        
+
         login_tab, register_tab, forgot_pw_tab = st.tabs(
             (login_title, register_title, "Passwort vergessen?")
-)
+        )
         with login_tab:
             self._login()
         with register_tab:
@@ -129,53 +135,50 @@ class LoginManager:
             self._forgot_password()
 
     def _login(self):
-        """Renders the login form and handles authentication status messages."""
+        """Rendert das Login-Formular und zeigt passende Statusmeldungen."""
         self.authenticator.login()
         if st.session_state["authentication_status"] is False:
-            st.error("Username/password is incorrect")
+            st.error("Benutzername oder Passwort ist falsch.")
         else:
-            st.warning("Please enter your username and password")
+            st.warning("Bitte Benutzernamen und Passwort eingeben.")
 
     def _register(self):
-        """
-        Renders the registration form and handles user registration flow.
-
-        Displays password requirements, processes registration attempts,
-        and saves credentials on successful registration.
-        """
-        st.info("""
-        The password must be 8-20 characters long and include at least one uppercase letter,
-        one lowercase letter, one digit, and one special character from @$!%*?&.
-        """)
+        """Rendert die Registrierung und speichert neue Zugangsdaten."""
+        st.info(
+            """
+Das Passwort muss 8 bis 20 Zeichen lang sein und mindestens einen Grossbuchstaben,
+einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen aus @$!%*?& enthalten.
+"""
+        )
         res = self.authenticator.register_user(captcha=False)
         if res and res[1] is not None:
-            st.success(f"User {res[1]} registered successfully")
+            st.success(f"Benutzerkonto {res[1]} wurde erfolgreich erstellt.")
             try:
                 self._save_auth_credentials()
-                st.success("Credentials saved successfully")
+                st.success("Zugangsdaten wurden erfolgreich gespeichert.")
             except Exception as e:
-                st.error(f"Failed to save credentials: {e}")
+                st.error(f"Fehler beim Speichern der Zugangsdaten: {e}")
 
     def _forgot_password(self):
-        """
-        Renders a forgot-password form.
+        """Rendert die Funktion zum Zurücksetzen eines Passworts.
 
-        streamlit-authenticator erzeugt dabei ein neues zufälliges Passwort.
+        `streamlit-authenticator` erzeugt dabei ein neues zufälliges Passwort.
         Dieses muss danach sicher an den Benutzer übermittelt werden.
         """
         st.info(
-            "Falls du dein Passwort vergessen hast, kannst du hier ein neues zufälliges Passwort erzeugen."
+            "Falls du dein Passwort vergessen hast, kannst du hier ein neues "
+            "zufälliges Passwort erzeugen."
         )
 
         try:
             username, email, new_password = self.authenticator.forgot_password(
                 captcha=False,
-                send_email=False
+                send_email=False,
             )
 
             if username:
                 st.success("Neues Passwort wurde erzeugt.")
-                st.write(f"Username: {username}")
+                st.write(f"Benutzername: {username}")
                 st.write(f"E-Mail: {email}")
                 st.warning(f"Neues temporäres Passwort: {new_password}")
 
@@ -186,7 +189,7 @@ class LoginManager:
                     st.error(f"Fehler beim Speichern der neuen Zugangsdaten: {e}")
 
             elif username is False:
-                st.error("Username nicht gefunden.")
+                st.error("Benutzername nicht gefunden.")
 
         except Exception as e:
             st.error(f"Fehler beim Zurücksetzen des Passworts: {e}")

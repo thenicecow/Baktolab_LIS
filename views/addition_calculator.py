@@ -1,14 +1,17 @@
-# views/addition_calculator.py
+"""Streamlit-Seite für das Resistenzmonitoring mit Verlauf und Visualisierung."""
 
-import streamlit as st
-import pandas as pd
-import altair as alt
+from __future__ import annotations
+
 from datetime import datetime
-import pytz
 
+import altair as alt
+import pandas as pd
+import pytz
+import streamlit as st
+
+from functions.addition import percent, subtract
+from functions.mdr_rules import antibiotic_class, classify_rate, get_mdr_hints
 from utils.data_manager import DataManager
-from functions.addition import subtract, percent
-from functions.mdr_rules import classify_rate, antibiotic_class, get_mdr_hints
 
 
 DEFAULT_COLUMNS = [
@@ -19,16 +22,16 @@ DEFAULT_COLUMNS = [
     "Resistenzrate in %",
 ]
 
-# DataManager für SwitchDrive / WebDAV
+# DataManager für Switchdrive / WebDAV
 data_manager = DataManager(
     fs_protocol="webdav",
-    fs_root_folder="resistenzmonitoring_app"
+    fs_root_folder="resistenzmonitoring_app",
 )
 
 current_username = st.session_state.get("username")
 
 # Verlauf neu laden, wenn kein Verlauf vorhanden ist
-# ODER wenn sich der eingeloggte Benutzer geändert hat
+# oder wenn sich der eingeloggte Benutzer geändert hat
 if (
     "data_df" not in st.session_state
     or st.session_state.get("data_df_username") != current_username
@@ -36,7 +39,7 @@ if (
     if current_username:
         loaded_df = data_manager.load_user_data(
             "resistance_data.csv",
-            initial_value=pd.DataFrame(columns=DEFAULT_COLUMNS)
+            initial_value=pd.DataFrame(columns=DEFAULT_COLUMNS),
         )
         if isinstance(loaded_df, pd.DataFrame):
             st.session_state["data_df"] = loaded_df
@@ -57,9 +60,9 @@ if "last_saved" not in st.session_state:
 
 
 def main():
-    st.title("Rechner Resistenzmonitoring")
+    """Rendert die Seite für das Resistenzmonitoring."""
+    st.title("Resistenzmonitoring")
 
-    # Eingabeformular
     with st.form("res_form"):
         st.subheader("Auswahl")
 
@@ -70,11 +73,19 @@ def main():
 
         antibiotic = st.selectbox(
             "Antibiotikum",
-            ["Meropenem", "Imipenem", "Ceftriaxon", "Cefepim", "Penicillin", "Ciprofloxacin", "Gentamicin"],
+            [
+                "Meropenem",
+                "Imipenem",
+                "Ceftriaxon",
+                "Cefepim",
+                "Penicillin",
+                "Ciprofloxacin",
+                "Gentamicin",
+            ],
         )
 
         st.subheader("Testergebnisse")
-        total = st.number_input("Anzahl getesteter Isolate (gesamt)", min_value=0, value=0, step=1)
+        total = st.number_input("Anzahl getesteter Isolate", min_value=0, value=0, step=1)
         resistant = st.number_input("Anzahl resistenter Isolate", min_value=0, value=0, step=1)
 
         st.write("Auswertungsperiode erfassen:")
@@ -84,16 +95,25 @@ def main():
             month = st.selectbox(
                 "Monat",
                 [
-                    "Januar", "Februar", "März", "April",
-                    "Mai", "Juni", "Juli", "August",
-                    "September", "Oktober", "November", "Dezember"
-                ]
+                    "Januar",
+                    "Februar",
+                    "März",
+                    "April",
+                    "Mai",
+                    "Juni",
+                    "Juli",
+                    "August",
+                    "September",
+                    "Oktober",
+                    "November",
+                    "Dezember",
+                ],
             )
 
         with col2:
             year = st.selectbox(
                 "Jahr",
-                [2026, 2025, 2024, 2023, 2022, 2021, 2020]
+                [2026, 2025, 2024, 2023, 2022, 2021, 2020],
             )
 
         period = f"{month} {year}"
@@ -102,17 +122,16 @@ def main():
     has_result = "result" in st.session_state
 
     if not submitted and not has_result:
-        st.info("Werte eingeben und auf **Berechnen** klicken.")
+        st.info("Werte eingeben und auf 'Berechnen' klicken.")
 
-    # Berechnung durchführen
     if submitted:
         if resistant > total:
-            st.error("Fehler: 'resistente Isolate' darf nicht größer sein als 'gesamt'.")
+            st.error("Die Anzahl resistenter Isolate darf nicht grösser sein als die Gesamtzahl.")
             st.stop()
 
         rate = percent(resistant, total)
         if rate is None:
-            st.error("Fehler: Gesamtzahl ist 0 – Resistenzrate kann nicht berechnet werden.")
+            st.error("Die Resistenzrate kann bei einer Gesamtzahl von 0 nicht berechnet werden.")
             st.stop()
 
         sensitive = subtract(total, resistant)
@@ -138,7 +157,6 @@ def main():
             "hints": hints,
         }
 
-        # Verlauf aktualisieren
         run_id = (period, organism, antibiotic, int(total), int(resistant))
         if st.session_state.get("last_saved") != run_id:
             new_row = pd.DataFrame(
@@ -157,22 +175,19 @@ def main():
             )
             st.session_state["last_saved"] = run_id
 
-            # Verlauf persistent speichern
             try:
                 data_manager.save_user_data(
                     st.session_state["data_df"],
-                    "resistance_data.csv"
+                    "resistance_data.csv",
                 )
             except Exception as e:
                 st.error(f"Fehler beim Speichern: {type(e).__name__}: {e}")
 
         has_result = True
 
-    # Nur anzeigen, wenn wirklich eine aktuelle Berechnung vorliegt
     if has_result:
         r = st.session_state["result"]
 
-        # Ergebnisanzeige
         st.subheader("Ergebnis")
         left, right = st.columns([2, 1])
 
@@ -186,13 +201,12 @@ def main():
             )
             st.metric("Resistenzrate", f"{r['rate']:.1f}%")
             st.metric("Einstufung", r["label"])
-            st.metric("Daten (res/gesamt)", f"{r['resistant']}/{r['total']}")
+            st.metric("Daten (resistent / gesamt)", f"{r['resistant']}/{r['total']}")
 
         with right:
             if r["hints"]:
-                st.info("⚠️ Öffne 'Interpretation und Hinweise' für klinische Hinweise.")
+                st.info("Klinische Hinweise sind im Abschnitt 'Interpretation und Hinweise' verfügbar.")
 
-        # Zusatztexte / Interpretation
         if r["hints"]:
             with st.expander("Interpretation und Hinweise"):
                 for hint_type, text in r["hints"]:
@@ -201,12 +215,11 @@ def main():
                     else:
                         st.info(text)
 
-        # Visualisierung aktuelle Auswertung
         st.subheader("Visualisierung")
 
         chart_df = pd.DataFrame(
             {
-                "Kategorie": ["Sensible", "Resistent"],
+                "Kategorie": ["Sensibel", "Resistent"],
                 "Anzahl": [r["sensitive"], r["resistant"]],
             }
         )
@@ -215,8 +228,8 @@ def main():
         chart_df["Share"] = chart_df["Anzahl"] / total_n if total_n > 0 else 0.0
 
         color_scale = alt.Scale(
-            domain=["Sensible", "Resistent"],
-            range=["#2ca02c", "#d62728"]
+            domain=["Sensibel", "Resistent"],
+            range=["#2ca02c", "#d62728"],
         )
 
         donut_chart = (
@@ -240,28 +253,26 @@ def main():
             st.altair_chart(donut_chart, use_container_width=True)
 
         with c2:
-            share_s = float(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Share"].iloc[0])
+            share_s = float(chart_df.loc[chart_df["Kategorie"] == "Sensibel", "Share"].iloc[0])
             share_r = float(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Share"].iloc[0])
 
-            abs_s = int(chart_df.loc[chart_df["Kategorie"] == "Sensible", "Anzahl"].iloc[0])
+            abs_s = int(chart_df.loc[chart_df["Kategorie"] == "Sensibel", "Anzahl"].iloc[0])
             abs_r = int(chart_df.loc[chart_df["Kategorie"] == "Resistent", "Anzahl"].iloc[0])
 
             st.markdown(
-                f"🔴 **Resistent:** {share_r:.1%}<br>({abs_r} Isolate)",
-                unsafe_allow_html=True
+                f"**Resistent:** {share_r:.1%}<br>({abs_r} Isolate)",
+                unsafe_allow_html=True,
             )
             st.markdown(
-                f"🟢 **Sensibel:** {share_s:.1%}<br>({abs_s} Isolate)",
-                unsafe_allow_html=True
+                f"**Sensibel:** {share_s:.1%}<br>({abs_s} Isolate)",
+                unsafe_allow_html=True,
             )
 
         st.caption(f"Auswertung: {r['organism']} – {r['antibiotic']} ({r['period']})")
 
-    # Verlaufstabelle immer anzeigen
     st.subheader("Verlauf der Berechnungen")
     st.dataframe(st.session_state["data_df"], use_container_width=True)
 
-    # Grafischer Verlauf immer anzeigen
     st.subheader("Grafischer Verlauf")
 
     if st.session_state["data_df"].empty:
@@ -272,10 +283,9 @@ def main():
 
     plot_df["Resistenzrate_plot"] = pd.to_numeric(
         plot_df["Resistenzrate in %"],
-        errors="coerce"
+        errors="coerce",
     )
 
-    # Monat + Jahr aus "Auswertungsperiode" in echtes Datum umwandeln
     month_map = {
         "Januar": "01",
         "Februar": "02",
@@ -312,25 +322,25 @@ def main():
         selected_organism = st.selectbox(
             "Keim für Verlauf auswählen",
             organism_options,
-            key="trend_organism"
+            key="trend_organism",
         )
 
     with col2:
         antibiotic_options = sorted(
             plot_df.loc[
                 plot_df["Keim"] == selected_organism,
-                "Antibiotikum"
+                "Antibiotikum",
             ].astype(str).dropna().unique()
         )
         selected_antibiotic = st.selectbox(
             "Antibiotikum für Verlauf auswählen",
             antibiotic_options,
-            key="trend_antibiotic"
+            key="trend_antibiotic",
         )
 
     filtered_df = plot_df[
-        (plot_df["Keim"] == selected_organism) &
-        (plot_df["Antibiotikum"] == selected_antibiotic)
+        (plot_df["Keim"] == selected_organism)
+        & (plot_df["Antibiotikum"] == selected_antibiotic)
     ].sort_values("Periode_dt")
 
     if filtered_df.empty:
@@ -342,7 +352,7 @@ def main():
             x=alt.X(
                 "Periode_dt:T",
                 title="Auswertungsperiode",
-                axis=alt.Axis(format="%b %Y")
+                axis=alt.Axis(format="%b %Y"),
             ),
             y=alt.Y("Resistenzrate_plot:Q", title="Resistenzrate in %"),
             tooltip=[
@@ -357,7 +367,7 @@ def main():
             x=alt.X(
                 "Periode_dt:T",
                 title="Auswertungsperiode",
-                axis=alt.Axis(format="%b %Y")
+                axis=alt.Axis(format="%b %Y"),
             ),
             y=alt.Y("Resistenzrate_plot:Q", title="Resistenzrate in %"),
             tooltip=[

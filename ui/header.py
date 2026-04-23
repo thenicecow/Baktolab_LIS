@@ -1,9 +1,15 @@
+"""Gemeinsamer Kopfbereich der Streamlit-App."""
+
+from __future__ import annotations
+
 import streamlit as st
 
-def show_header(title=None):
-    """Displays the application header with an optional title and a logo.
+
+def show_header(title: str | None = None) -> None:
+    """Zeigt den Kopfbereich der Anwendung mit optionalem Seitentitel und Logo an.
+
     Args:
-        title (str, optional): The title to display in the header. Defaults to None.
+        title: Optionaler Seitentitel für die aktuelle Ansicht.
     """
     col1, col2 = st.columns([5, 1])
 
