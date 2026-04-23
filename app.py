@@ -9,7 +9,9 @@ from functions.kulturen.navigation import (
     ist_kulturen_ablesen_aktiv,
 )
 from functions.patienten.navigation import (
+    deaktiviere_patientenbearbeitung,
     deaktiviere_patientendetailansicht,
+    ist_patientenbearbeitung_aktiv,
     ist_patientendetailansicht_aktiv,
 )
 from ui.navigation import (
@@ -54,10 +56,11 @@ if (
 ):
     deaktiviere_kulturen_ablesen()
 
-if (
-    aktuelle_sichtbare_navigation_url not in {PATIENTENUEBERSICHT_URL_PFAD, KULTUREN_ABLESEN_URL_PFAD}
-    and ist_patientendetailansicht_aktiv()
-):
-    deaktiviere_patientendetailansicht()
+if aktuelle_sichtbare_navigation_url != PATIENTENUEBERSICHT_URL_PFAD:
+    if ist_patientenbearbeitung_aktiv():
+        deaktiviere_patientenbearbeitung()
+
+    if ist_patientendetailansicht_aktiv():
+        deaktiviere_patientendetailansicht()
 
 navigation.run()

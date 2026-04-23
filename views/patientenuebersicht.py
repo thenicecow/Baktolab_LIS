@@ -9,10 +9,15 @@ import streamlit as st
 
 from domaene import Patient
 from functions.gemeinsam.anzeige_hilfen import formatiere_datum, formatiere_zeitpunkt
+from functions.patienten.loeschen import hole_und_entferne_erfolgsmeldung
 from functions.patienten.navigation import (
+    aktiviere_patientenbearbeitung,
     aktiviere_patientendetailansicht,
+    deaktiviere_patientenbearbeitung,
     deaktiviere_patientendetailansicht,
+    hat_gueltige_patientenbearbeiten_route,
     hat_gueltige_patientendetail_route,
+    ist_patientenbearbeitung_aktiv,
     ist_patientendetailansicht_aktiv,
 )
 from functions.patienten.uebersicht import (
@@ -33,10 +38,35 @@ def oeffne_patientendetail(patient_id: str) -> None:
     st.rerun()
 
 
+def oeffne_patientbearbeitung(patient_id: str) -> None:
+    """Oeffnet die Bearbeitungsansicht innerhalb der Patientenuebersicht."""
+    merke_patient_fuer_detailansicht(patient_id)
+
+    if not aktiviere_patientenbearbeitung(patient_id):
+        st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
+        return
+
+    st.rerun()
+
+
 def zeige_patientendetailansicht_innerhalb_der_uebersicht() -> None:
     """Rendert die bestehende Patientendetailansicht innerhalb der sichtbaren Uebersichtsseite."""
     detailansicht_pfad = Path(__file__).with_name("patientendetail.py")
     runpy.run_path(str(detailansicht_pfad), run_name="__main__")
+
+
+def zeige_patientbearbeitung_innerhalb_der_uebersicht() -> None:
+    """Rendert die bestehende Patientenbearbeitung innerhalb der sichtbaren Uebersichtsseite."""
+    bearbeitungsansicht_pfad = Path(__file__).with_name("patient_bearbeiten.py")
+    runpy.run_path(str(bearbeitungsansicht_pfad), run_name="__main__")
+
+
+def zeige_erfolgsmeldungen() -> None:
+    """Zeigt eine zwischengespeicherte Erfolgsmeldung zur Patienteloeschung an."""
+    erfolgsmeldung = hole_und_entferne_erfolgsmeldung()
+
+    if erfolgsmeldung:
+        st.success(erfolgsmeldung)
 
 
 def zeige_leermeldung() -> None:
@@ -66,14 +96,15 @@ def zeige_leermeldung_keine_treffer(suchtext: str) -> None:
 
 def zeige_tabellenkopf() -> None:
     """Rendert den Tabellenkopf der Patientenliste."""
-    spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.2))
+    spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.1, 1.3))
     ueberschriften = (
         "Vorname",
         "Nachname",
         "Geburtsdatum",
         "Geschlecht",
         "Erstellt am",
-        "Aktion",
+        "Details",
+        "Bearbeiten",
     )
 
     for spalte, ueberschrift in zip(spalten, ueberschriften):
@@ -83,7 +114,7 @@ def zeige_tabellenkopf() -> None:
 def zeige_patientenzeile(patient: Patient) -> None:
     """Rendert eine einzelne Zeile der Patientenliste."""
     with st.container(border=True):
-        spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.2))
+        spalten = st.columns((2.0, 2.0, 1.7, 1.5, 1.8, 1.1, 1.3))
 
         spalten[0].write(patient.vorname)
         spalten[1].write(patient.nachname)
@@ -98,12 +129,30 @@ def zeige_patientenzeile(patient: Patient) -> None:
         ):
             oeffne_patientendetail(patient.id)
 
+        if spalten[6].button(
+            "Bearbeiten",
+            key=f"patient_bearbeiten_{patient.id}",
+            use_container_width=True,
+        ):
+            oeffne_patientbearbeitung(patient.id)
+
 
 def main() -> None:
     """Rendert die Patientenuebersicht und bindet die Fachlogik ein."""
+    if hat_gueltige_patientenbearbeiten_route():
+        zeige_patientbearbeitung_innerhalb_der_uebersicht()
+        return
+
     if hat_gueltige_patientendetail_route():
         zeige_patientendetailansicht_innerhalb_der_uebersicht()
         return
+
+    if ist_patientenbearbeitung_aktiv():
+        deaktiviere_patientenbearbeitung()
+        st.warning(
+            "Die Patientenbearbeitung konnte nicht geoeffnet werden, "
+            "weil keine gueltige Patienten-ID vorhanden ist."
+        )
 
     if ist_patientendetailansicht_aktiv():
         deaktiviere_patientendetailansicht()
@@ -114,6 +163,7 @@ def main() -> None:
 
     st.title("Patientenuebersicht")
     st.write("Hier siehst du alle erfassten Patienten.")
+    zeige_erfolgsmeldungen()
 
     linke_spalte, rechte_spalte = st.columns(2)
     with linke_spalte:

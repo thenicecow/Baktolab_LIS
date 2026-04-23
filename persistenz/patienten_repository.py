@@ -142,6 +142,29 @@ class PatientenRepository:
         patientenakten[ziel_index] = (patient, materialliste)
         self._speichere_patientenakten(patientenakten)
 
+    def loesche_patient_nach_id(self, patient_id: str) -> Patient | None:
+        """Loescht einen Patienten mitsamt Materialien und Kulturdaten aus der Persistenz."""
+        patient_id_bereinigt = self._bereinige_patient_id(patient_id)
+        if patient_id_bereinigt is None:
+            return None
+
+        patientenakten = self._lade_patientenakten()
+        verbleibende_patientenakten: list[tuple[Patient, list[Material]]] = []
+        geloeschter_patient: Patient | None = None
+
+        for patient, materialien in patientenakten:
+            if patient.id == patient_id_bereinigt:
+                geloeschter_patient = patient
+                continue
+
+            verbleibende_patientenakten.append((patient, materialien))
+
+        if geloeschter_patient is None:
+            return None
+
+        self._speichere_patientenakten(verbleibende_patientenakten)
+        return geloeschter_patient
+
     def speichere_kulturdaten_fuer_material(
         self,
         material_id: str,
