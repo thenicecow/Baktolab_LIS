@@ -105,11 +105,7 @@ class LoginManager:
                 background-image: radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px);
                 background-size: 15px 15px;
             }
-            .stTabs {
-                background-color: white;
-                border-radius: 10px;
-                padding: 20px;
-                margin: 20px 0;
+
             }
             </style>
             """,
