@@ -19,6 +19,7 @@ PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL = (
 MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL = "material_erfassen_patient_id"
 MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL = "material_erfassen_erfolgsmeldung"
 MATERIAL_ERFASSEN_ANSATZHINWEIS_SCHLUESSEL = "material_erfassen_ansatzhinweis"
+PATIENT_BEARBEITEN_ERFOLGSMELDUNG_SCHLUESSEL = "patient_bearbeiten_erfolgsmeldung"
 ALLE_FILTER_OPTION = ""
 MATERIALTYP_FILTER_SCHLUESSEL = "patientendetail_filter_materialtyp"
 ANALYSE_FILTER_SCHLUESSEL = "patientendetail_filter_analyse"
@@ -107,6 +108,17 @@ def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
 def hole_und_entferne_erfolgsmeldung() -> str | None:
     """Liest eine Erfolgsmeldung zur Materialerfassung aus dem Session State."""
     erfolgsmeldung = st.session_state.pop(MATERIAL_ERFASSEN_ERFOLGSMELDUNG_SCHLUESSEL, None)
+
+    if not isinstance(erfolgsmeldung, str):
+        return None
+
+    bereinigt = erfolgsmeldung.strip()
+    return bereinigt or None
+
+
+def hole_und_entferne_bearbeitungserfolgsmeldung() -> str | None:
+    """Liest eine Erfolgsmeldung zur Patientenbearbeitung aus dem Session State."""
+    erfolgsmeldung = st.session_state.pop(PATIENT_BEARBEITEN_ERFOLGSMELDUNG_SCHLUESSEL, None)
 
     if not isinstance(erfolgsmeldung, str):
         return None

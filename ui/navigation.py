@@ -69,3 +69,4 @@ def hole_sichtbare_navigation_url(navigationseintrag: object) -> str | None:
 
     bereinigt = url_path.strip()
     return bereinigt or None
+
