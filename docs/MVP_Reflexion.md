@@ -14,4 +14,4 @@ Ja, die Roadmap wurde angepasst beziehungsweise geschärft. Der Fokus wurde bewu
 
 ### Welche Unterstützung brauchen wir, um unsere Ziele zu erreichen?
 
-Müssen wir noch bnesprechen!
+Müssen wir noch besprechen!
