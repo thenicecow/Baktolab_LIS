@@ -1,6 +1,8 @@
-"""Streamlit-Seite für die Funktion ``Kulturen ablesen``."""
+"""Streamlit-Seite für die Funktion ``Kulturen ablesen`` mit Bildbestätigung für Keimzahlen."""
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -35,6 +37,23 @@ KEIMGRUPPEN: tuple[str, ...] = ("gramnegative_staebchen", "gpk_gps", "andere")
 KEIMZAHL_CODES: tuple[str, ...] = tuple(
     code for code in ("k4", "p4", "p5", "g5") if code in ERLAUBTE_KEIMZAHL_CODES
 )
+
+PROJEKTWURZEL = Path(__file__).resolve().parent.parent
+REFERENZBILD_ORDNER = PROJEKTWURZEL / "assets" / "referenzbilder"
+REFERENZBILD_DATEIBASEN: dict[str, str] = {
+    "k4": "k4",
+    "p4": "p4",
+    "p5": "p5",
+    "g5": "g5",
+}
+REFERENZBILD_TITEL: dict[str, str] = {
+    "k4": "Referenzbild K4",
+    "p4": "Referenzbild P4",
+    "p5": "Referenzbild P5",
+    "g5": "Referenzbild G5",
+}
+REFERENZBILD_ENDUNGEN: tuple[str, ...] = (".png", ".jpg", ".jpeg")
+REFERENZBILD_BREITE_PIXEL = 140
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
@@ -74,6 +93,109 @@ def baue_formularschluessel(material_id: str, feldname: str) -> str:
     return f"kulturen_ablesen_{material_id}_{feldname}"
 
 
+def baue_keimzahl_bestaetigt_schluessel(material_id: str, index: int) -> str:
+    """Erzeugt den Session-State-Schlüssel für den Bestätigungsstatus einer Keimzahl."""
+    return baue_formularschluessel(material_id, f"keimzahl_bestaetigt_{index}")
+
+
+def baue_bestaetigte_keimzahl_schluessel(material_id: str, index: int) -> str:
+    """Erzeugt den Session-State-Schlüssel für die zuletzt bestätigte Keimzahl."""
+    return baue_formularschluessel(material_id, f"bestaetigte_keimzahl_code_{index}")
+
+
+def baue_referenzbild_anzeigen_schluessel(material_id: str, index: int) -> str:
+    """Erzeugt den Session-State-Schlüssel für die Sichtbarkeit des Referenzbilds."""
+    return baue_formularschluessel(material_id, f"referenzbild_anzeigen_{index}")
+
+
+def hole_ausgewaehlte_keimzahl(material_id: str, index: int) -> str:
+    """Liest die aktuell ausgewählte Keimzahl eines Keims aus dem Session State."""
+    wert = st.session_state.get(
+        baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
+        KEIMZAHL_CODES[0],
+    )
+
+    if not isinstance(wert, str):
+        return KEIMZAHL_CODES[0]
+
+    bereinigt = wert.strip()
+    if bereinigt not in KEIMZAHL_CODES:
+        return KEIMZAHL_CODES[0]
+
+    return bereinigt
+
+
+def hole_bestaetigte_keimzahl(material_id: str, index: int) -> str | None:
+    """Liest die aktuell bestätigte Keimzahl eines Keims aus dem Session State."""
+    wert = st.session_state.get(baue_bestaetigte_keimzahl_schluessel(material_id, index))
+
+    if not isinstance(wert, str):
+        return None
+
+    bereinigt = wert.strip()
+    if bereinigt not in KEIMZAHL_CODES:
+        return None
+
+    return bereinigt
+
+
+def ist_keimzahl_bestaetigt(material_id: str, index: int) -> bool:
+    """Prüft, ob die aktuell ausgewählte Keimzahl dieses Keims bestätigt wurde."""
+    return bool(
+        st.session_state.get(
+            baue_keimzahl_bestaetigt_schluessel(material_id, index),
+            False,
+        )
+    )
+
+
+def soll_referenzbild_angezeigt_werden(material_id: str, index: int) -> bool:
+    """Liefert, ob das Referenzbild für einen Keim aktuell sichtbar sein soll."""
+    schluessel = baue_referenzbild_anzeigen_schluessel(material_id, index)
+
+    if schluessel not in st.session_state:
+        return True
+
+    return bool(st.session_state.get(schluessel, False))
+
+
+def hole_referenzbild_pfad(keimzahl_code: str) -> Path:
+    """Sucht das Referenzbild zur gewählten Keimzahl im festen Projektordner."""
+    dateibasis = REFERENZBILD_DATEIBASEN.get(keimzahl_code, keimzahl_code)
+    basis_pfad = REFERENZBILD_ORDNER / dateibasis
+
+    for endung in REFERENZBILD_ENDUNGEN:
+        kandidat = basis_pfad.with_suffix(endung)
+        if kandidat.exists():
+            return kandidat
+
+    return basis_pfad.with_suffix(".png")
+
+
+def setze_keimzahl_als_unbestaetigt(material_id: str, index: int) -> None:
+    """Setzt eine geänderte Keimzahl sofort in den unbestätigten Zustand zurück."""
+    st.session_state[baue_keimzahl_bestaetigt_schluessel(material_id, index)] = False
+    st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = None
+    st.session_state[baue_referenzbild_anzeigen_schluessel(material_id, index)] = True
+
+
+def bestaetige_keimzahl(material_id: str, index: int) -> None:
+    """Übernimmt die aktuell ausgewählte Keimzahl als bestätigten Wert."""
+    ausgewaehlte_keimzahl = hole_ausgewaehlte_keimzahl(material_id, index)
+    st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = (
+        ausgewaehlte_keimzahl
+    )
+    st.session_state[baue_keimzahl_bestaetigt_schluessel(material_id, index)] = True
+    st.session_state[baue_referenzbild_anzeigen_schluessel(material_id, index)] = False
+
+
+def lehne_keimzahl_ab(material_id: str, index: int) -> None:
+    """Belässt die Auswahl in einem unbestätigten Zustand, damit sie korrigiert werden kann."""
+    st.session_state[baue_keimzahl_bestaetigt_schluessel(material_id, index)] = False
+    st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = None
+    st.session_state[baue_referenzbild_anzeigen_schluessel(material_id, index)] = False
+
+
 def initialisiere_formularzustand(material: Material) -> None:
     """Initialisiert den Formularzustand aus gespeicherten oder leeren Kulturdaten."""
     initialisiert_schluessel = baue_formularschluessel(material.id, "formular_initialisiert")
@@ -98,6 +220,11 @@ def initialisiere_formularzustand(material: Material) -> None:
         st.session_state[baue_formularschluessel(material.id, f"keimgruppe_{index}")] = (
             keim.keimgruppe
         )
+        st.session_state[baue_keimzahl_bestaetigt_schluessel(material.id, index)] = True
+        st.session_state[baue_bestaetigte_keimzahl_schluessel(material.id, index)] = (
+            keim.keimzahl_code
+        )
+        st.session_state[baue_referenzbild_anzeigen_schluessel(material.id, index)] = False
 
     st.session_state[initialisiert_schluessel] = True
 
@@ -125,13 +252,9 @@ def hole_wachstum(material_id: str) -> bool:
     return st.session_state.get(schluessel, "ja") == "ja"
 
 
-def hole_aktuellen_keimeintrag(material_id: str, index: int) -> dict[str, str]:
+def hole_aktuellen_keimeintrag(material_id: str, index: int) -> dict[str, object]:
     """Liest einen einzelnen lokalen Keimeintrag aus dem Session State."""
     keim_id = st.session_state.get(baue_formularschluessel(material_id, f"keim_id_{index}"), "")
-    keimzahl_code = st.session_state.get(
-        baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
-        KEIMZAHL_CODES[0],
-    )
     rolle = st.session_state.get(
         baue_formularschluessel(material_id, f"rolle_{index}"),
         ROLLEN[0],
@@ -141,9 +264,17 @@ def hole_aktuellen_keimeintrag(material_id: str, index: int) -> dict[str, str]:
         KEIMGRUPPEN[0],
     )
 
+    ausgewaehlte_keimzahl = hole_ausgewaehlte_keimzahl(material_id, index)
+    bestaetigte_keimzahl = hole_bestaetigte_keimzahl(material_id, index)
+    keimzahl_bestaetigt = ist_keimzahl_bestaetigt(material_id, index) and (
+        bestaetigte_keimzahl is not None
+    )
+
     return {
         "keim_id": str(keim_id).strip(),
-        "keimzahl_code": str(keimzahl_code).strip(),
+        "keimzahl_code": bestaetigte_keimzahl or "",
+        "ausgewaehlte_keimzahl_code": ausgewaehlte_keimzahl,
+        "keimzahl_bestaetigt": keimzahl_bestaetigt,
         "rolle": str(rolle).strip(),
         "keimgruppe": str(keimgruppe).strip(),
     }
@@ -157,22 +288,48 @@ def hole_formularvorschau(material_id: str) -> dict[str, object]:
         return {
             "wachstum": False,
             "keime": [],
+            "unbestaetigte_keime": [],
             "beurteilung": None,
         }
 
     keime: list[dict[str, str]] = []
+    unbestaetigte_keime: list[dict[str, str]] = []
 
     for index in range(hole_keimanzahl(material_id)):
         keimeintrag = hole_aktuellen_keimeintrag(material_id, index)
 
-        if not keimeintrag["keim_id"]:
+        keim_id = str(keimeintrag["keim_id"]).strip()
+        if not keim_id:
             continue
 
-        keime.append(keimeintrag)
+        rolle = str(keimeintrag["rolle"]).strip()
+        keimgruppe = str(keimeintrag["keimgruppe"]).strip()
+        ausgewaehlte_keimzahl = str(keimeintrag["ausgewaehlte_keimzahl_code"]).strip()
+
+        if bool(keimeintrag["keimzahl_bestaetigt"]):
+            keime.append(
+                {
+                    "keim_id": keim_id,
+                    "keimzahl_code": str(keimeintrag["keimzahl_code"]).strip(),
+                    "rolle": rolle,
+                    "keimgruppe": keimgruppe,
+                }
+            )
+            continue
+
+        unbestaetigte_keime.append(
+            {
+                "keim_id": keim_id,
+                "ausgewaehlte_keimzahl_code": ausgewaehlte_keimzahl,
+                "rolle": rolle,
+                "keimgruppe": keimgruppe,
+            }
+        )
 
     return {
         "wachstum": True,
         "keime": keime,
+        "unbestaetigte_keime": unbestaetigte_keime,
         "beurteilung": None,
     }
 
@@ -183,6 +340,14 @@ def baue_kulturdaten_aus_formularvorschau(
 ) -> Kulturdaten | None:
     """Erzeugt Kulturdaten aus der aktuellen Formulareingabe."""
     vorschau = hole_formularvorschau(material.id)
+
+    unbestaetigte_keime = vorschau.get("unbestaetigte_keime", [])
+    if isinstance(unbestaetigte_keime, list) and unbestaetigte_keime:
+        st.error(
+            "Bitte bestätige alle ausgewählten Keimzahlen anhand der Referenzbilder, "
+            "bevor du speicherst oder die Beurteilung berechnest."
+        )
+        return None
 
     if vorschau["wachstum"] and not vorschau["keime"]:
         st.error("Bitte erfasse mindestens einen Keim oder wähle bei Wachstum 'nein'.")
@@ -228,6 +393,73 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
     return patient, material
 
 
+def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
+    """Zeigt Referenzbild und Bestätigungslogik für die gewählte Keimzahl eines Keims."""
+    keim_id = st.session_state.get(baue_formularschluessel(material_id, f"keim_id_{index}"), "")
+    if not isinstance(keim_id, str) or not keim_id.strip():
+        return
+
+    ausgewaehlte_keimzahl = hole_ausgewaehlte_keimzahl(material_id, index)
+    referenzbild_pfad = hole_referenzbild_pfad(ausgewaehlte_keimzahl)
+    referenzbild_vorhanden = referenzbild_pfad.exists()
+    referenzbild_titel = REFERENZBILD_TITEL.get(
+        ausgewaehlte_keimzahl,
+        f"Referenzbild {ausgewaehlte_keimzahl.upper()}",
+    )
+    referenzbild_anzeigen = soll_referenzbild_angezeigt_werden(material_id, index)
+
+    with st.container(border=True):
+        st.markdown("**Visuelle Prüfung der Keimzahl**")
+        st.caption(
+            "Bitte prüfe die ausgewählte Keimzahl anhand des Referenzbilds und "
+            "bestätige oder lehne sie anschliessend ab."
+        )
+
+        if ist_keimzahl_bestaetigt(material_id, index):
+            st.success(
+                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestätigt."
+            )
+        else:
+            st.warning(
+                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestätigt "
+                "und wird noch nicht gespeichert oder beurteilt."
+            )
+
+        if referenzbild_anzeigen and referenzbild_vorhanden:
+            st.image(
+                str(referenzbild_pfad),
+                caption=referenzbild_titel,
+                width=REFERENZBILD_BREITE_PIXEL,
+            )
+        elif referenzbild_anzeigen and not referenzbild_vorhanden:
+            st.error(
+                "Das passende Referenzbild wurde nicht gefunden. "
+                f"Erwarteter Dateipfad: {referenzbild_pfad}"
+            )
+
+        linke_spalte, rechte_spalte = st.columns(2)
+
+        with linke_spalte:
+            if st.button(
+                "Bestätigen",
+                key=baue_formularschluessel(material_id, f"keimzahl_bestaetigen_{index}"),
+                type="primary",
+                use_container_width=True,
+                disabled=not referenzbild_vorhanden,
+            ):
+                bestaetige_keimzahl(material_id, index)
+                st.rerun()
+
+        with rechte_spalte:
+            if st.button(
+                "Ablehnen",
+                key=baue_formularschluessel(material_id, f"keimzahl_ablehnen_{index}"),
+                use_container_width=True,
+            ):
+                lehne_keimzahl_ab(material_id, index)
+                st.rerun()
+
+
 def zeige_keimeingabe(material_id: str) -> None:
     """Rendert die Eingabemaske für eine variable Anzahl Keime."""
     st.markdown("**Keime erfassen**")
@@ -249,6 +481,8 @@ def zeige_keimeingabe(material_id: str) -> None:
                     "Keimzahl",
                     options=list(KEIMZAHL_CODES),
                     key=baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
+                    on_change=setze_keimzahl_als_unbestaetigt,
+                    args=(material_id, index),
                 )
 
             with mittlere_spalte:
@@ -264,6 +498,8 @@ def zeige_keimeingabe(material_id: str) -> None:
                     options=list(KEIMGRUPPEN),
                     key=baue_formularschluessel(material_id, f"keimgruppe_{index}"),
                 )
+
+            zeige_keimzahl_bestaetigung(material_id, index)
 
     if st.button("Weiteren Keim hinzufügen", use_container_width=True):
         erhoehe_keimanzahl(material_id)
@@ -368,20 +604,50 @@ def zeige_vorschau(material_id: str) -> None:
     with st.container(border=True):
         st.write(f"Wachstum: {'ja' if vorschau['wachstum'] else 'nein'}")
 
-        keime = vorschau["keime"]
+        keime = vorschau.get("keime", [])
+        unbestaetigte_keime = vorschau.get("unbestaetigte_keime", [])
 
-        if not keime:
+        if not isinstance(keime, list):
+            keime = []
+        if not isinstance(unbestaetigte_keime, list):
+            unbestaetigte_keime = []
+
+        if not keime and not unbestaetigte_keime:
             if vorschau["wachstum"]:
                 st.info("Aktuell sind noch keine vollständigen Keimeinträge erfasst.")
             else:
                 st.info("Es ist aktuell 'kein Wachstum' ausgewählt.")
             return
 
-        st.dataframe(
-            pd.DataFrame(keime),
-            use_container_width=True,
-            hide_index=True,
-        )
+        if keime:
+            st.markdown("**Bestätigte Keime**")
+            st.dataframe(
+                pd.DataFrame(keime).rename(
+                    columns={
+                        "keim_id": "Keim-ID",
+                        "keimzahl_code": "Bestätigte Keimzahl",
+                        "rolle": "Rolle",
+                        "keimgruppe": "Keimgruppe",
+                    }
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        if unbestaetigte_keime:
+            st.warning("Für mindestens einen Keim fehlt noch die Bestätigung der Keimzahl.")
+            st.dataframe(
+                pd.DataFrame(unbestaetigte_keime).rename(
+                    columns={
+                        "keim_id": "Keim-ID",
+                        "ausgewaehlte_keimzahl_code": "Ausgewählte Keimzahl",
+                        "rolle": "Rolle",
+                        "keimgruppe": "Keimgruppe",
+                    }
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
 
 
 def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
