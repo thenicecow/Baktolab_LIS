@@ -1,8 +1,9 @@
-"""Streamlit-Seite für die Funktion ``Kulturen ablesen`` mit Bildbestätigung für Keimzahlen."""
+"""Streamlit-Seite fuer die Funktion ``Kulturen ablesen`` mit Bildbestaetigung fuer Keimzahlen."""
 
 from __future__ import annotations
 
 from pathlib import Path
+import runpy
 
 import pandas as pd
 import streamlit as st
@@ -27,8 +28,12 @@ from functions.kulturen.beurteilung import (
     beurteile_urin_allgemeine_bakteriologie,
 )
 from functions.kulturen.navigation import (
+    aktiviere_befund,
+    deaktiviere_befund,
     deaktiviere_kulturen_ablesen,
+    hat_gueltige_befund_route,
     hole_material_id_fuer_kulturen_ablesen,
+    ist_befund_aktiv,
 )
 
 
@@ -57,18 +62,18 @@ REFERENZBILD_BREITE_PIXEL = 140
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
-    """Beendet die Kulturseite und wechselt zur sichtbaren Patientenübersicht zurück."""
+    """Beendet die Kulturseite und wechselt zur sichtbaren Patientenuebersicht zurueck."""
     deaktiviere_kulturen_ablesen()
     st.switch_page("views/patientenuebersicht.py")
 
 
 def zeige_aktionsleiste() -> None:
-    """Rendert die wichtigsten Rücksprung- und Navigationsaktionen."""
+    """Rendert die wichtigsten Ruecksprung- und Navigationsaktionen."""
     linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
 
     with linke_spalte:
         if st.button(
-            "Zurück zur Patientendetailansicht",
+            "Zurueck zur Patientendetailansicht",
             use_container_width=True,
         ):
             kehre_zur_patientendetailansicht_zurueck()
@@ -76,40 +81,46 @@ def zeige_aktionsleiste() -> None:
     with mittlere_spalte:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurück zur Patientenübersicht",
+            label="Zurueck zur Patientenuebersicht",
             icon=":material/groups:",
         )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurück zum Dashboard",
+            label="Zurueck zum Dashboard",
             icon=":material/dashboard:",
         )
 
 
+def zeige_befund_innerhalb_kulturen_ablesen() -> None:
+    """Rendert die interne Befundansicht innerhalb der bestehenden Kulturseite."""
+    befundansicht_pfad = Path(__file__).with_name("befund.py")
+    runpy.run_path(str(befundansicht_pfad), run_name="__main__")
+
+
 def baue_formularschluessel(material_id: str, feldname: str) -> str:
-    """Erzeugt einen stabilen Session-State-Schlüssel für das lokale Kulturformular."""
+    """Erzeugt einen stabilen Session-State-Schluessel fuer das lokale Kulturformular."""
     return f"kulturen_ablesen_{material_id}_{feldname}"
 
 
 def baue_keimzahl_bestaetigt_schluessel(material_id: str, index: int) -> str:
-    """Erzeugt den Session-State-Schlüssel für den Bestätigungsstatus einer Keimzahl."""
+    """Erzeugt den Session-State-Schluessel fuer den Bestaetigungsstatus einer Keimzahl."""
     return baue_formularschluessel(material_id, f"keimzahl_bestaetigt_{index}")
 
 
 def baue_bestaetigte_keimzahl_schluessel(material_id: str, index: int) -> str:
-    """Erzeugt den Session-State-Schlüssel für die zuletzt bestätigte Keimzahl."""
+    """Erzeugt den Session-State-Schluessel fuer die zuletzt bestaetigte Keimzahl."""
     return baue_formularschluessel(material_id, f"bestaetigte_keimzahl_code_{index}")
 
 
 def baue_referenzbild_anzeigen_schluessel(material_id: str, index: int) -> str:
-    """Erzeugt den Session-State-Schlüssel für die Sichtbarkeit des Referenzbilds."""
+    """Erzeugt den Session-State-Schluessel fuer die Sichtbarkeit des Referenzbilds."""
     return baue_formularschluessel(material_id, f"referenzbild_anzeigen_{index}")
 
 
 def hole_ausgewaehlte_keimzahl(material_id: str, index: int) -> str:
-    """Liest die aktuell ausgewählte Keimzahl eines Keims aus dem Session State."""
+    """Liest die aktuell ausgewaehlte Keimzahl eines Keims aus dem Session State."""
     wert = st.session_state.get(
         baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
         KEIMZAHL_CODES[0],
@@ -126,7 +137,7 @@ def hole_ausgewaehlte_keimzahl(material_id: str, index: int) -> str:
 
 
 def hole_bestaetigte_keimzahl(material_id: str, index: int) -> str | None:
-    """Liest die aktuell bestätigte Keimzahl eines Keims aus dem Session State."""
+    """Liest die aktuell bestaetigte Keimzahl eines Keims aus dem Session State."""
     wert = st.session_state.get(baue_bestaetigte_keimzahl_schluessel(material_id, index))
 
     if not isinstance(wert, str):
@@ -140,7 +151,7 @@ def hole_bestaetigte_keimzahl(material_id: str, index: int) -> str | None:
 
 
 def ist_keimzahl_bestaetigt(material_id: str, index: int) -> bool:
-    """Prüft, ob die aktuell ausgewählte Keimzahl dieses Keims bestätigt wurde."""
+    """Prueft, ob die aktuell ausgewaehlte Keimzahl dieses Keims bestaetigt wurde."""
     return bool(
         st.session_state.get(
             baue_keimzahl_bestaetigt_schluessel(material_id, index),
@@ -150,7 +161,7 @@ def ist_keimzahl_bestaetigt(material_id: str, index: int) -> bool:
 
 
 def soll_referenzbild_angezeigt_werden(material_id: str, index: int) -> bool:
-    """Liefert, ob das Referenzbild für einen Keim aktuell sichtbar sein soll."""
+    """Liefert, ob das Referenzbild fuer einen Keim aktuell sichtbar sein soll."""
     schluessel = baue_referenzbild_anzeigen_schluessel(material_id, index)
 
     if schluessel not in st.session_state:
@@ -160,7 +171,7 @@ def soll_referenzbild_angezeigt_werden(material_id: str, index: int) -> bool:
 
 
 def hole_referenzbild_pfad(keimzahl_code: str) -> Path:
-    """Sucht das Referenzbild zur gewählten Keimzahl im festen Projektordner."""
+    """Sucht das Referenzbild zur gewaehlten Keimzahl im festen Projektordner."""
     dateibasis = REFERENZBILD_DATEIBASEN.get(keimzahl_code, keimzahl_code)
     basis_pfad = REFERENZBILD_ORDNER / dateibasis
 
@@ -173,14 +184,14 @@ def hole_referenzbild_pfad(keimzahl_code: str) -> Path:
 
 
 def setze_keimzahl_als_unbestaetigt(material_id: str, index: int) -> None:
-    """Setzt eine geänderte Keimzahl sofort in den unbestätigten Zustand zurück."""
+    """Setzt eine geaenderte Keimzahl sofort in den unbestaetigten Zustand zurueck."""
     st.session_state[baue_keimzahl_bestaetigt_schluessel(material_id, index)] = False
     st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = None
     st.session_state[baue_referenzbild_anzeigen_schluessel(material_id, index)] = True
 
 
 def bestaetige_keimzahl(material_id: str, index: int) -> None:
-    """Übernimmt die aktuell ausgewählte Keimzahl als bestätigten Wert."""
+    """Uebernimmt die aktuell ausgewaehlte Keimzahl als bestaetigten Wert."""
     ausgewaehlte_keimzahl = hole_ausgewaehlte_keimzahl(material_id, index)
     st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = (
         ausgewaehlte_keimzahl
@@ -190,7 +201,7 @@ def bestaetige_keimzahl(material_id: str, index: int) -> None:
 
 
 def lehne_keimzahl_ab(material_id: str, index: int) -> None:
-    """Belässt die Auswahl in einem unbestätigten Zustand, damit sie korrigiert werden kann."""
+    """Belaesst die Auswahl in einem unbestaetigten Zustand, damit sie korrigiert werden kann."""
     st.session_state[baue_keimzahl_bestaetigt_schluessel(material_id, index)] = False
     st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = None
     st.session_state[baue_referenzbild_anzeigen_schluessel(material_id, index)] = False
@@ -230,7 +241,7 @@ def initialisiere_formularzustand(material: Material) -> None:
 
 
 def hole_keimanzahl(material_id: str) -> int:
-    """Liest die aktuell lokale Anzahl vorbereiteter Keime für das Material."""
+    """Liest die aktuell lokale Anzahl vorbereiteter Keime fuer das Material."""
     schluessel = baue_formularschluessel(material_id, "keimanzahl")
     wert = st.session_state.get(schluessel, 1)
 
@@ -241,13 +252,13 @@ def hole_keimanzahl(material_id: str) -> int:
 
 
 def erhoehe_keimanzahl(material_id: str) -> None:
-    """Erhöht lokal die Anzahl sichtbarer Keimeingänge um eins."""
+    """Erhoeht lokal die Anzahl sichtbarer Keimeingaenge um eins."""
     schluessel = baue_formularschluessel(material_id, "keimanzahl")
     st.session_state[schluessel] = hole_keimanzahl(material_id) + 1
 
 
 def hole_wachstum(material_id: str) -> bool:
-    """Liest, ob lokal Wachstum für das Material ausgewählt ist."""
+    """Liest, ob lokal Wachstum fuer das Material ausgewaehlt ist."""
     schluessel = baue_formularschluessel(material_id, "wachstum")
     return st.session_state.get(schluessel, "ja") == "ja"
 
@@ -344,13 +355,13 @@ def baue_kulturdaten_aus_formularvorschau(
     unbestaetigte_keime = vorschau.get("unbestaetigte_keime", [])
     if isinstance(unbestaetigte_keime, list) and unbestaetigte_keime:
         st.error(
-            "Bitte bestätige alle ausgewählten Keimzahlen anhand der Referenzbilder, "
+            "Bitte bestaetige alle ausgewaehlten Keimzahlen anhand der Referenzbilder, "
             "bevor du speicherst oder die Beurteilung berechnest."
         )
         return None
 
     if vorschau["wachstum"] and not vorschau["keime"]:
-        st.error("Bitte erfasse mindestens einen Keim oder wähle bei Wachstum 'nein'.")
+        st.error("Bitte erfasse mindestens einen Keim oder waehle bei Wachstum 'nein'.")
         return None
 
     return baue_kulturdaten_aus_formularwerten(
@@ -361,7 +372,7 @@ def baue_kulturdaten_aus_formularvorschau(
 
 
 def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | None:
-    """Lädt und zeigt den Materialkontext für die Kulturseite an."""
+    """Laedt und zeigt den Materialkontext fuer die Kulturseite an."""
     st.caption(f"Aktuelle Materialreferenz: {materialreferenz}")
 
     try:
@@ -369,7 +380,7 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Das ausgewählte Material konnte nicht geladen werden."
+                "Das ausgewaehlte Material konnte nicht geladen werden."
             )
         )
         return None
@@ -394,7 +405,7 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
 
 
 def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
-    """Zeigt Referenzbild und Bestätigungslogik für die gewählte Keimzahl eines Keims."""
+    """Zeigt Referenzbild und Bestaetigungslogik fuer die gewaehlte Keimzahl eines Keims."""
     keim_id = st.session_state.get(baue_formularschluessel(material_id, f"keim_id_{index}"), "")
     if not isinstance(keim_id, str) or not keim_id.strip():
         return
@@ -409,19 +420,19 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
     referenzbild_anzeigen = soll_referenzbild_angezeigt_werden(material_id, index)
 
     with st.container(border=True):
-        st.markdown("**Visuelle Prüfung der Keimzahl**")
+        st.markdown("**Visuelle Pruefung der Keimzahl**")
         st.caption(
-            "Bitte prüfe die ausgewählte Keimzahl anhand des Referenzbilds und "
-            "bestätige oder lehne sie anschliessend ab."
+            "Bitte pruefe die ausgewaehlte Keimzahl anhand des Referenzbilds und "
+            "bestaetige oder lehne sie anschliessend ab."
         )
 
         if ist_keimzahl_bestaetigt(material_id, index):
             st.success(
-                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestätigt."
+                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestaetigt."
             )
         else:
             st.warning(
-                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestätigt "
+                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestaetigt "
                 "und wird noch nicht gespeichert oder beurteilt."
             )
 
@@ -441,7 +452,7 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
 
         with linke_spalte:
             if st.button(
-                "Bestätigen",
+                "Bestaetigen",
                 key=baue_formularschluessel(material_id, f"keimzahl_bestaetigen_{index}"),
                 type="primary",
                 use_container_width=True,
@@ -461,7 +472,7 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
 
 
 def zeige_keimeingabe(material_id: str) -> None:
-    """Rendert die Eingabemaske für eine variable Anzahl Keime."""
+    """Rendert die Eingabemaske fuer eine variable Anzahl Keime."""
     st.markdown("**Keime erfassen**")
 
     for index in range(hole_keimanzahl(material_id)):
@@ -501,7 +512,7 @@ def zeige_keimeingabe(material_id: str) -> None:
 
             zeige_keimzahl_bestaetigung(material_id, index)
 
-    if st.button("Weiteren Keim hinzufügen", use_container_width=True):
+    if st.button("Weiteren Keim hinzufuegen", use_container_width=True):
         erhoehe_keimanzahl(material_id)
         st.rerun()
 
@@ -532,7 +543,7 @@ def speichere_kulturdaten(material: Material) -> bool:
     material.kulturdaten = kulturdaten
     st.success(
         "Die Kulturdaten wurden erfolgreich gespeichert. "
-        "Die Beurteilung muss bei geänderten Eingaben neu berechnet werden."
+        "Die Beurteilung muss bei geaenderten Eingaben neu berechnet werden."
     )
     return True
 
@@ -575,8 +586,22 @@ def berechne_und_speichere_beurteilung(material: Material) -> UrinBeurteilung | 
     return beurteilung
 
 
+def validiere_und_oeffne_befund(material: Material) -> UrinBeurteilung | None:
+    """Berechnet die Beurteilung und oeffnet anschliessend die interne Befundansicht."""
+    beurteilung = berechne_und_speichere_beurteilung(material)
+    if beurteilung is None:
+        return None
+
+    if not aktiviere_befund(material.id):
+        st.error("Die Befundansicht konnte nicht geoeffnet werden.")
+        return beurteilung
+
+    st.rerun()
+    return beurteilung
+
+
 def hole_gespeicherte_beurteilung(material: Material) -> UrinBeurteilung | None:
-    """Liefert eine vorhandene, gespeicherte Beurteilung für das Material."""
+    """Liefert eine vorhandene, gespeicherte Beurteilung fuer das Material."""
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if not kulturdaten.beurteilung:
@@ -614,18 +639,18 @@ def zeige_vorschau(material_id: str) -> None:
 
         if not keime and not unbestaetigte_keime:
             if vorschau["wachstum"]:
-                st.info("Aktuell sind noch keine vollständigen Keimeinträge erfasst.")
+                st.info("Aktuell sind noch keine vollstaendigen Keimeintraege erfasst.")
             else:
-                st.info("Es ist aktuell 'kein Wachstum' ausgewählt.")
+                st.info("Es ist aktuell 'kein Wachstum' ausgewaehlt.")
             return
 
         if keime:
-            st.markdown("**Bestätigte Keime**")
+            st.markdown("**Bestaetigte Keime**")
             st.dataframe(
                 pd.DataFrame(keime).rename(
                     columns={
                         "keim_id": "Keim-ID",
-                        "keimzahl_code": "Bestätigte Keimzahl",
+                        "keimzahl_code": "Bestaetigte Keimzahl",
                         "rolle": "Rolle",
                         "keimgruppe": "Keimgruppe",
                     }
@@ -635,12 +660,12 @@ def zeige_vorschau(material_id: str) -> None:
             )
 
         if unbestaetigte_keime:
-            st.warning("Für mindestens einen Keim fehlt noch die Bestätigung der Keimzahl.")
+            st.warning("Fuer mindestens einen Keim fehlt noch die Bestaetigung der Keimzahl.")
             st.dataframe(
                 pd.DataFrame(unbestaetigte_keime).rename(
                     columns={
                         "keim_id": "Keim-ID",
-                        "ausgewaehlte_keimzahl_code": "Ausgewählte Keimzahl",
+                        "ausgewaehlte_keimzahl_code": "Ausgewaehlte Keimzahl",
                         "rolle": "Rolle",
                         "keimgruppe": "Keimgruppe",
                     }
@@ -651,11 +676,11 @@ def zeige_vorschau(material_id: str) -> None:
 
 
 def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
-    """Zeigt das aktuell vorhandene Beurteilungsergebnis übersichtlich an."""
+    """Zeigt das aktuell vorhandene Beurteilungsergebnis uebersichtlich an."""
     st.subheader("Beurteilung")
 
     if beurteilung is None:
-        st.info("Für dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
+        st.info("Fuer dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
         return
 
     with st.container(border=True):
@@ -675,7 +700,7 @@ def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
                 "Rolle": keim.rolle,
                 "Effektive Rolle": keim.effektive_rolle,
                 "Ergebnis": keim.ergebnis or "",
-                "Begründung": keim.begruendung,
+                "Begruendung": keim.begruendung,
             }
             for keim in beurteilung.keimbeurteilungen
         ]
@@ -689,19 +714,30 @@ def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
 
 def main() -> None:
     """Rendert die Seite ``Kulturen ablesen`` mit speicherbarer Eingabemaske."""
+    if hat_gueltige_befund_route():
+        zeige_befund_innerhalb_kulturen_ablesen()
+        return
+
     st.title("Kulturen ablesen")
     st.info(
-        "Diese Seite ist aktuell nur für Urin mit der Analyse "
+        "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
         "'Allgemeine Bakteriologie' vorgesehen. Kulturdaten und berechnete "
         "Beurteilungen werden materialbezogen gespeichert."
     )
+
+    if ist_befund_aktiv():
+        deaktiviere_befund()
+        st.warning(
+            "Die Befundansicht konnte nicht geoeffnet werden, "
+            "weil kein gueltiger Materialkontext vorhanden ist."
+        )
 
     zeige_aktionsleiste()
 
     materialreferenz = hole_material_id_fuer_kulturen_ablesen()
 
     if materialreferenz is None:
-        st.info("Es ist aktuell kein Material für 'Kulturen ablesen' ausgewählt.")
+        st.info("Es ist aktuell kein Material fuer 'Kulturen ablesen' ausgewaehlt.")
         return
 
     materialkontext = zeige_materialkontext(materialreferenz)
@@ -712,8 +748,8 @@ def main() -> None:
 
     if not ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
         st.warning(
-            "Diese Beurteilung wird aktuell nur für Material vom Typ 'Urin' "
-            "mit der Analyse 'Allgemeine Bakteriologie' unterstützt."
+            "Diese Beurteilung wird aktuell nur fuer Material vom Typ 'Urin' "
+            "mit der Analyse 'Allgemeine Bakteriologie' unterstuetzt."
         )
         return
 
@@ -732,7 +768,7 @@ def main() -> None:
     if hole_wachstum(material.id):
         zeige_keimeingabe(material.id)
 
-    button_spalte_links, button_spalte_rechts = st.columns(2)
+    button_spalte_links, button_spalte_mitte, button_spalte_rechts = st.columns(3)
 
     with button_spalte_links:
         if st.button(
@@ -743,13 +779,23 @@ def main() -> None:
             if speichere_kulturdaten(material):
                 aktuelle_beurteilung = None
 
-    with button_spalte_rechts:
+    with button_spalte_mitte:
         if st.button(
             "Beurteilung berechnen",
-            type="primary",
+            type="secondary",
             use_container_width=True,
         ):
             berechnete_beurteilung = berechne_und_speichere_beurteilung(material)
+            if berechnete_beurteilung is not None:
+                aktuelle_beurteilung = berechnete_beurteilung
+
+    with button_spalte_rechts:
+        if st.button(
+            "Validieren",
+            type="primary",
+            use_container_width=True,
+        ):
+            berechnete_beurteilung = validiere_und_oeffne_befund(material)
             if berechnete_beurteilung is not None:
                 aktuelle_beurteilung = berechnete_beurteilung
 
