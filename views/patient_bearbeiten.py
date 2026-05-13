@@ -27,20 +27,20 @@ from functions.patienten.navigation import (
 
 
 def kehre_zur_patientendetailansicht_zurueck(patient_id: str) -> None:
-    """Wechselt nach der Bearbeitung direkt zur Detailansicht des Patienten zurueck."""
+    """Wechselt nach der Bearbeitung intern zur Detailansicht des Patienten zurueck."""
     deaktiviere_patientenbearbeitung()
 
     if not aktiviere_patientendetailansicht(patient_id):
         st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
         return
 
-    st.switch_page("views/patientendetail.py")
+    st.rerun()
 
 
 def kehre_zur_patientenuebersicht_zurueck() -> None:
-    """Beendet die interne Bearbeitung und wechselt zur Patientenuebersicht zurueck."""
+    """Beendet die interne Bearbeitung und zeigt wieder die Patientenuebersicht an."""
     deaktiviere_patientenbearbeitung()
-    st.switch_page("views/patientenuebersicht.py")
+    st.rerun()
 
 
 def main() -> None:
@@ -145,4 +145,5 @@ def main() -> None:
         kehre_zur_patientenuebersicht_zurueck()
 
 
-main()
+if __name__ == "__main__":
+    main()

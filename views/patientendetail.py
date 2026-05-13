@@ -112,12 +112,12 @@ def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
 
 
 def oeffne_patientbearbeitung_aus_detail(patient_id: str) -> None:
-    """Oeffnet die Patientenbearbeitung als eigene interne Seite."""
+    """Oeffnet die Patientenbearbeitung innerhalb der sichtbaren Uebersichtsseite."""
     if not aktiviere_patientenbearbeitung(patient_id):
         st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
         return
 
-    st.switch_page("views/patient_bearbeiten.py")
+    st.rerun()
 
 
 def oeffne_kulturen_ablesen(material_id: str) -> None:
@@ -287,10 +287,11 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
     st.caption(
         "Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen. "
-        "Mit 'Kulturen' gelangst du bei unterstuetzten Urinmaterialien zur Seite "
-        "'Kulturen ablesen'. Wenn kein Button 'Kulturen' erscheint, ist fuer diese "
-        "Material-Analyse-Kombination in der App aktuell keine direkte Kulturseite "
-        "hinterlegt."
+        "Mit 'Kulturen' gelangst du nur bei unterstuetzten Urinmaterialien mit der "
+        "Analyse 'Allgemeine Bakteriologie' zur Seite 'Kulturen ablesen'. "
+        "Andere Material-Analyse-Kombinationen werden in der App dokumentiert, "
+        "aber aktuell nicht ueber einen Kulturworkflow mit Beurteilung und Befund "
+        "weiterverarbeitet."
     )
 
     if not sortierte_materialien:

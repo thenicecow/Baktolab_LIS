@@ -1,4 +1,4 @@
-"""Fachliche Inhalte und Kontexte für das Dashboard."""
+"""Fachliche Inhalte und Kontexte fuer das Dashboard."""
 
 from __future__ import annotations
 
@@ -24,13 +24,15 @@ class DashboardAktionskarte:
 
 
 DASHBOARD_UNTERTITEL = (
-    "Zentrale Startseite für das Laborinformationssystem im Modul "
+    "Zentrale Startseite fuer das Laborinformationssystem im Modul "
     "Biomedizinische Labordiagnostik."
 )
 
 DASHBOARD_HINWEIS = (
     "Empfohlener Ablauf: zuerst Patienten erfassen, danach Material erfassen "
-    "und anschliessend in der Patientenübersicht weiterarbeiten."
+    "und anschliessend in der Patientenuebersicht weiterarbeiten. "
+    "Der durchgaengige Demo-Workflow mit Kulturen, Beurteilung und Befund "
+    "ist aktuell auf Urin mit der Analyse 'Allgemeine Bakteriologie' begrenzt."
 )
 
 
@@ -38,37 +40,43 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
     DashboardAktionskarte(
         titel="Patienten erfassen",
         beschreibung="Neue Patienten anlegen und Stammdaten erfassen.",
-        button_text="Patientenerfassung öffnen",
+        button_text="Patientenerfassung oeffnen",
         seitenpfad="views/patienten_erfassen.py",
         button_typ="primary",
         groesse="gross",
     ),
     DashboardAktionskarte(
         titel="Material erfassen",
-        beschreibung="Neues Material für einen bestehenden Patienten erfassen.",
-        button_text="Materialerfassung öffnen",
+        beschreibung="Neues Material fuer einen bestehenden Patienten erfassen.",
+        button_text="Materialerfassung oeffnen",
         seitenpfad="views/material_erfassen.py",
         button_typ="primary",
         groesse="gross",
     ),
     DashboardAktionskarte(
-        titel="Patientenübersicht",
+        titel="Patientenuebersicht",
         beschreibung="Alle bereits erfassten Patienten anzeigen und durchsuchen.",
-        button_text="Patientenübersicht öffnen",
+        button_text="Patientenuebersicht oeffnen",
         seitenpfad="views/patientenuebersicht.py",
         groesse="klein",
     ),
     DashboardAktionskarte(
         titel="Resistenzmonitoring",
-        beschreibung="Resistenzraten erfassen, speichern und grafisch darstellen.",
-        button_text="Resistenzmonitoring öffnen",
+        beschreibung=(
+            "Einfaches Demo-Modul fuer ausgewaehlte Keime und Antibiotika "
+            "mit Verlaufsgrafik."
+        ),
+        button_text="Resistenzmonitoring oeffnen",
         seitenpfad="views/addition_calculator.py",
         groesse="klein",
     ),
     DashboardAktionskarte(
         titel="Kulturen ablesen",
-        beschreibung="Kulturdaten erfassen und eine Beurteilung für unterstützte Materialien berechnen.",
-        button_text="Kulturen ablesen öffnen",
+        beschreibung=(
+            "Kulturdaten erfassen und eine Beurteilung nur fuer Urin mit der "
+            "Analyse 'Allgemeine Bakteriologie' berechnen."
+        ),
+        button_text="Kulturen ablesen oeffnen",
         seitenpfad="views/kulturen_ablesen.py",
         groesse="klein",
     ),
@@ -89,7 +97,7 @@ def hole_anzeige_name(session_state: Mapping[str, object]) -> str:
 
 
 def hole_dashboard_aktionskarten() -> tuple[DashboardAktionskarte, ...]:
-    """Liefert alle fachlichen Aktionskarten für das Dashboard."""
+    """Liefert alle fachlichen Aktionskarten fuer das Dashboard."""
     return _DASHBOARD_AKTIONSKARTEN
 
 

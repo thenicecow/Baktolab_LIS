@@ -36,10 +36,12 @@ from functions.kulturen.navigation import (
     aktiviere_befund,
     deaktiviere_befund,
     deaktiviere_kulturen_ablesen,
+    hat_gueltige_befund_route,
     hole_material_id_fuer_kulturen_ablesen,
     ist_befund_aktiv,
 )
 from functions.patienten.navigation import aktiviere_patientendetailansicht
+from views.befund import main as rendere_befundansicht
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
@@ -59,7 +61,7 @@ def kehre_zur_patientendetailansicht_zurueck() -> None:
     deaktiviere_kulturen_ablesen()
 
     if patient_id is not None and aktiviere_patientendetailansicht(patient_id):
-        st.switch_page("views/patientendetail.py")
+        st.switch_page("views/patientenuebersicht.py")
         return
 
     st.switch_page("views/patientenuebersicht.py")
@@ -104,10 +106,9 @@ def zeige_kurzanleitung() -> None:
         )
 
 
-def bereinige_befundzustand_fuer_kulturseite() -> None:
-    """Beendet eine noch aktive Befundroute, wenn die sichtbare Kulturseite geladen wird."""
-    if ist_befund_aktiv():
-        deaktiviere_befund()
+def zeige_befund_innerhalb_kulturen_ablesen() -> None:
+    """Rendert die interne Befundansicht innerhalb der sichtbaren Kulturseite."""
+    rendere_befundansicht()
 
 
 def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | None:
@@ -288,7 +289,7 @@ def validiere_und_oeffne_befund(material: Material) -> UrinBeurteilung | None:
         st.error("Die Befundansicht konnte nicht geoeffnet werden.")
         return beurteilung
 
-    st.switch_page("views/befund.py")
+    st.rerun()
     return beurteilung
 
 
@@ -357,14 +358,26 @@ def verarbeite_aktionsbuttons(
 
 def main() -> None:
     """Rendert die Seite ``Kulturen ablesen`` mit speicherbarer Eingabemaske."""
+    if hat_gueltige_befund_route():
+        zeige_befund_innerhalb_kulturen_ablesen()
+        return
+
     st.title("Kulturen ablesen")
     st.info(
         "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
-        "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten und berechnete "
-        "Beurteilungen werden immer materialbezogen gespeichert."
+        "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten, Beurteilung "
+        "und Befund werden nur innerhalb dieses begrenzten Demo-Workflows "
+        "unterstuetzt. Andere Materialien oder Analysen werden in der App "
+        "dokumentiert, aber nicht ueber diese Seite weiterverarbeitet."
     )
 
-    bereinige_befundzustand_fuer_kulturseite()
+    if ist_befund_aktiv():
+        deaktiviere_befund()
+        st.warning(
+            "Die Befundansicht konnte nicht geoeffnet werden, "
+            "weil kein gueltiger Materialkontext vorhanden ist."
+        )
+
     zeige_aktionsleiste()
     zeige_kurzanleitung()
 

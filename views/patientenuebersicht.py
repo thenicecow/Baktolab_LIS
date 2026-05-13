@@ -17,6 +17,8 @@ from functions.patienten.navigation import (
     aktiviere_patientendetailansicht,
     deaktiviere_patientenbearbeitung,
     deaktiviere_patientendetailansicht,
+    hat_gueltige_patientenbearbeiten_route,
+    hat_gueltige_patientendetail_route,
     ist_patientenbearbeitung_aktiv,
     ist_patientendetailansicht_aktiv,
 )
@@ -24,24 +26,26 @@ from functions.patienten.uebersicht import (
     filtere_patienten,
     lade_patienten,
 )
+from views.patient_bearbeiten import main as rendere_patientenbearbeitung
+from views.patientendetail import main as rendere_patientendetailansicht
 
 
 def oeffne_patientendetail(patient_id: str) -> None:
-    """Oeffnet die Detailansicht eines Patienten als eigene interne Seite."""
+    """Aktiviert die interne Detailansicht innerhalb der Patientenuebersicht."""
     if not aktiviere_patientendetailansicht(patient_id):
         st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
         return
 
-    st.switch_page("views/patientendetail.py")
+    st.rerun()
 
 
 def oeffne_patientbearbeitung(patient_id: str) -> None:
-    """Oeffnet die Patientenbearbeitung als eigene interne Seite."""
+    """Aktiviert die interne Bearbeitung innerhalb der Patientenuebersicht."""
     if not aktiviere_patientenbearbeitung(patient_id):
         st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
         return
 
-    st.switch_page("views/patient_bearbeiten.py")
+    st.rerun()
 
 
 def bestaetige_und_loesche_patient(patient: Patient) -> None:
@@ -56,13 +60,14 @@ def bestaetige_und_loesche_patient(patient: Patient) -> None:
     st.rerun()
 
 
-def bereinige_interne_patientenzustaende() -> None:
-    """Bereinigt interne Detail- und Bearbeitungszustaende fuer die sichtbare Uebersicht."""
-    if ist_patientenbearbeitung_aktiv():
-        deaktiviere_patientenbearbeitung()
+def zeige_patientendetailansicht_innerhalb_der_uebersicht() -> None:
+    """Rendert die bestehende Patientendetailansicht innerhalb der sichtbaren Uebersicht."""
+    rendere_patientendetailansicht()
 
-    if ist_patientendetailansicht_aktiv():
-        deaktiviere_patientendetailansicht()
+
+def zeige_patientenbearbeitung_innerhalb_der_uebersicht() -> None:
+    """Rendert die bestehende Patientenbearbeitung innerhalb der sichtbaren Uebersicht."""
+    rendere_patientenbearbeitung()
 
 
 def zeige_erfolgsmeldungen() -> None:
@@ -165,7 +170,27 @@ def zeige_patientenzeile(patient: Patient) -> None:
 
 def main() -> None:
     """Rendert die Patientenuebersicht und bindet die Fachlogik ein."""
-    bereinige_interne_patientenzustaende()
+    if hat_gueltige_patientenbearbeiten_route():
+        zeige_patientenbearbeitung_innerhalb_der_uebersicht()
+        return
+
+    if hat_gueltige_patientendetail_route():
+        zeige_patientendetailansicht_innerhalb_der_uebersicht()
+        return
+
+    if ist_patientenbearbeitung_aktiv():
+        deaktiviere_patientenbearbeitung()
+        st.warning(
+            "Die Patientenbearbeitung konnte nicht geoeffnet werden, "
+            "weil keine gueltige Patienten-ID vorhanden ist."
+        )
+
+    if ist_patientendetailansicht_aktiv():
+        deaktiviere_patientendetailansicht()
+        st.warning(
+            "Die Patientendetailansicht konnte nicht geoeffnet werden, "
+            "weil keine gueltige Patienten-ID vorhanden ist."
+        )
 
     st.title("Patientenuebersicht")
     st.write("Hier siehst du alle erfassten Patienten.")

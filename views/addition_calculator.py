@@ -138,6 +138,20 @@ def speichere_verlaufsdaten(verlaufsdaten: pd.DataFrame) -> None:
     )
 
 
+def zeige_fachliche_abgrenzung() -> None:
+    """Zeigt die fachliche Abgrenzung des aktuellen Resistenzmonitorings an."""
+    keime = ", ".join(mdr_regeln.UNTERSTUETZTE_KEIME)
+    antibiotika = ", ".join(mdr_regeln.UNTERSTUETZTE_ANTIBIOTIKA)
+
+    st.info(
+        "Dieses Resistenzmonitoring ist ein separates Demo-Modul mit manueller Eingabe. "
+        "Es ist aktuell nicht direkt mit patientenbezogenen Kulturdaten verknuepft."
+    )
+    st.caption(
+        f"Unterstuetzte Keime: {keime}. Unterstuetzte Antibiotika: {antibiotika}."
+    )
+
+
 def validiere_berechnungseingaben(total: int, resistant: int) -> str | None:
     """Validiert die Kerneingaben fuer die Resistenzberechnung."""
     if resistant > total:
@@ -248,10 +262,7 @@ def main() -> None:
     initialisiere_resistenzmonitoring()
 
     st.title("Resistenzmonitoring")
-    st.info(
-        "Verlaufsdaten werden benutzerspezifisch gespeichert, beim Laden bereinigt "
-        "und fuer die Analyse aggregiert."
-    )
+    zeige_fachliche_abgrenzung()
 
     if hole_aktuellen_benutzernamen() is None:
         st.error("Es konnte kein angemeldeter Benutzer ermittelt werden.")

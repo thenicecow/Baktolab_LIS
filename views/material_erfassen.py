@@ -43,13 +43,15 @@ def zeige_naechsten_schritt_hinweis(materialtyp_code: str, analyse_code: str) ->
     """Zeigt an, was nach dem Speichern als naechster Schritt passiert."""
     if ist_direkter_kulturworkflow(materialtyp_code, analyse_code):
         st.info(
-            "Nach dem Speichern wird direkt die Seite 'Kulturen ablesen' fuer dieses "
-            "Material geoeffnet."
+            "Nach dem Speichern wird direkt der unterstuetzte Kulturworkflow "
+            "mit Beurteilung und Befund fuer dieses Material geoeffnet."
         )
         return
 
     st.caption(
-        "Nach dem Speichern kehrst du zur Detailansicht des Patienten zurueck."
+        "Dieses Material wird in der App gespeichert und in den Patientendetails angezeigt. "
+        "Ein Kulturworkflow mit Beurteilung und Befund ist aktuell nur fuer Urin mit der "
+        "Analyse 'Allgemeine Bakteriologie' vorhanden."
     )
 
 
@@ -80,7 +82,9 @@ def main() -> None:
     st.write("Hier kannst du ein neues Material fuer einen bestehenden Patienten erfassen.")
     st.info(
         "Reihenfolge: zuerst Patient festlegen, danach Materialtyp und Analyse waehlen "
-        "und zum Schluss die Datumsangaben pruefen."
+        "und zum Schluss die Datumsangaben pruefen. "
+        "Der durchgaengige Kulturworkflow mit Beurteilung und Befund ist aktuell nur "
+        "fuer Urin mit der Analyse 'Allgemeine Bakteriologie' vorgesehen."
     )
 
     repository = PatientenRepository()
@@ -206,7 +210,7 @@ def main() -> None:
                     st.switch_page("views/kulturen_ablesen.py")
                 else:
                     deaktiviere_kulturen_ablesen()
-                    st.switch_page("views/patientendetail.py")
+                    st.switch_page("views/patientenuebersicht.py")
 
     linke_spalte, rechte_spalte = st.columns(2)
 
