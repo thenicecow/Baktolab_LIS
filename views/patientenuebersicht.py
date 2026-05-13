@@ -1,9 +1,6 @@
-"""Streamlit-Seite für die Übersicht aller Patienten."""
+"""Streamlit-Seite fuer die Uebersicht aller Patienten."""
 
 from __future__ import annotations
-
-from pathlib import Path
-import runpy
 
 import streamlit as st
 
@@ -20,42 +17,35 @@ from functions.patienten.navigation import (
     aktiviere_patientendetailansicht,
     deaktiviere_patientenbearbeitung,
     deaktiviere_patientendetailansicht,
-    hat_gueltige_patientenbearbeiten_route,
-    hat_gueltige_patientendetail_route,
     ist_patientenbearbeitung_aktiv,
     ist_patientendetailansicht_aktiv,
 )
 from functions.patienten.uebersicht import (
     filtere_patienten,
     lade_patienten,
-    merke_patient_fuer_detailansicht,
 )
 
 
 def oeffne_patientendetail(patient_id: str) -> None:
-    """Merkt sich den Patienten und öffnet die Detailansicht innerhalb der Übersicht."""
-    merke_patient_fuer_detailansicht(patient_id)
-
+    """Oeffnet die Detailansicht eines Patienten als eigene interne Seite."""
     if not aktiviere_patientendetailansicht(patient_id):
-        st.error("Die Patientendetailansicht konnte nicht geöffnet werden.")
+        st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
         return
 
-    st.rerun()
+    st.switch_page("views/patientendetail.py")
 
 
 def oeffne_patientbearbeitung(patient_id: str) -> None:
-    """Öffnet die Bearbeitungsansicht innerhalb der Patientenübersicht."""
-    merke_patient_fuer_detailansicht(patient_id)
-
+    """Oeffnet die Patientenbearbeitung als eigene interne Seite."""
     if not aktiviere_patientenbearbeitung(patient_id):
-        st.error("Die Patientenbearbeitung konnte nicht geöffnet werden.")
+        st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
         return
 
-    st.rerun()
+    st.switch_page("views/patient_bearbeiten.py")
 
 
 def bestaetige_und_loesche_patient(patient: Patient) -> None:
-    """Löscht einen Patienten über die bestehende Löschlogik und aktualisiert die Übersicht."""
+    """Loescht einen Patienten ueber die bestehende Loeschlogik und aktualisiert die Uebersicht."""
     erfolgsmeldung = loesche_patient(patient.id)
 
     if erfolgsmeldung is None:
@@ -66,20 +56,17 @@ def bestaetige_und_loesche_patient(patient: Patient) -> None:
     st.rerun()
 
 
-def zeige_patientendetailansicht_innerhalb_der_uebersicht() -> None:
-    """Rendert die bestehende Patientendetailansicht innerhalb der sichtbaren Übersichtsseite."""
-    detailansicht_pfad = Path(__file__).with_name("patientendetail.py")
-    runpy.run_path(str(detailansicht_pfad), run_name="__main__")
+def bereinige_interne_patientenzustaende() -> None:
+    """Bereinigt interne Detail- und Bearbeitungszustaende fuer die sichtbare Uebersicht."""
+    if ist_patientenbearbeitung_aktiv():
+        deaktiviere_patientenbearbeitung()
 
-
-def zeige_patientbearbeitung_innerhalb_der_uebersicht() -> None:
-    """Rendert die bestehende Patientenbearbeitung innerhalb der sichtbaren Übersichtsseite."""
-    bearbeitungsansicht_pfad = Path(__file__).with_name("patient_bearbeiten.py")
-    runpy.run_path(str(bearbeitungsansicht_pfad), run_name="__main__")
+    if ist_patientendetailansicht_aktiv():
+        deaktiviere_patientendetailansicht()
 
 
 def zeige_erfolgsmeldungen() -> None:
-    """Zeigt eine zwischengespeicherte Erfolgsmeldung zur Patientenlöschung an."""
+    """Zeigt eine zwischengespeicherte Erfolgsmeldung zur Patientenloeschung an."""
     erfolgsmeldung = hole_und_entferne_erfolgsmeldung()
 
     if erfolgsmeldung:
@@ -101,7 +88,7 @@ def zeige_leermeldung() -> None:
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurück zum Dashboard",
+            label="Zurueck zum Dashboard",
             icon=":material/dashboard:",
         )
 
@@ -122,7 +109,7 @@ def zeige_tabellenkopf() -> None:
         "Erstellt am",
         "Details",
         "Bearbeiten",
-        "Löschen",
+        "Loeschen",
     )
 
     for spalte, ueberschrift in zip(spalten, ueberschriften):
@@ -130,16 +117,16 @@ def zeige_tabellenkopf() -> None:
 
 
 def zeige_loeschaktion(patient: Patient) -> None:
-    """Zeigt die abgesicherte Löschaktion für einen Patienten in der Übersicht an."""
-    with st.popover("Löschen", use_container_width=True):
+    """Zeigt die abgesicherte Loeschaktion fuer einen Patienten in der Uebersicht an."""
+    with st.popover("Loeschen", use_container_width=True):
         st.warning(
             f"Patient {patient.vorname} {patient.nachname} wird mit allen "
-            "zugehörigen Materialien und Kulturdaten dauerhaft gelöscht."
+            "zugehoerigen Materialien und Kulturdaten dauerhaft geloescht."
         )
-        st.caption("Diese Aktion kann nicht rückgängig gemacht werden.")
+        st.caption("Diese Aktion kann nicht rueckgaengig gemacht werden.")
 
         if st.button(
-            "Löschen bestätigen",
+            "Loeschen bestaetigen",
             key=f"patient_loeschen_{patient.id}",
             type="primary",
             use_container_width=True,
@@ -177,30 +164,10 @@ def zeige_patientenzeile(patient: Patient) -> None:
 
 
 def main() -> None:
-    """Rendert die Patientenübersicht und bindet die Fachlogik ein."""
-    if hat_gueltige_patientenbearbeiten_route():
-        zeige_patientbearbeitung_innerhalb_der_uebersicht()
-        return
+    """Rendert die Patientenuebersicht und bindet die Fachlogik ein."""
+    bereinige_interne_patientenzustaende()
 
-    if hat_gueltige_patientendetail_route():
-        zeige_patientendetailansicht_innerhalb_der_uebersicht()
-        return
-
-    if ist_patientenbearbeitung_aktiv():
-        deaktiviere_patientenbearbeitung()
-        st.warning(
-            "Die Patientenbearbeitung konnte nicht geöffnet werden, "
-            "weil keine gültige Patienten-ID vorhanden ist."
-        )
-
-    if ist_patientendetailansicht_aktiv():
-        deaktiviere_patientendetailansicht()
-        st.warning(
-            "Die Patientendetailansicht konnte nicht geöffnet werden, "
-            "weil keine gültige Patienten-ID vorhanden ist."
-        )
-
-    st.title("Patientenübersicht")
+    st.title("Patientenuebersicht")
     st.write("Hier siehst du alle erfassten Patienten.")
     zeige_erfolgsmeldungen()
 
@@ -214,7 +181,7 @@ def main() -> None:
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurück zum Dashboard",
+            label="Zurueck zum Dashboard",
             icon=":material/dashboard:",
         )
 
@@ -249,4 +216,5 @@ def main() -> None:
 
 
 main()
+
 

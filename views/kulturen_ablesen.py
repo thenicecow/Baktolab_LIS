@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import runpy
-
 import streamlit as st
 
 from domaene import Material, Patient
@@ -39,7 +36,6 @@ from functions.kulturen.navigation import (
     aktiviere_befund,
     deaktiviere_befund,
     deaktiviere_kulturen_ablesen,
-    hat_gueltige_befund_route,
     hole_material_id_fuer_kulturen_ablesen,
     ist_befund_aktiv,
 )
@@ -62,8 +58,9 @@ def kehre_zur_patientendetailansicht_zurueck() -> None:
     deaktiviere_befund()
     deaktiviere_kulturen_ablesen()
 
-    if patient_id is not None:
-        aktiviere_patientendetailansicht(patient_id)
+    if patient_id is not None and aktiviere_patientendetailansicht(patient_id):
+        st.switch_page("views/patientendetail.py")
+        return
 
     st.switch_page("views/patientenuebersicht.py")
 
@@ -107,19 +104,10 @@ def zeige_kurzanleitung() -> None:
         )
 
 
-def zeige_befund_innerhalb_kulturen_ablesen() -> None:
-    """Rendert die interne Befundansicht innerhalb der bestehenden Kulturseite."""
-    befundansicht_pfad = Path(__file__).with_name("befund.py")
-
-    try:
-        runpy.run_path(str(befundansicht_pfad), run_name="__main__")
-    except Exception:
+def bereinige_befundzustand_fuer_kulturseite() -> None:
+    """Beendet eine noch aktive Befundroute, wenn die sichtbare Kulturseite geladen wird."""
+    if ist_befund_aktiv():
         deaktiviere_befund()
-        st.error(
-            baue_technische_fehlernachricht(
-                "Die Befundansicht konnte nicht geladen werden."
-            )
-        )
 
 
 def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | None:
@@ -300,7 +288,7 @@ def validiere_und_oeffne_befund(material: Material) -> UrinBeurteilung | None:
         st.error("Die Befundansicht konnte nicht geoeffnet werden.")
         return beurteilung
 
-    st.rerun()
+    st.switch_page("views/befund.py")
     return beurteilung
 
 
@@ -369,10 +357,6 @@ def verarbeite_aktionsbuttons(
 
 def main() -> None:
     """Rendert die Seite ``Kulturen ablesen`` mit speicherbarer Eingabemaske."""
-    if hat_gueltige_befund_route():
-        zeige_befund_innerhalb_kulturen_ablesen()
-        return
-
     st.title("Kulturen ablesen")
     st.info(
         "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
@@ -380,13 +364,7 @@ def main() -> None:
         "Beurteilungen werden immer materialbezogen gespeichert."
     )
 
-    if ist_befund_aktiv():
-        deaktiviere_befund()
-        st.warning(
-            "Die Befundansicht konnte nicht geoeffnet werden, "
-            "weil kein gueltiger Materialkontext vorhanden ist."
-        )
-
+    bereinige_befundzustand_fuer_kulturseite()
     zeige_aktionsleiste()
     zeige_kurzanleitung()
 

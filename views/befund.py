@@ -55,7 +55,7 @@ ZUSATZFLORA_CODES: frozenset[str] = frozenset({"kf", "kfzus", "uriflor", "urikon
 def kehre_zu_kulturen_ablesen_zurueck() -> None:
     """Beendet nur die Befundansicht und zeigt wieder die Kulturseite an."""
     deaktiviere_befund()
-    st.rerun()
+    st.switch_page("views/kulturen_ablesen.py")
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:

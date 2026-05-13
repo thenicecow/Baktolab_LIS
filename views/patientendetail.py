@@ -1,4 +1,4 @@
-"""Streamlit-Seite für die Detailansicht eines Patienten."""
+"""Streamlit-Seite fuer die Detailansicht eines Patienten."""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def zeige_ansatzhinweistabelle(
 
 
 def zeige_ansatzhinweis_nach_speicherung() -> None:
-    """Zeigt den Hinweis für ein soeben erfolgreich gespeichertes Material an."""
+    """Zeigt den Hinweis fuer ein soeben erfolgreich gespeichertes Material an."""
     ansatzhinweis = hole_und_entferne_ansatzhinweis()
     zeige_ansatzhinweistabelle(
         ansatzhinweis,
@@ -90,11 +90,11 @@ def zeige_ansatzhinweis_nach_speicherung() -> None:
 
 
 def zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien: list[Material]) -> None:
-    """Zeigt den Hinweis für das in der Materialliste ausgewählte Material an."""
+    """Zeigt den Hinweis fuer das in der Materialliste ausgewaehlte Material an."""
     ansatzhinweis = baue_ansatzhinweis_fuer_ausgewaehltes_material(materialien)
     zeige_ansatzhinweistabelle(
         ansatzhinweis,
-        "Ansatzhinweis zum ausgewählten Material",
+        "Ansatzhinweis zum ausgewaehlten Material",
     )
 
 
@@ -105,25 +105,25 @@ def wechsle_zu_sichtbarer_seite(zielseite: str) -> None:
 
 
 def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
-    """Öffnet die Materialerfassung für den aktuellen Patienten."""
+    """Oeffnet die Materialerfassung fuer den aktuellen Patienten."""
     merke_patient_id_fuer_material_erfassen(patient_id)
     deaktiviere_patientendetailansicht()
     st.switch_page("views/material_erfassen.py")
 
 
 def oeffne_patientbearbeitung_aus_detail(patient_id: str) -> None:
-    """Oeffnet die Patientenbearbeitung ueber die stabile Rueckroute der Uebersicht."""
+    """Oeffnet die Patientenbearbeitung als eigene interne Seite."""
     if not aktiviere_patientenbearbeitung(patient_id):
-        st.error("Die Patientenbearbeitung konnte nicht geöffnet werden.")
+        st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
         return
 
-    st.switch_page("views/patientenuebersicht.py")
+    st.switch_page("views/patient_bearbeiten.py")
 
 
 def oeffne_kulturen_ablesen(material_id: str) -> None:
-    """Aktiviert die Seite ``Kulturen ablesen`` für ein Material."""
+    """Aktiviert die Seite ``Kulturen ablesen`` fuer ein Material."""
     if not aktiviere_kulturen_ablesen(material_id):
-        st.error("Die Seite 'Kulturen ablesen' konnte nicht geöffnet werden.")
+        st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
         return
 
     st.switch_page("views/kulturen_ablesen.py")
@@ -135,14 +135,14 @@ def zeige_aktionsleiste(patient: Patient | None) -> None:
 
     with erste_spalte:
         if st.button(
-            "Zurück zur Patientenübersicht",
+            "Zurueck zur Patientenuebersicht",
             use_container_width=True,
         ):
             wechsle_zu_sichtbarer_seite("views/patientenuebersicht.py")
 
     with zweite_spalte:
         if st.button(
-            "Zurück zum Dashboard",
+            "Zurueck zum Dashboard",
             use_container_width=True,
         ):
             wechsle_zu_sichtbarer_seite("views/dashboard.py")
@@ -157,7 +157,7 @@ def zeige_aktionsleiste(patient: Patient | None) -> None:
 
     with vierte_spalte:
         if st.button(
-            "Material für diesen Patienten erfassen",
+            "Material fuer diesen Patienten erfassen",
             use_container_width=True,
             type="primary",
             disabled=patient is None,
@@ -193,21 +193,21 @@ def zeige_stammdaten(patient: Patient) -> None:
 
 
 def zeige_loeschsektion(patient: Patient) -> None:
-    """Zeigt eine bewusst abgesicherte Löschsektion für den aktuellen Patienten an."""
+    """Zeigt eine bewusst abgesicherte Loeschsektion fuer den aktuellen Patienten an."""
     initialisiere_loeschzustand(patient.id)
 
-    with st.expander("Patient löschen", expanded=False):
+    with st.expander("Patient loeschen", expanded=False):
         st.warning(
-            "Wenn du diesen Patienten löschst, werden auch alle zugehörigen "
+            "Wenn du diesen Patienten loeschst, werden auch alle zugehoerigen "
             "Materialien und vorhandenen Kulturdaten dauerhaft entfernt."
         )
         st.checkbox(
-            "Ich habe die Warnung gelesen und möchte diesen Patienten wirklich löschen.",
+            "Ich habe die Warnung gelesen und moechte diesen Patienten wirklich loeschen.",
             key=LOESCHEN_BESTAETIGUNG_SCHLUESSEL,
         )
 
         if st.button(
-            "Patient endgültig löschen",
+            "Patient endgueltig loeschen",
             use_container_width=True,
             disabled=not bool(
                 st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
@@ -222,7 +222,7 @@ def zeige_loeschsektion(patient: Patient) -> None:
 
 
 def zeige_filterleiste() -> tuple[str | None, str | None]:
-    """Rendert die Filter für Materialtyp und Analyse."""
+    """Rendert die Filter fuer Materialtyp und Analyse."""
     materialtyp_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in MATERIALTYPEN]
     analyse_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in ANALYSEN]
 
@@ -265,7 +265,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
     st.subheader("Materialien")
 
     if not materialien:
-        st.info("Für diesen Patienten sind noch keine Materialien erfasst.")
+        st.info("Fuer diesen Patienten sind noch keine Materialien erfasst.")
         return
 
     materialtyp_filter, analyse_filter = zeige_filterleiste()
@@ -280,21 +280,21 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
     if materialtyp_filter or analyse_filter:
         st.caption(
-            f"Gefilterte Materialeinträge: {len(sortierte_materialien)} von {len(materialien)}"
+            f"Gefilterte Materialeintraege: {len(sortierte_materialien)} von {len(materialien)}"
         )
     else:
-        st.caption(f"Anzahl Materialeinträge: {len(sortierte_materialien)}")
+        st.caption(f"Anzahl Materialeintraege: {len(sortierte_materialien)}")
 
     st.caption(
         "Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen. "
-        "Mit 'Kulturen' gelangst du bei unterstützten Urinmaterialien zur Seite "
+        "Mit 'Kulturen' gelangst du bei unterstuetzten Urinmaterialien zur Seite "
         "'Kulturen ablesen'. Wenn kein Button 'Kulturen' erscheint, ist fuer diese "
         "Material-Analyse-Kombination in der App aktuell keine direkte Kulturseite "
         "hinterlegt."
     )
 
     if not sortierte_materialien:
-        st.info("Für die gesetzten Filter wurden keine Materialien gefunden.")
+        st.info("Fuer die gesetzten Filter wurden keine Materialien gefunden.")
         return
 
     spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
