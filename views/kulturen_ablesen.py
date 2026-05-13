@@ -35,6 +35,7 @@ from functions.kulturen.navigation import (
     hole_material_id_fuer_kulturen_ablesen,
     ist_befund_aktiv,
 )
+from functions.patienten.navigation import aktiviere_patientendetailansicht
 
 
 ROLLEN: tuple[str, ...] = ("pathogen", "kontaminante")
@@ -62,8 +63,24 @@ REFERENZBILD_BREITE_PIXEL = 140
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
-    """Beendet die Kulturseite und wechselt zur sichtbaren Patientenuebersicht zurueck."""
+    """Kehrt moeglichst in die Detailansicht des aktuell bearbeiteten Patienten zurueck."""
+    patient_id: str | None = None
+
+    try:
+        materialkontext = lade_materialkontext_fuer_kulturen_ablesen()
+    except Exception:
+        materialkontext = None
+
+    if materialkontext is not None:
+        patient, _material = materialkontext
+        patient_id = patient.id
+
+    deaktiviere_befund()
     deaktiviere_kulturen_ablesen()
+
+    if patient_id is not None:
+        aktiviere_patientendetailansicht(patient_id)
+
     st.switch_page("views/patientenuebersicht.py")
 
 
@@ -90,6 +107,19 @@ def zeige_aktionsleiste() -> None:
             "views/dashboard.py",
             label="Zurueck zum Dashboard",
             icon=":material/dashboard:",
+        )
+
+
+def zeige_kurzanleitung() -> None:
+    """Zeigt eine kurze, gut sichtbare Anleitung fuer die Arbeitsschritte."""
+    with st.expander("Kurzanleitung fuer diese Seite", expanded=True):
+        st.markdown(
+            """
+1. Lege zuerst fest, ob Wachstum vorliegt.
+2. Erfasse nur die vorhandenen Keime und bestaetige jede Keimzahl anhand des Referenzbilds.
+3. Speichere die Eingabe oder berechne die Beurteilung, sobald alle Angaben vollstaendig sind.
+4. Mit 'Validieren und Befund oeffnen' wird der Befund nur nach einer gueltigen Beurteilung geoeffnet.
+"""
         )
 
 
@@ -185,9 +215,9 @@ def hole_referenzbild_pfad(keimzahl_code: str) -> Path:
 
 def setze_keimzahl_als_unbestaetigt(material_id: str, index: int) -> None:
     """Setzt eine geaenderte Keimzahl sofort in den unbestaetigten Zustand zurueck."""
-    st.session_state[baue_keimzahl_bestaetigt_schluessel(material_id, index)] = False
-    st.session_state[baue_bestaetigte_keimzahl_schluessel(material_id, index)] = None
-    st.session_state[baue_referenzbild_anzeigen_schluessel(material_id, index)] = True
+    st.session_state[baue_keimzahl_bestaetigt_schluessel(material.id, index)] = False
+    st.session_state[baue_bestaetigte_keimzahl_schluessel(material.id, index)] = None
+    st.session_state[baue_referenzbild_anzeigen_schluessel(material.id, index)] = True
 
 
 def bestaetige_keimzahl(material_id: str, index: int) -> None:
@@ -400,6 +430,9 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
         st.write(f"Materialtyp: {loese_materialtyp_label_auf(material.materialtyp_code)}")
         st.write(f"Analyse: {loese_analyse_label_auf(material.klinische_frage_code)}")
         st.write(f"Eingangsdatum: {formatiere_datum(material.eingangsdatum)}")
+        st.caption(
+            "Alle Eingaben auf dieser Seite werden direkt bei diesem Material gespeichert."
+        )
 
     return patient, material
 
@@ -721,8 +754,8 @@ def main() -> None:
     st.title("Kulturen ablesen")
     st.info(
         "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
-        "'Allgemeine Bakteriologie' vorgesehen. Kulturdaten und berechnete "
-        "Beurteilungen werden materialbezogen gespeichert."
+        "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten und berechnete "
+        "Beurteilungen werden immer materialbezogen gespeichert."
     )
 
     if ist_befund_aktiv():
@@ -733,11 +766,16 @@ def main() -> None:
         )
 
     zeige_aktionsleiste()
+    zeige_kurzanleitung()
 
     materialreferenz = hole_material_id_fuer_kulturen_ablesen()
 
     if materialreferenz is None:
-        st.info("Es ist aktuell kein Material fuer 'Kulturen ablesen' ausgewaehlt.")
+        st.info(
+            "Es ist aktuell kein Material fuer 'Kulturen ablesen' ausgewaehlt. "
+            "Oeffne die Seite ueber die Patientendetailansicht oder direkt nach dem "
+            "Speichern eines passenden Materials."
+        )
         return
 
     materialkontext = zeige_materialkontext(materialreferenz)
@@ -748,8 +786,10 @@ def main() -> None:
 
     if not ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
         st.warning(
-            "Diese Beurteilung wird aktuell nur fuer Material vom Typ 'Urin' "
-            "mit der Analyse 'Allgemeine Bakteriologie' unterstuetzt."
+            "Fuer dieses Material ist 'Kulturen ablesen' aktuell nicht freigeschaltet. "
+            "Unterstuetzt wird nur Material vom Typ 'Urin' mit der Analyse "
+            "'Allgemeine Bakteriologie'. Kehre zur Patientendetailansicht zurueck, "
+            "um ein anderes Material auszuwaehlen oder den Fall dort weiterzubearbeiten."
         )
         return
 
@@ -766,7 +806,16 @@ def main() -> None:
     )
 
     if hole_wachstum(material.id):
+        st.caption(
+            "Erfasse nur die vorhandenen Keime. Jede ausgewaehlte Keimzahl muss vor "
+            "dem Speichern oder Beurteilen anhand des Referenzbilds bestaetigt werden."
+        )
         zeige_keimeingabe(material.id)
+    else:
+        st.caption(
+            "Bei 'nein' werden keine Keime erfasst. Die Beurteilung fuehrt dann zu "
+            "'Kein Wachstum'."
+        )
 
     button_spalte_links, button_spalte_mitte, button_spalte_rechts = st.columns(3)
 
@@ -791,7 +840,7 @@ def main() -> None:
 
     with button_spalte_rechts:
         if st.button(
-            "Validieren",
+            "Validieren und Befund oeffnen",
             type="primary",
             use_container_width=True,
         ):

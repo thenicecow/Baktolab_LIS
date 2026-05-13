@@ -38,7 +38,7 @@ from functions.patienten.loeschen import (
     merke_erfolgreiche_loeschung,
 )
 from functions.patienten.navigation import (
-    aktiviere_patientendetailansicht,
+    aktiviere_patientenbearbeitung,
     deaktiviere_patientendetailansicht,
 )
 
@@ -112,12 +112,12 @@ def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
 
 
 def oeffne_patientbearbeitung_aus_detail(patient_id: str) -> None:
-    """Öffnet die Bearbeitungsseite für den aktuellen Patienten."""
-    if not aktiviere_patientendetailansicht(patient_id):
+    """Oeffnet die Patientenbearbeitung ueber die stabile Rueckroute der Uebersicht."""
+    if not aktiviere_patientenbearbeitung(patient_id):
         st.error("Die Patientenbearbeitung konnte nicht geöffnet werden.")
         return
 
-    st.switch_page("views/patient_bearbeiten.py")
+    st.switch_page("views/patientenuebersicht.py")
 
 
 def oeffne_kulturen_ablesen(material_id: str) -> None:
@@ -163,6 +163,15 @@ def zeige_aktionsleiste(patient: Patient | None) -> None:
             disabled=patient is None,
         ) and patient is not None:
             oeffne_materialerfassung_aus_detail(patient.id)
+
+
+def zeige_arbeitskontext() -> None:
+    """Zeigt den empfohlenen Ablauf fuer die weitere Bearbeitung des Patienten."""
+    st.info(
+        "Empfohlener Ablauf: zuerst Stammdaten pruefen, danach Material fuer diesen "
+        "Patienten erfassen und anschliessend je nach Material in der Materialliste "
+        "mit 'Anzeigen' oder 'Kulturen' weiterarbeiten."
+    )
 
 
 def zeige_stammdaten(patient: Patient) -> None:
@@ -279,7 +288,9 @@ def zeige_material_log(materialien: list[Material]) -> None:
     st.caption(
         "Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen. "
         "Mit 'Kulturen' gelangst du bei unterstützten Urinmaterialien zur Seite "
-        "'Kulturen ablesen'."
+        "'Kulturen ablesen'. Wenn kein Button 'Kulturen' erscheint, ist fuer diese "
+        "Material-Analyse-Kombination in der App aktuell keine direkte Kulturseite "
+        "hinterlegt."
     )
 
     if not sortierte_materialien:
@@ -349,6 +360,7 @@ def main() -> None:
     if patient is None:
         return
 
+    zeige_arbeitskontext()
     zeige_stammdaten(patient)
     st.divider()
     zeige_loeschsektion(patient)

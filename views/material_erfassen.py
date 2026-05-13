@@ -12,7 +12,11 @@ from functions.gemeinsam.anzeige_hilfen import (
     loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
-from functions.kulturen.ablesen import ist_material_fuer_kulturen_ablesen_unterstuetzt
+from functions.kulturen.ablesen import (
+    UNTERSTUETZTER_ANALYSE_CODE,
+    UNTERSTUETZTER_MATERIALTYP_CODE,
+    ist_material_fuer_kulturen_ablesen_unterstuetzt,
+)
 from functions.kulturen.navigation import (
     aktiviere_kulturen_ablesen,
     deaktiviere_kulturen_ablesen,
@@ -25,6 +29,28 @@ from functions.materialien.erfassung import (
 )
 from functions.patienten.navigation import aktiviere_patientendetailansicht
 from persistenz import PatientenRepository
+
+
+def ist_direkter_kulturworkflow(materialtyp_code: str, analyse_code: str) -> bool:
+    """Prueft, ob nach dem Speichern direkt 'Kulturen ablesen' folgt."""
+    return (
+        materialtyp_code == UNTERSTUETZTER_MATERIALTYP_CODE
+        and analyse_code == UNTERSTUETZTER_ANALYSE_CODE
+    )
+
+
+def zeige_naechsten_schritt_hinweis(materialtyp_code: str, analyse_code: str) -> None:
+    """Zeigt an, was nach dem Speichern als naechster Schritt passiert."""
+    if ist_direkter_kulturworkflow(materialtyp_code, analyse_code):
+        st.info(
+            "Nach dem Speichern wird direkt die Seite 'Kulturen ablesen' fuer dieses "
+            "Material geoeffnet."
+        )
+        return
+
+    st.caption(
+        "Nach dem Speichern kehrst du zur Detailansicht des Patienten zurueck."
+    )
 
 
 def zeige_leermeldung() -> None:
@@ -52,6 +78,10 @@ def main() -> None:
     """Rendert die Materialerfassung und bindet die Fachlogik ein."""
     st.title("Material erfassen")
     st.write("Hier kannst du ein neues Material für einen bestehenden Patienten erfassen.")
+    st.info(
+        "Reihenfolge: zuerst Patient festlegen, danach Materialtyp und Analyse waehlen "
+        "und zum Schluss die Datumsangaben pruefen."
+    )
 
     repository = PatientenRepository()
     patienten = lade_patienten(repository)
@@ -136,6 +166,8 @@ def main() -> None:
                 max_value=date.today(),
                 format="DD.MM.YYYY",
             )
+
+        zeige_naechsten_schritt_hinweis(materialtyp_code, analyse_code)
 
         speichern = st.form_submit_button(
             "Material speichern",
