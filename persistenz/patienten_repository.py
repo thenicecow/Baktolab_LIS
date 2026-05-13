@@ -10,15 +10,15 @@ from domaene import Kulturdaten, Material, Patient
 from persistenz.datei_ablage import (
     baue_datenwurzel,
     ist_patientenakten_datei,
-    patientendaten_dateipfad,
+    patientendaten_dateiname,
 )
 from persistenz.json_hilfen import (
     lade_json_objekt,
     patientendaten_als_dict,
     patientendaten_aus_dict,
     patientenakte_aus_dict,
-    speichere_json_objekt,
 )
+from persistenz.konfiguration import hole_switchdrive_data_dir
 from utils.data_handler import DataHandler
 from utils.data_manager import DataManager
 
@@ -34,7 +34,10 @@ class PatientenRepository:
         self.data_manager = data_manager or DataManager()
         datenwurzel = baue_datenwurzel(self.data_manager.fs_root_folder)
         self.data_handler = DataHandler(self.data_manager.fs, datenwurzel)
-        self.patientendatei = patientendaten_dateipfad()
+        self.patientendatei = posixpath.join(
+            hole_switchdrive_data_dir(),
+            patientendaten_dateiname(),
+        )
 
     def lade_alle_patienten(self) -> list[Patient]:
         """Laedt alle Patienten und sortiert sie wie bisher alphabetisch."""
@@ -208,7 +211,7 @@ class PatientenRepository:
         self,
     ) -> list[tuple[Patient, list[Material]]] | None:
         """Laedt Patientenakten aus der zentralen Datei oder ``None`` bei fehlender Datei."""
-        rohdaten = lade_json_objekt(self.data_handler, self.patientendatei)
+        rohdaten = self._lade_zentrale_patientendaten_rohdaten()
         if rohdaten is None:
             return None
 
@@ -241,7 +244,34 @@ class PatientenRepository:
     ) -> None:
         """Schreibt alle Patientenakten in die zentrale JSON-Datei."""
         daten = patientendaten_als_dict(patientenakten)
-        speichere_json_objekt(self.data_handler, self.patientendatei, daten)
+        self.data_manager.save_app_data(daten, self.patientendatei)
+
+    def _lade_zentrale_patientendaten_rohdaten(self) -> dict[str, object] | None:
+        """Laedt das zentrale JSON-Objekt ueber den DataManager defensiv."""
+        try:
+            rohdaten = self.data_manager.load_app_data(self.patientendatei)
+        except FileNotFoundError:
+            return None
+        except (OSError, TypeError, ValueError) as exc:
+            logger.warning(
+                "Zentrale Patientendatei konnte nicht geladen werden (%s): %s",
+                self.patientendatei,
+                exc,
+            )
+            return None
+
+        if rohdaten is None:
+            logger.warning("Zentrale Patientendatei ist leer (%s).", self.patientendatei)
+            return None
+
+        if not isinstance(rohdaten, dict):
+            logger.warning(
+                "Zentrale Patientendatei enthaelt kein gueltiges Objekt (%s).",
+                self.patientendatei,
+            )
+            return None
+
+        return rohdaten
 
     def _liste_patientendateien(self) -> list[str]:
         """Liest die Legacy-Einzeldateien der Patientenakten aus der Datenwurzel."""

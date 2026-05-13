@@ -88,6 +88,24 @@ def hole_zeitpunkt() -> str:
     return datetime.now(pytz.timezone("Europe/Zurich")).strftime("%d.%m.%Y %H:%M")
 
 
+def lade_verlaufsdaten_aus_speicher() -> tuple[pd.DataFrame, bool]:
+    """Laedt Verlaufsdaten bevorzugt aus JSON und faellt einmalig auf Legacy-CSV zurueck."""
+    try:
+        geladene_daten = data_manager.load_user_data(resistenz_daten.VERLAUF_DATEIPFAD)
+        return resistenz_daten.verlaufsdaten_aus_speicherobjekt(geladene_daten), False
+    except (FileNotFoundError, TypeError, ValueError):
+        pass
+
+    try:
+        geladene_daten = data_manager.load_user_data(
+            resistenz_daten.LEGACY_VERLAUF_DATEIPFAD
+        )
+    except (FileNotFoundError, TypeError, ValueError):
+        return resistenz_daten.hole_leeres_verlaufs_dataframe(), False
+
+    return resistenz_daten.verlaufsdaten_aus_speicherobjekt(geladene_daten), True
+
+
 def initialisiere_resistenzmonitoring() -> None:
     """Laedt und normalisiert die benutzerspezifischen Verlaufsdaten bei Bedarf neu."""
     aktueller_benutzer = hole_aktuellen_benutzernamen()
@@ -102,11 +120,14 @@ def initialisiere_resistenzmonitoring() -> None:
     if aktueller_benutzer is None:
         verlauf = resistenz_daten.hole_leeres_verlaufs_dataframe()
     else:
-        geladene_daten = data_manager.load_user_data(
-            resistenz_daten.VERLAUF_DATEIPFAD,
-            initial_value=resistenz_daten.hole_leeres_verlaufs_dataframe(),
-        )
-        verlauf = resistenz_daten.normalisiere_verlaufsdaten(geladene_daten)
+        verlauf, stammt_aus_legacy_csv = lade_verlaufsdaten_aus_speicher()
+        if stammt_aus_legacy_csv:
+            try:
+                speichere_verlaufsdaten(verlauf)
+            except Exception:
+                st.warning(
+                    "Vorhandene Verlaufsdaten konnten noch nicht in das neue JSON-Format uebernommen werden."
+                )
 
     st.session_state[VERLAUF_DF_SCHLUESSEL] = verlauf
     st.session_state[VERLAUF_BENUTZER_SCHLUESSEL] = aktueller_benutzer
@@ -131,9 +152,9 @@ def setze_verlaufsdaten(verlaufsdaten: pd.DataFrame) -> None:
 
 
 def speichere_verlaufsdaten(verlaufsdaten: pd.DataFrame) -> None:
-    """Persistiert benutzerspezifische Verlaufsdaten ueber den vorhandenen Datenmanager."""
+    """Persistiert benutzerspezifische Verlaufsdaten als JSON ueber den DataManager."""
     data_manager.save_user_data(
-        resistenz_daten.normalisiere_verlaufsdaten(verlaufsdaten),
+        resistenz_daten.verlaufsdaten_fuer_speicherung(verlaufsdaten),
         resistenz_daten.VERLAUF_DATEIPFAD,
     )
 

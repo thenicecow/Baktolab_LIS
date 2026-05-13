@@ -1,4 +1,4 @@
-"""Hilfsfunktionen fuer Datenverarbeitung und Aggregation im Resistenzmonitoring."""
+"""Hilfsfunktionen fuer Datenverarbeitung, Serialisierung und Aggregation im Resistenzmonitoring."""
 
 from __future__ import annotations
 
@@ -7,7 +7,9 @@ from datetime import date
 import pandas as pd
 
 
-VERLAUF_DATEIPFAD = "resistance_data.csv"
+VERLAUF_DATEIPFAD = "resistance_data.json"
+LEGACY_VERLAUF_DATEIPFAD = "resistance_data.csv"
+VERLAUF_LISTENSCHLUESSEL = "verlaufseintraege"
 
 STANDARD_SPALTEN: tuple[str, ...] = (
     "Zeitpunkt",
@@ -20,7 +22,7 @@ STANDARD_SPALTEN: tuple[str, ...] = (
 MONATSNAMEN: tuple[str, ...] = (
     "Januar",
     "Februar",
-    "M\u00e4rz",
+    "Maerz",
     "April",
     "Mai",
     "Juni",
@@ -35,7 +37,7 @@ MONATSNAMEN: tuple[str, ...] = (
 MONAT_NACH_NUMMER: dict[str, int] = {
     monat: index for index, monat in enumerate(MONATSNAMEN, start=1)
 }
-MONAT_NACH_NUMMER["Maerz"] = 3
+MONAT_NACH_NUMMER["März"] = 3
 
 
 def hole_leeres_verlaufs_dataframe() -> pd.DataFrame:
@@ -78,6 +80,34 @@ def parse_auswertungsperiode(periode: object) -> pd.Timestamp | None:
         return pd.Timestamp(year=jahr, month=monatsnummer, day=1)
     except ValueError:
         return None
+
+
+def verlaufsdaten_aus_speicherobjekt(daten: object) -> pd.DataFrame:
+    """Wandelt gespeicherte JSON- oder Legacy-Daten in das erwartete Verlaufsformat um."""
+    if isinstance(daten, pd.DataFrame):
+        return normalisiere_verlaufsdaten(daten)
+
+    if isinstance(daten, list):
+        return normalisiere_verlaufsdaten(pd.DataFrame(daten))
+
+    if isinstance(daten, dict):
+        eintraege = daten.get(VERLAUF_LISTENSCHLUESSEL)
+        if isinstance(eintraege, list):
+            return normalisiere_verlaufsdaten(pd.DataFrame(eintraege))
+
+    return hole_leeres_verlaufs_dataframe()
+
+
+def verlaufsdaten_fuer_speicherung(
+    verlaufsdaten: pd.DataFrame,
+) -> dict[str, list[dict[str, object]]]:
+    """Serialisiert normalisierte Verlaufsdaten in ein JSON-kompatibles Speicherformat."""
+    normalisierte_daten = normalisiere_verlaufsdaten(verlaufsdaten)
+    eintraege = [
+        _serialisiere_verlaufseintrag(eintrag)
+        for eintrag in normalisierte_daten.to_dict(orient="records")
+    ]
+    return {VERLAUF_LISTENSCHLUESSEL: eintraege}
 
 
 def normalisiere_verlaufsdaten(daten: object) -> pd.DataFrame:
@@ -308,3 +338,37 @@ def baue_kombinationsuebersicht(plot_daten: pd.DataFrame, keim: str) -> pd.DataF
         ["Maximale Resistenzrate in %", "Antibiotikum"],
         ascending=[False, True],
     ).reset_index(drop=True)
+
+
+def _serialisiere_verlaufseintrag(eintrag: dict[str, object]) -> dict[str, object]:
+    """Bereinigt einen Verlaufseintrag fuer die JSON-Speicherung."""
+    resistenzrate_roh = pd.to_numeric(
+        eintrag.get("Resistenzrate in %"),
+        errors="coerce",
+    )
+    resistenzrate = 0.0 if pd.isna(resistenzrate_roh) else round(float(resistenzrate_roh), 1)
+
+    return {
+        "Zeitpunkt": _bereinige_textwert(eintrag.get("Zeitpunkt")),
+        "Auswertungsperiode": _bereinige_textwert(eintrag.get("Auswertungsperiode")),
+        "Keim": _bereinige_textwert(eintrag.get("Keim")),
+        "Antibiotikum": _bereinige_textwert(eintrag.get("Antibiotikum")),
+        "Resistenzrate in %": resistenzrate,
+    }
+
+
+def _bereinige_textwert(wert: object) -> str:
+    """Normalisiert einen optionalen Textwert fuer die Speicherung."""
+    if wert is None:
+        return ""
+
+    if isinstance(wert, str):
+        return wert.strip()
+
+    try:
+        if pd.isna(wert):
+            return ""
+    except TypeError:
+        pass
+
+    return str(wert).strip()
