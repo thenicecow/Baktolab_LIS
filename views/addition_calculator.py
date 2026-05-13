@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TypedDict, cast
 
 import altair as alt
 import pandas as pd
@@ -28,11 +29,28 @@ from functions.resistenzmonitoring import (
 from utils.data_manager import DataManager
 
 
-UNTERSTUETZTE_KEIME: tuple[str, ...] = tuple(mdr_regeln.UNTERSTUETZTE_KEIME)
-UNTERSTUETZTE_ANTIBIOTIKA: tuple[str, ...] = tuple(mdr_regeln.UNTERSTUETZTE_ANTIBIOTIKA)
-antibiotic_class = mdr_regeln.antibiotic_class
-classify_rate = mdr_regeln.classify_rate
-get_mdr_hints = mdr_regeln.get_mdr_hints
+Hinweis = tuple[str, str]
+RunId = tuple[str, str, str, int, int]
+
+
+class ResistenzErgebnis(TypedDict):
+    """Struktur fuer das zuletzt berechnete Resistenz-Ergebnis."""
+
+    timestamp: str
+    organism: str
+    period: str
+    antibiotic: str
+    ab_class: str
+    total: int
+    resistant: int
+    sensitive: int
+    rate: float
+    label: str
+    hints: list[Hinweis]
+
+
+KEIM_OPTIONEN: tuple[str, ...] = tuple(mdr_regeln.UNTERSTUETZTE_KEIME)
+ANTIBIOTIKA_OPTIONEN: tuple[str, ...] = tuple(mdr_regeln.UNTERSTUETZTE_ANTIBIOTIKA)
 
 VERLAUF_DF_SCHLUESSEL = "resistenzmonitoring_verlauf_df"
 VERLAUF_BENUTZER_SCHLUESSEL = "resistenzmonitoring_benutzer"
@@ -61,6 +79,55 @@ def hole_aktuellen_benutzernamen() -> str | None:
     return bereinigt or None
 
 
+def hole_gespeichertes_ergebnis() -> ResistenzErgebnis | None:
+    """Liest das zuletzt berechnete Ergebnis typisiert aus dem Session State."""
+    ergebnis = st.session_state.get(ERGEBNIS_SCHLUESSEL)
+    if not isinstance(ergebnis, dict):
+        return None
+
+    return cast(ResistenzErgebnis, ergebnis)
+
+
+def setze_gespeichertes_ergebnis(ergebnis: ResistenzErgebnis) -> None:
+    """Speichert das aktuelle Berechnungsergebnis im Session State."""
+    st.session_state[ERGEBNIS_SCHLUESSEL] = ergebnis
+
+
+def entferne_gespeichertes_ergebnis() -> None:
+    """Entfernt ein vorhandenes Berechnungsergebnis aus dem Session State."""
+    st.session_state.pop(ERGEBNIS_SCHLUESSEL, None)
+
+
+def hole_letzte_speicherung() -> RunId | None:
+    """Liest die Kennung der zuletzt gespeicherten Berechnung aus dem Session State."""
+    letzte_speicherung = st.session_state.get(LETZTE_SPEICHERUNG_SCHLUESSEL)
+    if not isinstance(letzte_speicherung, tuple) or len(letzte_speicherung) != 5:
+        return None
+
+    return cast(RunId, letzte_speicherung)
+
+
+def setze_letzte_speicherung(run_id: RunId) -> None:
+    """Speichert die Kennung der zuletzt persistierten Berechnung."""
+    st.session_state[LETZTE_SPEICHERUNG_SCHLUESSEL] = run_id
+
+
+def baue_run_id(
+    periode: str,
+    keim: str,
+    antibiotikum: str,
+    total: int,
+    resistant: int,
+) -> RunId:
+    """Erzeugt eine stabile Kennung fuer eine konkrete Berechnung."""
+    return (periode, keim, antibiotikum, int(total), int(resistant))
+
+
+def hole_zeitpunkt() -> str:
+    """Liefert den aktuellen Schweizer Zeitstempel fuer Ergebnis und Verlauf."""
+    return datetime.now(pytz.timezone("Europe/Zurich")).strftime("%d.%m.%Y %H:%M")
+
+
 def initialisiere_resistenzmonitoring() -> None:
     """Laedt und normalisiert die benutzerspezifischen Verlaufsdaten bei Bedarf neu."""
     aktueller_benutzer = hole_aktuellen_benutzernamen()
@@ -84,7 +151,7 @@ def initialisiere_resistenzmonitoring() -> None:
     st.session_state[VERLAUF_DF_SCHLUESSEL] = verlauf
     st.session_state[VERLAUF_BENUTZER_SCHLUESSEL] = aktueller_benutzer
     st.session_state[LETZTE_SPEICHERUNG_SCHLUESSEL] = None
-    st.session_state.pop(ERGEBNIS_SCHLUESSEL, None)
+    entferne_gespeichertes_ergebnis()
 
 
 def hole_verlaufsdaten() -> pd.DataFrame:
@@ -176,7 +243,7 @@ def baue_heatmap_chart(matrix_daten: pd.DataFrame) -> alt.LayerChart:
         y=alt.Y(
             "Antibiotikum:N",
             title="Antibiotikum",
-            sort=list(UNTERSTUETZTE_ANTIBIOTIKA),
+            sort=list(ANTIBIOTIKA_OPTIONEN),
         ),
         color=alt.Color(
             "Resistenzrate_plot:Q",
@@ -186,7 +253,11 @@ def baue_heatmap_chart(matrix_daten: pd.DataFrame) -> alt.LayerChart:
         tooltip=[
             alt.Tooltip("Auswertungsperiode:N", title="Auswertungsperiode"),
             alt.Tooltip("Antibiotikum:N", title="Antibiotikum"),
-            alt.Tooltip("Resistenzrate_plot:Q", title="Durchschnittliche Resistenzrate in %", format=".1f"),
+            alt.Tooltip(
+                "Resistenzrate_plot:Q",
+                title="Durchschnittliche Resistenzrate in %",
+                format=".1f",
+            ),
         ],
     )
 
@@ -198,100 +269,8 @@ def baue_heatmap_chart(matrix_daten: pd.DataFrame) -> alt.LayerChart:
     ).properties(height=320)
 
 
-def verarbeite_berechnung(
-    keim: str,
-    antibiotikum: str,
-    total: int,
-    resistant: int,
-    periode: str,
-) -> None:
-    """Validiert eine Eingabe, berechnet die Resistenzrate und speichert den Verlauf."""
-    if resistant > total:
-        st.session_state.pop(ERGEBNIS_SCHLUESSEL, None)
-        st.error("Die Anzahl resistenter Isolate darf nicht groesser sein als die Gesamtzahl.")
-        return
-
-    rate = percent(resistant, total)
-    if rate is None:
-        st.session_state.pop(ERGEBNIS_SCHLUESSEL, None)
-        st.error("Die Resistenzrate kann bei einer Gesamtzahl von 0 nicht berechnet werden.")
-        return
-
-    sensitive = subtract(total, resistant)
-    klasse = antibiotic_class(antibiotikum)
-    hinweise = get_mdr_hints(keim, klasse, resistant)
-    zeitpunkt = datetime.now(pytz.timezone("Europe/Zurich")).strftime("%d.%m.%Y %H:%M")
-
-    st.session_state[ERGEBNIS_SCHLUESSEL] = {
-        "timestamp": zeitpunkt,
-        "organism": keim,
-        "period": periode,
-        "antibiotic": antibiotikum,
-        "ab_class": klasse,
-        "total": int(total),
-        "resistant": int(resistant),
-        "sensitive": int(sensitive),
-        "rate": float(rate),
-        "label": classify_rate(float(rate)),
-        "hints": hinweise,
-    }
-
-    run_id = (periode, keim, antibiotikum, int(total), int(resistant))
-    if st.session_state.get(LETZTE_SPEICHERUNG_SCHLUESSEL) == run_id:
-        return
-
-    neuer_eintrag = baue_verlaufseintrag(
-        zeitpunkt=zeitpunkt,
-        auswertungsperiode=periode,
-        keim=keim,
-        antibiotikum=antibiotikum,
-        resistenzrate=float(rate),
-    )
-    aktualisierte_daten = pd.concat([hole_verlaufsdaten(), neuer_eintrag], ignore_index=True)
-    aktualisierte_daten = normalisiere_verlaufsdaten(aktualisierte_daten)
-    setze_verlaufsdaten(aktualisierte_daten)
-    st.session_state[LETZTE_SPEICHERUNG_SCHLUESSEL] = run_id
-
-    try:
-        speichere_verlaufsdaten(aktualisierte_daten)
-    except Exception as exc:
-        st.error(f"Fehler beim Speichern: {type(exc).__name__}: {exc}")
-
-
-def zeige_ergebnis(ergebnis: dict[str, object]) -> None:
-    """Zeigt das Ergebnis der aktuellen Berechnung inklusive Donut-Diagramm an."""
-    st.subheader("Aktuelles Ergebnis")
-
-    linke_spalte, rechte_spalte = st.columns([2, 1])
-
-    with linke_spalte:
-        detailzeilen = [
-            f"**Zeitpunkt:** {ergebnis['timestamp']}",
-            f"**Auswertungsperiode:** {ergebnis['period']}",
-            f"**Keim:** {ergebnis['organism']}",
-            f"**Antibiotikum:** {ergebnis['antibiotic']}",
-            f"**Klasse:** {ergebnis['ab_class']}",
-        ]
-        st.markdown("  \n".join(detailzeilen))
-        st.metric("Resistenzrate", f"{float(ergebnis['rate']):.1f}%")
-        st.metric("Einstufung", str(ergebnis["label"]))
-        st.metric(
-            "Daten (resistent / gesamt)",
-            f"{int(ergebnis['resistant'])}/{int(ergebnis['total'])}",
-        )
-
-    with rechte_spalte:
-        if ergebnis["hints"]:
-            st.info("Klinische Hinweise sind im Abschnitt 'Interpretation und Hinweise' verfuegbar.")
-
-    if ergebnis["hints"]:
-        with st.expander("Interpretation und Hinweise"):
-            for hinweis_typ, text in ergebnis["hints"]:
-                if hinweis_typ == "warning":
-                    st.warning(text)
-                else:
-                    st.info(text)
-
+def baue_chart_daten_fuer_ergebnis(ergebnis: ResistenzErgebnis) -> pd.DataFrame:
+    """Erzeugt die Datenbasis fuer die Donut-Visualisierung eines Ergebnisses."""
     chart_daten = pd.DataFrame(
         {
             "Kategorie": ["Sensibel", "Resistent"],
@@ -300,6 +279,43 @@ def zeige_ergebnis(ergebnis: dict[str, object]) -> None:
     )
     total_n = int(chart_daten["Anzahl"].sum())
     chart_daten["Anteil"] = chart_daten["Anzahl"] / total_n if total_n > 0 else 0.0
+    return chart_daten
+
+
+def zeige_ergebnis_metadaten(ergebnis: ResistenzErgebnis) -> None:
+    """Zeigt Metadaten und Kernkennzahlen des aktuellen Ergebnisses an."""
+    detailzeilen = [
+        f"**Zeitpunkt:** {ergebnis['timestamp']}",
+        f"**Auswertungsperiode:** {ergebnis['period']}",
+        f"**Keim:** {ergebnis['organism']}",
+        f"**Antibiotikum:** {ergebnis['antibiotic']}",
+        f"**Klasse:** {ergebnis['ab_class']}",
+    ]
+    st.markdown("  \n".join(detailzeilen))
+    st.metric("Resistenzrate", f"{float(ergebnis['rate']):.1f}%")
+    st.metric("Einstufung", str(ergebnis["label"]))
+    st.metric(
+        "Daten (resistent / gesamt)",
+        f"{int(ergebnis['resistant'])}/{int(ergebnis['total'])}",
+    )
+
+
+def zeige_ergebnis_hinweise(ergebnis: ResistenzErgebnis) -> None:
+    """Zeigt vorhandene fachliche Hinweise zur aktuellen Berechnung an."""
+    if not ergebnis["hints"]:
+        return
+
+    with st.expander("Interpretation und Hinweise"):
+        for hinweis_typ, text in ergebnis["hints"]:
+            if hinweis_typ == "warning":
+                st.warning(text)
+            else:
+                st.info(text)
+
+
+def zeige_ergebnis_visualisierung(ergebnis: ResistenzErgebnis) -> None:
+    """Zeigt die grafische Aufbereitung des aktuellen Ergebnisses an."""
+    chart_daten = baue_chart_daten_fuer_ergebnis(ergebnis)
 
     st.subheader("Visualisierung der aktuellen Berechnung")
     chart_spalte, detail_spalte = st.columns([2, 1])
@@ -324,17 +340,99 @@ def zeige_ergebnis(ergebnis: dict[str, object]) -> None:
     )
 
 
-def zeige_verlaufsbereich(verlaufsdaten: pd.DataFrame) -> None:
-    """Zeigt tabellarische, trendbasierte und aggregierte Verlaufsauswertungen an."""
-    st.subheader("Verlauf der Berechnungen")
-    st.dataframe(verlaufsdaten, use_container_width=True)
-
-    plot_daten = baue_plot_daten(verlaufsdaten)
-    if plot_daten.empty:
-        st.info("Noch keine gueltigen Verlaufsdaten vorhanden.")
+def verarbeite_berechnung(
+    keim: str,
+    antibiotikum: str,
+    total: int,
+    resistant: int,
+    periode: str,
+) -> None:
+    """Validiert eine Eingabe, berechnet die Resistenzrate und speichert den Verlauf."""
+    if resistant > total:
+        entferne_gespeichertes_ergebnis()
+        st.error("Die Anzahl resistenter Isolate darf nicht groesser sein als die Gesamtzahl.")
         return
 
-    st.subheader("Trendanalyse")
+    rate = percent(resistant, total)
+    if rate is None:
+        entferne_gespeichertes_ergebnis()
+        st.error("Die Resistenzrate kann bei einer Gesamtzahl von 0 nicht berechnet werden.")
+        return
+
+    sensitive = subtract(total, resistant)
+    antibiotikaklasse = mdr_regeln.antibiotic_class(antibiotikum)
+    hinweise = mdr_regeln.get_mdr_hints(keim, antibiotikaklasse, resistant)
+    zeitpunkt = hole_zeitpunkt()
+
+    ergebnis: ResistenzErgebnis = {
+        "timestamp": zeitpunkt,
+        "organism": keim,
+        "period": periode,
+        "antibiotic": antibiotikum,
+        "ab_class": antibiotikaklasse,
+        "total": int(total),
+        "resistant": int(resistant),
+        "sensitive": int(sensitive),
+        "rate": float(rate),
+        "label": mdr_regeln.classify_rate(float(rate)),
+        "hints": hinweise,
+    }
+    setze_gespeichertes_ergebnis(ergebnis)
+
+    run_id = baue_run_id(periode, keim, antibiotikum, total, resistant)
+    if hole_letzte_speicherung() == run_id:
+        return
+
+    neuer_eintrag = baue_verlaufseintrag(
+        zeitpunkt=zeitpunkt,
+        auswertungsperiode=periode,
+        keim=keim,
+        antibiotikum=antibiotikum,
+        resistenzrate=float(rate),
+    )
+    aktualisierte_daten = pd.concat([hole_verlaufsdaten(), neuer_eintrag], ignore_index=True)
+    aktualisierte_daten = normalisiere_verlaufsdaten(aktualisierte_daten)
+    setze_verlaufsdaten(aktualisierte_daten)
+    setze_letzte_speicherung(run_id)
+
+    try:
+        speichere_verlaufsdaten(aktualisierte_daten)
+    except Exception as exc:
+        st.error(f"Fehler beim Speichern: {type(exc).__name__}: {exc}")
+
+
+def zeige_ergebnis(ergebnis: ResistenzErgebnis) -> None:
+    """Zeigt das Ergebnis der aktuellen Berechnung strukturiert an."""
+    st.subheader("Aktuelles Ergebnis")
+    linke_spalte, rechte_spalte = st.columns([2, 1])
+
+    with linke_spalte:
+        zeige_ergebnis_metadaten(ergebnis)
+
+    with rechte_spalte:
+        if ergebnis["hints"]:
+            st.info("Klinische Hinweise sind im Abschnitt 'Interpretation und Hinweise' verfuegbar.")
+
+    zeige_ergebnis_hinweise(ergebnis)
+    zeige_ergebnis_visualisierung(ergebnis)
+
+
+def formatiere_prozentwert(wert: float | None) -> str:
+    """Formatiert einen optionalen Prozentwert fuer Metriken."""
+    if wert is None:
+        return "-"
+    return f"{float(wert):.1f}%"
+
+
+def formatiere_veraenderung(wert: float | None) -> str:
+    """Formatiert eine optionale Veraenderung in Prozentpunkten fuer Metriken."""
+    if wert is None:
+        return "-"
+    return f"{float(wert):+.1f} %-Pkt."
+
+
+def waehle_trendkombination(plot_daten: pd.DataFrame) -> tuple[str, str]:
+    """Rendert die Auswahllogik fuer die Trendanalyse und liefert die Kombination zurueck."""
     auswahl_links, auswahl_rechts = st.columns(2)
 
     with auswahl_links:
@@ -358,46 +456,39 @@ def zeige_verlaufsbereich(verlaufsdaten: pd.DataFrame) -> None:
             key="trend_antibiotic",
         )
 
-    verlauf_kombination = filtere_verlauf_nach_kombination(
-        plot_daten,
-        ausgewaehlter_keim,
-        ausgewaehltes_antibiotikum,
-    )
-    if verlauf_kombination.empty:
-        st.info("Fuer diese Kombination sind noch keine Verlaufsdaten vorhanden.")
-        return
+    return ausgewaehlter_keim, ausgewaehltes_antibiotikum
 
-    kennzahlen = berechne_verlaufskennzahlen(verlauf_kombination)
+
+def zeige_verlaufskennzahlen_abschnitt(kennzahlen: dict[str, float | int | str | None]) -> None:
+    """Zeigt die wichtigsten Kennzahlen zur aktuell ausgewaehlten Trendkombination an."""
     metric_spalten = st.columns(4)
     metric_spalten[0].metric("Eintraege", int(kennzahlen["anzahl_eintraege"]))
     metric_spalten[1].metric(
         "Letzte Resistenzrate",
-        "-" if kennzahlen["letzte_rate"] is None else f"{float(kennzahlen['letzte_rate']):.1f}%",
+        formatiere_prozentwert(cast(float | None, kennzahlen["letzte_rate"])),
     )
     metric_spalten[2].metric(
         "Durchschnitt",
-        "-"
-        if kennzahlen["durchschnitt_rate"] is None
-        else f"{float(kennzahlen['durchschnitt_rate']):.1f}%",
+        formatiere_prozentwert(cast(float | None, kennzahlen["durchschnitt_rate"])),
     )
     metric_spalten[3].metric(
         "Seit Start",
-        "-"
-        if kennzahlen["veraenderung_seit_start"] is None
-        else f"{float(kennzahlen['veraenderung_seit_start']):+.1f} %-Pkt.",
+        formatiere_veraenderung(cast(float | None, kennzahlen["veraenderung_seit_start"])),
     )
 
-    if kennzahlen["letzte_periode"] is not None:
-        st.caption(f"Letzte beruecksichtigte Periode: {kennzahlen['letzte_periode']}")
+    letzte_periode = kennzahlen["letzte_periode"]
+    if isinstance(letzte_periode, str) and letzte_periode:
+        st.caption(f"Letzte beruecksichtigte Periode: {letzte_periode}")
 
-    st.altair_chart(baue_trend_chart(verlauf_kombination), use_container_width=True)
 
+def zeige_aggregierte_keimauswertung(plot_daten: pd.DataFrame, keim: str) -> None:
+    """Zeigt Uebersicht und Matrix fuer den aktuell ausgewaehlten Keim an."""
     st.subheader("Aggregierte Uebersicht fuer den ausgewaehlten Keim")
-    uebersicht = baue_kombinationsuebersicht(plot_daten, ausgewaehlter_keim)
+    uebersicht = baue_kombinationsuebersicht(plot_daten, keim)
     if not uebersicht.empty:
         st.dataframe(uebersicht, use_container_width=True)
 
-    matrix_daten = baue_matrixdaten(plot_daten, ausgewaehlter_keim)
+    matrix_daten = baue_matrixdaten(plot_daten, keim)
     if matrix_daten.empty:
         st.info("Fuer den ausgewaehlten Keim sind noch keine Matrixdaten vorhanden.")
         return
@@ -408,25 +499,40 @@ def zeige_verlaufsbereich(verlaufsdaten: pd.DataFrame) -> None:
     st.altair_chart(baue_heatmap_chart(matrix_daten), use_container_width=True)
 
 
-def main() -> None:
-    """Rendert die Seite fuer das Resistenzmonitoring."""
-    initialisiere_resistenzmonitoring()
+def zeige_verlaufsbereich(verlaufsdaten: pd.DataFrame) -> None:
+    """Zeigt tabellarische, trendbasierte und aggregierte Verlaufsauswertungen an."""
+    st.subheader("Verlauf der Berechnungen")
+    st.dataframe(verlaufsdaten, use_container_width=True)
 
-    st.title("Resistenzmonitoring")
-    st.info(
-        "Verlaufsdaten werden benutzerspezifisch gespeichert, beim Laden bereinigt "
-        "und fuer die Analyse aggregiert."
-    )
-
-    if hole_aktuellen_benutzernamen() is None:
-        st.error("Es konnte kein angemeldeter Benutzer ermittelt werden.")
+    plot_daten = baue_plot_daten(verlaufsdaten)
+    if plot_daten.empty:
+        st.info("Noch keine gueltigen Verlaufsdaten vorhanden.")
         return
 
+    st.subheader("Trendanalyse")
+    ausgewaehlter_keim, ausgewaehltes_antibiotikum = waehle_trendkombination(plot_daten)
+
+    verlauf_kombination = filtere_verlauf_nach_kombination(
+        plot_daten,
+        ausgewaehlter_keim,
+        ausgewaehltes_antibiotikum,
+    )
+    if verlauf_kombination.empty:
+        st.info("Fuer diese Kombination sind noch keine Verlaufsdaten vorhanden.")
+        return
+
+    kennzahlen = berechne_verlaufskennzahlen(verlauf_kombination)
+    zeige_verlaufskennzahlen_abschnitt(kennzahlen)
+    st.altair_chart(baue_trend_chart(verlauf_kombination), use_container_width=True)
+    zeige_aggregierte_keimauswertung(plot_daten, ausgewaehlter_keim)
+
+
+def zeige_berechnungsformular() -> tuple[bool, str, str, int, int, str]:
+    """Rendert das Berechnungsformular und liefert die aktuellen Eingabewerte zurueck."""
     with st.form("res_form"):
         st.subheader("Auswahl")
-
-        keim = st.selectbox("Keim", options=list(UNTERSTUETZTE_KEIME))
-        antibiotikum = st.selectbox("Antibiotikum", options=list(UNTERSTUETZTE_ANTIBIOTIKA))
+        keim = st.selectbox("Keim", options=list(KEIM_OPTIONEN))
+        antibiotikum = st.selectbox("Antibiotikum", options=list(ANTIBIOTIKA_OPTIONEN))
 
         st.subheader("Testergebnisse")
         total = st.number_input("Anzahl getesteter Isolate", min_value=0, value=0, step=1)
@@ -444,19 +550,39 @@ def main() -> None:
         periode = baue_auswertungsperiode(monat, int(jahr))
         submitted = st.form_submit_button("Berechnen und speichern")
 
+    return submitted, keim, antibiotikum, int(total), int(resistant), periode
+
+
+def main() -> None:
+    """Rendert die Seite fuer das Resistenzmonitoring."""
+    initialisiere_resistenzmonitoring()
+
+    st.title("Resistenzmonitoring")
+    st.info(
+        "Verlaufsdaten werden benutzerspezifisch gespeichert, beim Laden bereinigt "
+        "und fuer die Analyse aggregiert."
+    )
+
+    if hole_aktuellen_benutzernamen() is None:
+        st.error("Es konnte kein angemeldeter Benutzer ermittelt werden.")
+        return
+
+    submitted, keim, antibiotikum, total, resistant, periode = zeige_berechnungsformular()
+
     if submitted:
         verarbeite_berechnung(
             keim=keim,
             antibiotikum=antibiotikum,
-            total=int(total),
-            resistant=int(resistant),
+            total=total,
+            resistant=resistant,
             periode=periode,
         )
 
-    if ERGEBNIS_SCHLUESSEL in st.session_state:
-        zeige_ergebnis(st.session_state[ERGEBNIS_SCHLUESSEL])
-    else:
+    ergebnis = hole_gespeichertes_ergebnis()
+    if ergebnis is None:
         st.info("Werte eingeben und auf 'Berechnen und speichern' klicken.")
+    else:
+        zeige_ergebnis(ergebnis)
 
     zeige_verlaufsbereich(hole_verlaufsdaten())
 
