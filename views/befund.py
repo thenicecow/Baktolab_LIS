@@ -21,6 +21,7 @@ from functions.kulturen.ablesen import (
 )
 from functions.kulturen.beurteilung import (
     BeurteilterKeim,
+    ROLLE_KONTAMINANTE,
     UrinBeurteilung,
     beurteile_urin_allgemeine_bakteriologie,
 )
@@ -188,11 +189,39 @@ def baue_einleitungssatz(material: Material) -> str:
     return "Aus dem von Ihnen eingesandten Material wurden folgende Keime identifiziert:"
 
 
+def ist_kontaminantenrolle(rolle: str | None) -> bool:
+    """Prueft, ob eine uebergebene Rollenangabe einer Kontaminante entspricht."""
+    if rolle is None:
+        return False
+
+    return rolle.strip().casefold() == ROLLE_KONTAMINANTE.casefold()
+
+
+def soll_resistenzempfehlung_ausgeblendet_werden(
+    rolle: str,
+    keimbeurteilung: BeurteilterKeim | None,
+) -> bool:
+    """Prueft, ob fuer einen Keim keine sichtbare Resistenzempfehlung erscheinen soll."""
+    if ist_kontaminantenrolle(rolle):
+        return True
+
+    if keimbeurteilung is None:
+        return False
+
+    return ist_kontaminantenrolle(keimbeurteilung.rolle) or ist_kontaminantenrolle(
+        keimbeurteilung.effektive_rolle
+    )
+
+
 def baue_resistenzempfehlung(
+    rolle: str,
     keimbeurteilung: BeurteilterKeim | None,
     beurteilung: UrinBeurteilung | None,
-) -> str:
+) -> str | None:
     """Erzeugt die sichtbare Resistenzempfehlung fuer einen einzelnen Keim."""
+    if soll_resistenzempfehlung_ausgeblendet_werden(rolle, keimbeurteilung):
+        return None
+
     if keimbeurteilung is not None and keimbeurteilung.ergebnis:
         empfehlung = loese_abkuerzung_auf(keimbeurteilung.ergebnis)
         if keimbeurteilung.begruendung.strip():
@@ -208,7 +237,7 @@ def baue_resistenzempfehlung(
 def baue_keimbloecke(
     material: Material,
     beurteilung: UrinBeurteilung | None,
-) -> list[dict[str, str]]:
+) -> list[dict[str, str | None]]:
     """Erzeugt strukturierte Bloecke fuer die sichtbare Keimdarstellung im Befund."""
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
@@ -216,7 +245,7 @@ def baue_keimbloecke(
         return []
 
     beurteilungsindex = baue_beurteilungsindex(beurteilung)
-    keimbloecke: list[dict[str, str]] = []
+    keimbloecke: list[dict[str, str | None]] = []
 
     for index, keim in enumerate(kulturdaten.keime, start=1):
         schluessel = baue_keimschluessel(
@@ -233,7 +262,11 @@ def baue_keimbloecke(
                 "ueberschrift": f"Keim {index}",
                 "keim": formatiere_text(keim.keim_id),
                 "keimzahl": loese_keimzahl_auf(keim.keimzahl_code),
-                "resistenzempfehlung": baue_resistenzempfehlung(keimbeurteilung, beurteilung),
+                "resistenzempfehlung": baue_resistenzempfehlung(
+                    keim.rolle,
+                    keimbeurteilung,
+                    beurteilung,
+                ),
                 "rolle": formatiere_text(keim.rolle),
                 "keimgruppe": formatiere_text(keim.keimgruppe),
             }
@@ -321,13 +354,18 @@ def zeige_keimdarstellung(material: Material, beurteilung: UrinBeurteilung | Non
         return
 
     for keimblock in keimbloecke:
+        resistenzempfehlung = keimblock.get("resistenzempfehlung")
+
         with st.container(border=True):
             st.markdown(f"**{keimblock['ueberschrift']}**")
             st.markdown(f"**Keim:** {keimblock['keim']}")
             st.markdown(f"**Keimzahl:** {keimblock['keimzahl']}")
-            st.markdown(
-                f"**Resistenzempfehlung:** {keimblock['resistenzempfehlung']}"
-            )
+
+            if isinstance(resistenzempfehlung, str) and resistenzempfehlung.strip():
+                st.markdown(
+                    f"**Resistenzempfehlung:** {resistenzempfehlung}"
+                )
+
             st.markdown(f"**Rolle:** {keimblock['rolle']}")
             st.markdown(f"**Keimgruppe:** {keimblock['keimgruppe']}")
 
