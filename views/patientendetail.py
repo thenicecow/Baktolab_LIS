@@ -202,40 +202,14 @@ def zeige_loeschsektion(patient: Patient) -> None:
             "Wenn du diesen Patienten loeschst, werden auch alle zugehoerigen "
             "Materialien und vorhandenen Kulturdaten dauerhaft entfernt."
         )
-
         st.checkbox(
             "Ich habe die Warnung gelesen und moechte diesen Patienten wirklich loeschen.",
             key=LOESCHEN_BESTAETIGUNG_SCHLUESSEL,
         )
 
-        # CSS fuer roten Loeschbutton
-        st.markdown(
-            """
-            <style>
-            div.stButton > button[kind="primary"] {
-                background-color: #d62728 !important;
-                color: white !important;
-                border: none !important;
-            }
-
-            div.stButton > button[kind="primary"]:hover {
-                background-color: #b22222 !important;
-                color: white !important;
-            }
-
-            div.stButton > button[kind="primary"]:disabled {
-                background-color: #f2a3a3 !important;
-                color: white !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-
         if st.button(
             "Patient endgueltig loeschen",
             use_container_width=True,
-            type="primary",
             disabled=not bool(
                 st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
             ),
@@ -257,3 +231,145 @@ def zeige_filterleiste() -> tuple[str | None, str | None]:
 
     with st.container(border=True):
         st.markdown("**Filter**")
+
+        linke_spalte, rechte_spalte = st.columns(2)
+
+        with linke_spalte:
+            materialtyp_code = st.selectbox(
+                "Materialtyp",
+                options=materialtyp_optionen,
+                key=MATERIALTYP_FILTER_SCHLUESSEL,
+                format_func=lambda code: (
+                    "Alle Materialtypen"
+                    if code == ALLE_FILTER_OPTION
+                    else loese_materialtyp_label_auf(code)
+                ),
+            )
+
+        with rechte_spalte:
+            analyse_code = st.selectbox(
+                "Analyse",
+                options=analyse_optionen,
+                key=ANALYSE_FILTER_SCHLUESSEL,
+                format_func=lambda code: (
+                    "Alle Analysen"
+                    if code == ALLE_FILTER_OPTION
+                    else loese_analyse_label_auf(code)
+                ),
+            )
+
+    return materialtyp_code or None, analyse_code or None
+
+
+def zeige_material_log(materialien: list[Material]) -> None:
+    """Zeigt das Materialprotokoll des Patienten an."""
+    st.subheader("Materialien")
+
+    if not materialien:
+        st.info("Fuer diesen Patienten sind noch keine Materialien erfasst.")
+        return
+
+    materialtyp_filter, analyse_filter = zeige_filterleiste()
+
+    gefilterte_materialien = filtere_materialien(
+        materialien,
+        materialtyp_code=materialtyp_filter,
+        analyse_code=analyse_filter,
+    )
+
+    sortierte_materialien = sortiere_materialien(gefilterte_materialien)
+
+    if materialtyp_filter or analyse_filter:
+        st.caption(
+            f"Gefilterte Materialeintraege: {len(sortierte_materialien)} von {len(materialien)}"
+        )
+    else:
+        st.caption(f"Anzahl Materialeintraege: {len(sortierte_materialien)}")
+
+    st.caption(
+        "Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen. "
+        "Mit 'Kulturen' gelangst du nur bei unterstuetzten Urinmaterialien mit der "
+        "Analyse 'Allgemeine Bakteriologie' zur Seite 'Kulturen ablesen'. "
+        "Andere Material-Analyse-Kombinationen werden in der App dokumentiert, "
+        "aber aktuell nicht ueber einen Kulturworkflow mit Beurteilung und Befund "
+        "weiterverarbeitet."
+    )
+
+    if not sortierte_materialien:
+        st.info("Fuer die gesetzten Filter wurden keine Materialien gefunden.")
+        return
+
+    spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
+    ueberschriften = (
+        "Materialtyp",
+        "Analyse",
+        "Abnahmedatum",
+        "Eingangsdatum",
+        "Erstellt am",
+        "Erstellt von",
+        "Hinweis",
+        "Kulturen",
+    )
+
+    for spalte, ueberschrift in zip(spalten, ueberschriften):
+        spalte.markdown(f"**{ueberschrift}**")
+
+    st.divider()
+
+    for material in sortierte_materialien:
+        with st.container(border=True):
+            zeilen_spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
+            zeilen_spalten[0].write(loese_materialtyp_label_auf(material.materialtyp_code))
+            zeilen_spalten[1].write(loese_analyse_label_auf(material.klinische_frage_code))
+            zeilen_spalten[2].write(formatiere_datum(material.abnahmedatum))
+            zeilen_spalten[3].write(formatiere_datum(material.eingangsdatum))
+            zeilen_spalten[4].write(formatiere_zeitpunkt(material.erstellt_am))
+            zeilen_spalten[5].write(formatiere_text(material.erstellt_von_user_id))
+
+            if zeilen_spalten[6].button(
+                "Anzeigen",
+                key=f"material_hinweis_{material.id}",
+                use_container_width=True,
+            ):
+                merke_material_fuer_ansatzhinweis(material.id)
+
+            if ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
+                if zeilen_spalten[7].button(
+                    "Kulturen",
+                    key=f"material_kulturen_{material.id}",
+                    use_container_width=True,
+                ):
+                    oeffne_kulturen_ablesen(material.id)
+            else:
+                zeilen_spalten[7].write("-")
+
+
+def main() -> None:
+    """Rendert die Patientendetailansicht."""
+    show_header("Patientendetails")
+    zeige_erfolgsmeldungen()
+    zeige_ansatzhinweis_nach_speicherung()
+
+    patientenakte = lade_patientenakte()
+    patient = None
+    materialien: list[Material] = []
+
+    if patientenakte is not None:
+        patient, materialien = patientenakte
+
+    zeige_aktionsleiste(patient)
+
+    if patient is None:
+        return
+
+    zeige_arbeitskontext()
+    zeige_stammdaten(patient)
+    st.divider()
+    zeige_loeschsektion(patient)
+    st.divider()
+    zeige_material_log(materialien)
+    zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien)
+
+
+if __name__ == "__main__":
+    main()
