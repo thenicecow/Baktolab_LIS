@@ -202,29 +202,36 @@ def zeige_loeschsektion(patient: Patient) -> None:
             "Wenn du diesen Patienten loeschst, werden auch alle zugehoerigen "
             "Materialien und vorhandenen Kulturdaten dauerhaft entfernt."
         )
+
         st.checkbox(
             "Ich habe die Warnung gelesen und moechte diesen Patienten wirklich loeschen.",
             key=LOESCHEN_BESTAETIGUNG_SCHLUESSEL,
         )
-        
-        # Durch die direkte CSS-Ansprache des sekundären Buttons in diesem Container wird die Loeschaktion optisch hervorgehoben, um die Aufmerksamkeit der Nutzer:innen auf die Ernsthaftigkeit dieser Aktion zu lenken.
-        st.markdown(
-        """
-        <style>
-        div.stButton > button[kind="secondary"] {
-            background-color: #d62728;
-            color: white;
-            border: none;
-        }
 
-        div.stButton > button[kind="secondary"]:hover {
-            background-color: #b22222;
-            color: white;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        # Roten Loeschbutton stylen
+        st.markdown(
+            """
+            <style>
+            div.stButton > button[kind="secondary"] {
+                background-color: #d62728;
+                color: white;
+                border: none;
+            }
+
+            div.stButton > button[kind="secondary"]:hover {
+                background-color: #b22222;
+                color: white;
+            }
+
+            div.stButton > button[kind="secondary"]:disabled {
+                background-color: #f2a3a3;
+                color: white;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
         if st.button(
             "Patient endgueltig loeschen",
             use_container_width=True,
@@ -238,7 +245,6 @@ def zeige_loeschsektion(patient: Patient) -> None:
                 bereinige_patientbezogenen_zustand_nach_loeschung()
                 merke_erfolgreiche_loeschung(erfolgsmeldung)
                 st.switch_page("views/patientenuebersicht.py")
-
 
 def zeige_filterleiste() -> tuple[str | None, str | None]:
     """Rendert die Filter fuer Materialtyp und Analyse."""
