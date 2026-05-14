@@ -1,317 +1,402 @@
-"""Streamlit-Seite fuer das Resistenzmonitoring mit sauber getrenntem Seitenablauf."""
+"""Streamlit-Seite fuer die Detailansicht eines Patienten."""
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import cast
-
 import pandas as pd
-import pytz
 import streamlit as st
 
-import functions.mdr_rules as mdr_regeln
-import functions.resistenzmonitoring as resistenz_daten
-import functions.resistenzmonitoring_ansicht as resistenz_ansicht
-from functions.addition import percent, subtract
+from domaene import ANALYSEN, MATERIALTYPEN, Material, Patient
+from functions.gemeinsam.anzeige_hilfen import (
+    formatiere_datum,
+    formatiere_text,
+    formatiere_zeitpunkt,
+    loese_analyse_label_auf,
+    loese_materialtyp_label_auf,
+)
 from ui.header import show_header
-from utils.data_manager import DataManager
-
-
-RunId = tuple[str, str, str, int, int]
-
-VERLAUF_DF_SCHLUESSEL = "resistenzmonitoring_verlauf_df"
-VERLAUF_BENUTZER_SCHLUESSEL = "resistenzmonitoring_benutzer"
-LETZTE_SPEICHERUNG_SCHLUESSEL = "resistenzmonitoring_last_saved"
-ERGEBNIS_SCHLUESSEL = "resistenzmonitoring_result"
-
-data_manager = DataManager(
-    fs_protocol="webdav",
-    fs_root_folder="BMLD_APP_DATA",
+from functions.kulturen.ablesen import ist_material_fuer_kulturen_ablesen_unterstuetzt
+from functions.kulturen.navigation import aktiviere_kulturen_ablesen
+from functions.patienten.detail import (
+    ALLE_FILTER_OPTION,
+    ANALYSE_FILTER_SCHLUESSEL,
+    MATERIALTYP_FILTER_SCHLUESSEL,
+    baue_ansatzhinweis_fuer_ausgewaehltes_material,
+    filtere_materialien,
+    hole_und_entferne_ansatzhinweis,
+    hole_und_entferne_bearbeitungserfolgsmeldung,
+    hole_und_entferne_erfolgsmeldung,
+    initialisiere_filterzustand,
+    lade_patientenakte,
+    merke_material_fuer_ansatzhinweis,
+    merke_patient_id_fuer_material_erfassen,
+    sortiere_materialien,
+)
+from functions.patienten.loeschen import (
+    LOESCHEN_BESTAETIGUNG_SCHLUESSEL,
+    bereinige_patientbezogenen_zustand_nach_loeschung,
+    initialisiere_loeschzustand,
+    loesche_patient,
+    merke_erfolgreiche_loeschung,
+)
+from functions.patienten.navigation import (
+    aktiviere_patientenbearbeitung,
+    deaktiviere_patientendetailansicht,
 )
 
 
-def hole_aktuellen_benutzernamen() -> str | None:
-    """Liest den aktuell angemeldeten Benutzernamen defensiv aus dem Session State."""
-    benutzername = st.session_state.get("username")
-    if not isinstance(benutzername, str):
-        return None
+def zeige_erfolgsmeldungen() -> None:
+    """Zeigt gespeicherte Erfolgsmeldungen an."""
+    bearbeitungserfolg = hole_und_entferne_bearbeitungserfolgsmeldung()
+    if bearbeitungserfolg:
+        st.success(bearbeitungserfolg)
 
-    bereinigt = benutzername.strip()
-    return bereinigt or None
-
-
-def hole_gespeichertes_ergebnis() -> resistenz_ansicht.ResistenzErgebnis | None:
-    """Liest das zuletzt berechnete Ergebnis typisiert aus dem Session State."""
-    ergebnis = st.session_state.get(ERGEBNIS_SCHLUESSEL)
-    if not isinstance(ergebnis, dict):
-        return None
-
-    return cast(resistenz_ansicht.ResistenzErgebnis, ergebnis)
+    erfolgsmeldung_material = hole_und_entferne_erfolgsmeldung()
+    if erfolgsmeldung_material:
+        st.success(erfolgsmeldung_material)
 
 
-def setze_gespeichertes_ergebnis(ergebnis: resistenz_ansicht.ResistenzErgebnis) -> None:
-    """Speichert das aktuelle Berechnungsergebnis im Session State."""
-    st.session_state[ERGEBNIS_SCHLUESSEL] = ergebnis
-
-
-def entferne_gespeichertes_ergebnis() -> None:
-    """Entfernt ein vorhandenes Berechnungsergebnis aus dem Session State."""
-    st.session_state.pop(ERGEBNIS_SCHLUESSEL, None)
-
-
-def hole_letzte_speicherung() -> RunId | None:
-    """Liest die Kennung der zuletzt gespeicherten Berechnung aus dem Session State."""
-    letzte_speicherung = st.session_state.get(LETZTE_SPEICHERUNG_SCHLUESSEL)
-    if not isinstance(letzte_speicherung, tuple) or len(letzte_speicherung) != 5:
-        return None
-
-    return cast(RunId, letzte_speicherung)
-
-
-def setze_letzte_speicherung(run_id: RunId) -> None:
-    """Speichert die Kennung der zuletzt persistierten Berechnung."""
-    st.session_state[LETZTE_SPEICHERUNG_SCHLUESSEL] = run_id
-
-
-def baue_run_id(
-    periode: str,
-    keim: str,
-    antibiotikum: str,
-    total: int,
-    resistant: int,
-) -> RunId:
-    """Erzeugt eine stabile Kennung fuer eine konkrete Berechnung."""
-    return (periode, keim, antibiotikum, int(total), int(resistant))
-
-
-def hole_zeitpunkt() -> str:
-    """Liefert den aktuellen Schweizer Zeitstempel fuer Ergebnis und Verlauf."""
-    return datetime.now(pytz.timezone("Europe/Zurich")).strftime("%d.%m.%Y %H:%M")
-
-
-def lade_verlaufsdaten_aus_speicher() -> tuple[pd.DataFrame, bool]:
-    """Laedt Verlaufsdaten bevorzugt aus JSON und faellt einmalig auf Legacy-CSV zurueck."""
-    try:
-        geladene_daten = data_manager.load_user_data(resistenz_daten.VERLAUF_DATEIPFAD)
-        return resistenz_daten.verlaufsdaten_aus_speicherobjekt(geladene_daten), False
-    except (FileNotFoundError, TypeError, ValueError):
-        pass
-
-    try:
-        geladene_daten = data_manager.load_user_data(
-            resistenz_daten.LEGACY_VERLAUF_DATEIPFAD
-        )
-    except (FileNotFoundError, TypeError, ValueError):
-        return resistenz_daten.hole_leeres_verlaufs_dataframe(), False
-
-    return resistenz_daten.verlaufsdaten_aus_speicherobjekt(geladene_daten), True
-
-
-def initialisiere_resistenzmonitoring() -> None:
-    """Laedt und normalisiert die benutzerspezifischen Verlaufsdaten bei Bedarf neu."""
-    aktueller_benutzer = hole_aktuellen_benutzernamen()
-    geladener_benutzer = st.session_state.get(VERLAUF_BENUTZER_SCHLUESSEL)
-
-    if (
-        VERLAUF_DF_SCHLUESSEL in st.session_state
-        and geladener_benutzer == aktueller_benutzer
-    ):
+def zeige_ansatzhinweistabelle(
+    ansatzhinweis: dict[str, object] | None,
+    ueberschrift: str,
+) -> None:
+    """Zeigt einen Ansatzhinweis als Tabelle oder neutrale Info an."""
+    if ansatzhinweis is None:
         return
 
-    if aktueller_benutzer is None:
-        verlauf = resistenz_daten.hole_leeres_verlaufs_dataframe()
-    else:
-        verlauf, stammt_aus_legacy_csv = lade_verlaufsdaten_aus_speicher()
-        if stammt_aus_legacy_csv:
-            try:
-                speichere_verlaufsdaten(verlauf)
-            except Exception:
-                st.warning(
-                    "Vorhandene Verlaufsdaten konnten noch nicht in das neue JSON-Format uebernommen werden."
-                )
+    titel = ansatzhinweis.get("titel")
+    zeilen = ansatzhinweis.get("zeilen")
+    hinweistext = ansatzhinweis.get("hinweistext")
 
-    st.session_state[VERLAUF_DF_SCHLUESSEL] = verlauf
-    st.session_state[VERLAUF_BENUTZER_SCHLUESSEL] = aktueller_benutzer
-    st.session_state[LETZTE_SPEICHERUNG_SCHLUESSEL] = None
-    entferne_gespeichertes_ergebnis()
+    with st.container(border=True):
+        st.markdown(f"**{ueberschrift}**")
 
+        if isinstance(titel, str) and titel.strip():
+            st.caption(titel.strip())
 
-def hole_verlaufsdaten() -> pd.DataFrame:
-    """Liefert die aktuell im Zustand gehaltenen Verlaufsdaten normalisiert zurueck."""
-    daten = st.session_state.get(
-        VERLAUF_DF_SCHLUESSEL,
-        resistenz_daten.hole_leeres_verlaufs_dataframe(),
-    )
-    return resistenz_daten.normalisiere_verlaufsdaten(daten)
+        if isinstance(zeilen, list) and zeilen:
+            st.table(pd.DataFrame(zeilen, columns=["Ansatz", "Inkubation"]))
+            return
+
+        if isinstance(hinweistext, str) and hinweistext.strip():
+            st.info(hinweistext.strip())
 
 
-def setze_verlaufsdaten(verlaufsdaten: pd.DataFrame) -> None:
-    """Aktualisiert die gespeicherten Verlaufsdaten im Session State konsistent."""
-    st.session_state[VERLAUF_DF_SCHLUESSEL] = resistenz_daten.normalisiere_verlaufsdaten(
-        verlaufsdaten
+def zeige_ansatzhinweis_nach_speicherung() -> None:
+    """Zeigt den Hinweis fuer ein soeben erfolgreich gespeichertes Material an."""
+    ansatzhinweis = hole_und_entferne_ansatzhinweis()
+    zeige_ansatzhinweistabelle(
+        ansatzhinweis,
+        "Ansatzhinweis zum neu erfassten Material",
     )
 
 
-def speichere_verlaufsdaten(verlaufsdaten: pd.DataFrame) -> None:
-    """Persistiert benutzerspezifische Verlaufsdaten als JSON ueber den DataManager."""
-    data_manager.save_user_data(
-        resistenz_daten.verlaufsdaten_fuer_speicherung(verlaufsdaten),
-        resistenz_daten.VERLAUF_DATEIPFAD,
+def zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien: list[Material]) -> None:
+    """Zeigt den Hinweis fuer das in der Materialliste ausgewaehlte Material an."""
+    ansatzhinweis = baue_ansatzhinweis_fuer_ausgewaehltes_material(materialien)
+    zeige_ansatzhinweistabelle(
+        ansatzhinweis,
+        "Ansatzhinweis zum ausgewaehlten Material",
     )
 
 
-def zeige_fachliche_abgrenzung() -> None:
-    """Zeigt die fachliche Abgrenzung des aktuellen Resistenzmonitorings an."""
-    keime = ", ".join(mdr_regeln.UNTERSTUETZTE_KEIME)
-    antibiotika = ", ".join(mdr_regeln.UNTERSTUETZTE_ANTIBIOTIKA)
+def wechsle_zu_sichtbarer_seite(zielseite: str) -> None:
+    """Beendet die interne Detailansicht und wechselt zu einer sichtbaren Seite."""
+    deaktiviere_patientendetailansicht()
+    st.switch_page(zielseite)
 
+
+def oeffne_materialerfassung_aus_detail(patient_id: str) -> None:
+    """Oeffnet die Materialerfassung fuer den aktuellen Patienten."""
+    merke_patient_id_fuer_material_erfassen(patient_id)
+    deaktiviere_patientendetailansicht()
+    st.switch_page("views/material_erfassen.py")
+
+
+def oeffne_patientbearbeitung_aus_detail(patient_id: str) -> None:
+    """Oeffnet die Patientenbearbeitung innerhalb der sichtbaren Uebersichtsseite."""
+    if not aktiviere_patientenbearbeitung(patient_id):
+        st.error("Die Patientenbearbeitung konnte nicht geoeffnet werden.")
+        return
+
+    st.rerun()
+
+
+def oeffne_kulturen_ablesen(material_id: str) -> None:
+    """Aktiviert die Seite ``Kulturen ablesen`` fuer ein Material."""
+    if not aktiviere_kulturen_ablesen(material_id):
+        st.error("Die Seite 'Kulturen ablesen' konnte nicht geoeffnet werden.")
+        return
+
+    st.switch_page("views/kulturen_ablesen.py")
+
+
+def zeige_aktionsleiste(patient: Patient | None) -> None:
+    """Rendert die Aktionsleiste der Detailansicht."""
+    erste_spalte, zweite_spalte, dritte_spalte, vierte_spalte = st.columns(4)
+
+    with erste_spalte:
+        if st.button(
+            "Zurueck zur Patientenuebersicht",
+            use_container_width=True,
+        ):
+            wechsle_zu_sichtbarer_seite("views/patientenuebersicht.py")
+
+    with zweite_spalte:
+        if st.button(
+            "Zurueck zum Dashboard",
+            use_container_width=True,
+        ):
+            wechsle_zu_sichtbarer_seite("views/dashboard.py")
+
+    with dritte_spalte:
+        if st.button(
+            "Patient bearbeiten",
+            use_container_width=True,
+            disabled=patient is None,
+        ) and patient is not None:
+            oeffne_patientbearbeitung_aus_detail(patient.id)
+
+    with vierte_spalte:
+        if st.button(
+            "Material fuer diesen Patienten erfassen",
+            use_container_width=True,
+            type="primary",
+            disabled=patient is None,
+        ) and patient is not None:
+            oeffne_materialerfassung_aus_detail(patient.id)
+
+
+def zeige_arbeitskontext() -> None:
+    """Zeigt den empfohlenen Ablauf fuer die weitere Bearbeitung des Patienten."""
     st.info(
-        "Dieses Resistenzmonitoring ist ein separates Demo-Modul mit manueller Eingabe. "
-        "Es ist aktuell nicht direkt mit patientenbezogenen Kulturdaten verknuepft."
+        "Empfohlener Ablauf: zuerst Stammdaten pruefen, danach Material fuer diesen "
+        "Patienten erfassen und anschliessend je nach Material in der Materialliste "
+        "mit 'Anzeigen' oder 'Kulturen' weiterarbeiten."
     )
+
+
+def zeige_stammdaten(patient: Patient) -> None:
+    """Zeigt die Stammdaten des Patienten an."""
+    st.subheader("Stammdaten")
+
+    with st.container(border=True):
+        linke_spalte, rechte_spalte = st.columns(2)
+
+        with linke_spalte:
+            st.markdown(f"**Vorname:** {patient.vorname}")
+            st.markdown(f"**Nachname:** {patient.nachname}")
+            st.markdown(f"**Geburtsdatum:** {formatiere_datum(patient.geburtsdatum)}")
+
+        with rechte_spalte:
+            st.markdown(f"**Geschlecht:** {patient.geschlecht}")
+            st.markdown(f"**Erstellt am:** {formatiere_zeitpunkt(patient.erstellt_am)}")
+            st.markdown(f"**Erstellt von:** {formatiere_text(patient.erstellt_von_user_id)}")
+
+
+def zeige_loeschsektion(patient: Patient) -> None:
+    """Zeigt eine bewusst abgesicherte Loeschsektion fuer den aktuellen Patienten an."""
+    initialisiere_loeschzustand(patient.id)
+
+    with st.expander("Patient loeschen", expanded=False):
+        st.warning(
+            "Wenn du diesen Patienten loeschst, werden auch alle zugehoerigen "
+            "Materialien und vorhandenen Kulturdaten dauerhaft entfernt."
+        )
+
+        st.checkbox(
+            "Ich habe die Warnung gelesen und moechte diesen Patienten wirklich loeschen.",
+            key=LOESCHEN_BESTAETIGUNG_SCHLUESSEL,
+        )
+
+        st.markdown(
+            """
+            <style>
+            div.stButton > button[kind="primary"] {
+                background-color: #d62728 !important;
+                color: white !important;
+                border: none !important;
+            }
+
+            div.stButton > button[kind="primary"]:hover {
+                background-color: #b22222 !important;
+                color: white !important;
+                border: none !important;
+            }
+
+            div.stButton > button[kind="primary"]:disabled {
+                background-color: #f2a3a3 !important;
+                color: white !important;
+                border: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if st.button(
+            "Patient endgueltig loeschen",
+            use_container_width=True,
+            type="primary",
+            disabled=not bool(
+                st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
+            ),
+        ):
+            erfolgsmeldung = loesche_patient(patient.id)
+
+            if erfolgsmeldung is not None:
+                bereinige_patientbezogenen_zustand_nach_loeschung()
+                merke_erfolgreiche_loeschung(erfolgsmeldung)
+                st.switch_page("views/patientenuebersicht.py")
+
+
+def zeige_filterleiste() -> tuple[str | None, str | None]:
+    """Rendert die Filter fuer Materialtyp und Analyse."""
+    materialtyp_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in MATERIALTYPEN]
+    analyse_optionen = [ALLE_FILTER_OPTION] + [eintrag.code for eintrag in ANALYSEN]
+
+    initialisiere_filterzustand(materialtyp_optionen, analyse_optionen)
+
+    with st.container(border=True):
+        st.markdown("**Filter**")
+
+        linke_spalte, rechte_spalte = st.columns(2)
+
+        with linke_spalte:
+            materialtyp_code = st.selectbox(
+                "Materialtyp",
+                options=materialtyp_optionen,
+                key=MATERIALTYP_FILTER_SCHLUESSEL,
+                format_func=lambda code: (
+                    "Alle Materialtypen"
+                    if code == ALLE_FILTER_OPTION
+                    else loese_materialtyp_label_auf(code)
+                ),
+            )
+
+        with rechte_spalte:
+            analyse_code = st.selectbox(
+                "Analyse",
+                options=analyse_optionen,
+                key=ANALYSE_FILTER_SCHLUESSEL,
+                format_func=lambda code: (
+                    "Alle Analysen"
+                    if code == ALLE_FILTER_OPTION
+                    else loese_analyse_label_auf(code)
+                ),
+            )
+
+    return materialtyp_code or None, analyse_code or None
+
+
+def zeige_material_log(materialien: list[Material]) -> None:
+    """Zeigt das Materialprotokoll des Patienten an."""
+    st.subheader("Materialien")
+
+    if not materialien:
+        st.info("Fuer diesen Patienten sind noch keine Materialien erfasst.")
+        return
+
+    materialtyp_filter, analyse_filter = zeige_filterleiste()
+
+    gefilterte_materialien = filtere_materialien(
+        materialien,
+        materialtyp_code=materialtyp_filter,
+        analyse_code=analyse_filter,
+    )
+
+    sortierte_materialien = sortiere_materialien(gefilterte_materialien)
+
+    if materialtyp_filter or analyse_filter:
+        st.caption(
+            f"Gefilterte Materialeintraege: {len(sortierte_materialien)} von {len(materialien)}"
+        )
+    else:
+        st.caption(f"Anzahl Materialeintraege: {len(sortierte_materialien)}")
+
     st.caption(
-        f"Unterstuetzte Keime: {keime}. Unterstuetzte Antibiotika: {antibiotika}."
+        "Mit 'Anzeigen' kannst du den passenden Ansatzhinweis erneut aufrufen. "
+        "Mit 'Kulturen' gelangst du nur bei unterstuetzten Urinmaterialien mit der "
+        "Analyse 'Allgemeine Bakteriologie' zur Seite 'Kulturen ablesen'. "
+        "Andere Material-Analyse-Kombinationen werden in der App dokumentiert, "
+        "aber aktuell nicht ueber einen Kulturworkflow mit Beurteilung und Befund "
+        "weiterverarbeitet."
     )
 
-
-def validiere_berechnungseingaben(total: int, resistant: int) -> str | None:
-    """Validiert die Kerneingaben fuer die Resistenzberechnung."""
-    if resistant > total:
-        return "Die Anzahl resistenter Isolate darf nicht groesser sein als die Gesamtzahl."
-
-    if percent(resistant, total) is None:
-        return "Die Resistenzrate kann bei einer Gesamtzahl von 0 nicht berechnet werden."
-
-    return None
-
-
-def baue_berechnungsergebnis(
-    keim: str,
-    antibiotikum: str,
-    total: int,
-    resistant: int,
-    periode: str,
-) -> resistenz_ansicht.ResistenzErgebnis | None:
-    """Erzeugt das strukturierte Ergebnis einer validen Berechnung."""
-    rate = percent(resistant, total)
-    if rate is None:
-        return None
-
-    sensitive = subtract(total, resistant)
-    antibiotikaklasse = mdr_regeln.antibiotic_class(antibiotikum)
-    hinweise = mdr_regeln.get_mdr_hints(keim, antibiotikaklasse, resistant)
-
-    return {
-        "timestamp": hole_zeitpunkt(),
-        "organism": keim,
-        "period": periode,
-        "antibiotic": antibiotikum,
-        "ab_class": antibiotikaklasse,
-        "total": int(total),
-        "resistant": int(resistant),
-        "sensitive": int(sensitive),
-        "rate": float(rate),
-        "label": mdr_regeln.classify_rate(float(rate)),
-        "hints": hinweise,
-    }
-
-
-def speichere_berechnung_im_verlauf(
-    ergebnis: resistenz_ansicht.ResistenzErgebnis,
-) -> None:
-    """Persistiert ein neues Berechnungsergebnis im benutzerspezifischen Verlauf."""
-    run_id = baue_run_id(
-        ergebnis["period"],
-        ergebnis["organism"],
-        ergebnis["antibiotic"],
-        int(ergebnis["total"]),
-        int(ergebnis["resistant"]),
-    )
-    if hole_letzte_speicherung() == run_id:
+    if not sortierte_materialien:
+        st.info("Fuer die gesetzten Filter wurden keine Materialien gefunden.")
         return
 
-    neuer_eintrag = resistenz_daten.baue_verlaufseintrag(
-        zeitpunkt=ergebnis["timestamp"],
-        auswertungsperiode=ergebnis["period"],
-        keim=ergebnis["organism"],
-        antibiotikum=ergebnis["antibiotic"],
-        resistenzrate=float(ergebnis["rate"]),
+    spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
+    ueberschriften = (
+        "Materialtyp",
+        "Analyse",
+        "Abnahmedatum",
+        "Eingangsdatum",
+        "Erstellt am",
+        "Erstellt von",
+        "Hinweis",
+        "Kulturen",
     )
-    aktualisierte_daten = pd.concat([hole_verlaufsdaten(), neuer_eintrag], ignore_index=True)
-    aktualisierte_daten = resistenz_daten.normalisiere_verlaufsdaten(aktualisierte_daten)
 
-    setze_verlaufsdaten(aktualisierte_daten)
-    setze_letzte_speicherung(run_id)
+    for spalte, ueberschrift in zip(spalten, ueberschriften):
+        spalte.markdown(f"**{ueberschrift}**")
 
-    try:
-        speichere_verlaufsdaten(aktualisierte_daten)
-    except Exception as exc:
-        st.error(f"Fehler beim Speichern: {type(exc).__name__}: {exc}")
+    st.divider()
 
+    for material in sortierte_materialien:
+        with st.container(border=True):
+            zeilen_spalten = st.columns((1.4, 1.8, 1.2, 1.2, 1.4, 1.2, 1.0, 1.1))
+            zeilen_spalten[0].write(loese_materialtyp_label_auf(material.materialtyp_code))
+            zeilen_spalten[1].write(loese_analyse_label_auf(material.klinische_frage_code))
+            zeilen_spalten[2].write(formatiere_datum(material.abnahmedatum))
+            zeilen_spalten[3].write(formatiere_datum(material.eingangsdatum))
+            zeilen_spalten[4].write(formatiere_zeitpunkt(material.erstellt_am))
+            zeilen_spalten[5].write(formatiere_text(material.erstellt_von_user_id))
 
-def verarbeite_berechnung(
-    keim: str,
-    antibiotikum: str,
-    total: int,
-    resistant: int,
-    periode: str,
-) -> None:
-    """Validiert eine Eingabe, berechnet das Ergebnis und speichert den Verlauf."""
-    fehlermeldung = validiere_berechnungseingaben(total, resistant)
-    if fehlermeldung is not None:
-        entferne_gespeichertes_ergebnis()
-        st.error(fehlermeldung)
-        return
+            if zeilen_spalten[6].button(
+                "Anzeigen",
+                key=f"material_hinweis_{material.id}",
+                use_container_width=True,
+            ):
+                merke_material_fuer_ansatzhinweis(material.id)
 
-    ergebnis = baue_berechnungsergebnis(
-        keim=keim,
-        antibiotikum=antibiotikum,
-        total=total,
-        resistant=resistant,
-        periode=periode,
-    )
-    if ergebnis is None:
-        entferne_gespeichertes_ergebnis()
-        st.error("Die Berechnung konnte nicht durchgefuehrt werden.")
-        return
-
-    setze_gespeichertes_ergebnis(ergebnis)
-    speichere_berechnung_im_verlauf(ergebnis)
+            if ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
+                if zeilen_spalten[7].button(
+                    "Kulturen",
+                    key=f"material_kulturen_{material.id}",
+                    use_container_width=True,
+                ):
+                    oeffne_kulturen_ablesen(material.id)
+            else:
+                zeilen_spalten[7].write("-")
 
 
 def main() -> None:
-    """Rendert die Seite fuer das Resistenzmonitoring."""
-    initialisiere_resistenzmonitoring()
+    """Rendert die Patientendetailansicht."""
+    show_header("Patientendetails")
+    zeige_erfolgsmeldungen()
+    zeige_ansatzhinweis_nach_speicherung()
 
-    show_header("Resistenzmonitoring")
-    zeige_fachliche_abgrenzung()
+    patientenakte = lade_patientenakte()
+    patient = None
+    materialien: list[Material] = []
 
-    if hole_aktuellen_benutzernamen() is None:
-        st.error("Es konnte kein angemeldeter Benutzer ermittelt werden.")
+    if patientenakte is not None:
+        patient, materialien = patientenakte
+
+    zeige_aktionsleiste(patient)
+
+    if patient is None:
         return
 
-    submitted, keim, antibiotikum, total, resistant, periode = (
-        resistenz_ansicht.zeige_berechnungsformular()
-    )
-
-    if submitted:
-        verarbeite_berechnung(
-            keim=keim,
-            antibiotikum=antibiotikum,
-            total=total,
-            resistant=resistant,
-            periode=periode,
-        )
-
-    ergebnis = hole_gespeichertes_ergebnis()
-    if ergebnis is None:
-        st.info("Werte eingeben und auf 'Berechnen und speichern' klicken.")
-    else:
-        resistenz_ansicht.zeige_ergebnis(ergebnis)
-
-    resistenz_ansicht.zeige_verlaufsbereich(hole_verlaufsdaten())
+    zeige_arbeitskontext()
+    zeige_stammdaten(patient)
+    st.divider()
+    zeige_loeschsektion(patient)
+    st.divider()
+    zeige_material_log(materialien)
+    zeige_ansatzhinweis_zum_ausgewaehlten_material(materialien)
 
 
 if __name__ == "__main__":
     main()
-
