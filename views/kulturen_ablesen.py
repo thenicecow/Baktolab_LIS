@@ -32,6 +32,7 @@ from functions.kulturen.beurteilung import (
     UrinBeurteilung,
     beurteile_urin_allgemeine_bakteriologie,
 )
+from ui.header import show_header
 from functions.kulturen.navigation import (
     aktiviere_befund,
     deaktiviere_befund,
@@ -362,7 +363,7 @@ def main() -> None:
         zeige_befund_innerhalb_kulturen_ablesen()
         return
 
-    st.title("Kulturen ablesen")
+    show_header("Kulturen ablesen")
     st.info(
         "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
         "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten, Beurteilung "

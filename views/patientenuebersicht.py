@@ -26,6 +26,7 @@ from functions.patienten.uebersicht import (
     filtere_patienten,
     lade_patienten,
 )
+from ui.header import show_header
 from views.patient_bearbeiten import main as rendere_patientenbearbeitung
 from views.patientendetail import main as rendere_patientendetailansicht
 
@@ -192,7 +193,7 @@ def main() -> None:
             "weil keine gueltige Patienten-ID vorhanden ist."
         )
 
-    st.title("Patientenuebersicht")
+    show_header("Patientenuebersicht")
     st.write("Hier siehst du alle erfassten Patienten.")
     zeige_erfolgsmeldungen()
 

@@ -21,6 +21,7 @@ class DashboardAktionskarte:
     seitenpfad: str
     button_typ: ButtonTyp = "secondary"
     groesse: Aktionsgroesse = "klein"
+    icon: str | None = None
 
 
 DASHBOARD_UNTERTITEL = (
@@ -44,6 +45,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         seitenpfad="views/patienten_erfassen.py",
         button_typ="primary",
         groesse="gross",
+        icon=":material/person_add:",
     ),
     DashboardAktionskarte(
         titel="Material erfassen",
@@ -52,6 +54,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         seitenpfad="views/material_erfassen.py",
         button_typ="primary",
         groesse="gross",
+        icon=":material/science:",
     ),
     DashboardAktionskarte(
         titel="Patientenuebersicht",
@@ -59,6 +62,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         button_text="Patientenuebersicht oeffnen",
         seitenpfad="views/patientenuebersicht.py",
         groesse="klein",
+        icon=":material/groups:",
     ),
     DashboardAktionskarte(
         titel="Resistenzmonitoring",
@@ -69,6 +73,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         button_text="Resistenzmonitoring oeffnen",
         seitenpfad="views/addition_calculator.py",
         groesse="klein",
+        icon=":material/functions:",
     ),
     DashboardAktionskarte(
         titel="Kulturen ablesen",
@@ -79,6 +84,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         button_text="Kulturen ablesen oeffnen",
         seitenpfad="views/kulturen_ablesen.py",
         groesse="klein",
+        icon=":material/biotech:",
     ),
 )
 

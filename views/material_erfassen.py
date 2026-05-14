@@ -17,6 +17,7 @@ from functions.kulturen.ablesen import (
     UNTERSTUETZTER_MATERIALTYP_CODE,
     ist_material_fuer_kulturen_ablesen_unterstuetzt,
 )
+from ui.header import show_header
 from functions.kulturen.navigation import (
     aktiviere_kulturen_ablesen,
     deaktiviere_kulturen_ablesen,
@@ -78,7 +79,7 @@ def zeige_leermeldung() -> None:
 
 def main() -> None:
     """Rendert die Materialerfassung und bindet die Fachlogik ein."""
-    st.title("Material erfassen")
+    show_header("Material erfassen")
     st.write("Hier kannst du ein neues Material fuer einen bestehenden Patienten erfassen.")
     st.info(
         "Reihenfolge: zuerst Patient festlegen, danach Materialtyp und Analyse waehlen "

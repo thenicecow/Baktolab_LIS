@@ -102,8 +102,6 @@ st.markdown(
     .stMultiselect div {
         background: white !important;
         color: #111827 !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 4px !important;
         box-shadow: none !important;
     }
 

@@ -13,6 +13,7 @@ import functions.mdr_rules as mdr_regeln
 import functions.resistenzmonitoring as resistenz_daten
 import functions.resistenzmonitoring_ansicht as resistenz_ansicht
 from functions.addition import percent, subtract
+from ui.header import show_header
 from utils.data_manager import DataManager
 
 
@@ -282,7 +283,7 @@ def main() -> None:
     """Rendert die Seite fuer das Resistenzmonitoring."""
     initialisiere_resistenzmonitoring()
 
-    st.title("Resistenzmonitoring")
+    show_header("Resistenzmonitoring")
     zeige_fachliche_abgrenzung()
 
     if hole_aktuellen_benutzernamen() is None:

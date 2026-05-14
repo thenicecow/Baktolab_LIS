@@ -45,7 +45,7 @@ def kehre_zur_patientenuebersicht_zurueck() -> None:
 
 def main() -> None:
     """Rendert die Bearbeitungsmaske fuer einen bestehenden Patienten."""
-    st.title("Patient bearbeiten")
+    show_header("Patient bearbeiten")
     st.write("Hier kannst du die Stammdaten eines bestehenden Patienten bearbeiten.")
 
     patientenakte = lade_patientenakte_fuer_bearbeitung()

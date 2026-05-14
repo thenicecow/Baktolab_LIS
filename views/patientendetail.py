@@ -13,6 +13,7 @@ from functions.gemeinsam.anzeige_hilfen import (
     loese_analyse_label_auf,
     loese_materialtyp_label_auf,
 )
+from ui.header import show_header
 from functions.kulturen.ablesen import ist_material_fuer_kulturen_ablesen_unterstuetzt
 from functions.kulturen.navigation import aktiviere_kulturen_ablesen
 from functions.patienten.detail import (
@@ -345,7 +346,7 @@ def zeige_material_log(materialien: list[Material]) -> None:
 
 def main() -> None:
     """Rendert die Patientendetailansicht."""
-    st.title("Patientendetails")
+    show_header("Patientendetails")
     zeige_erfolgsmeldungen()
     zeige_ansatzhinweis_nach_speicherung()
 

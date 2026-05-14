@@ -35,7 +35,7 @@ def erstelle_navigation():
             st.Page(
                 "views/patientenuebersicht.py",
                 title="Patientenübersicht",
-                icon=":material/groups:",
+                icon=":material/people:",
                 url_path=PATIENTENUEBERSICHT_URL_PFAD,
             ),
             st.Page(

@@ -17,28 +17,50 @@ from ui.header import show_header
 
 def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
     """Rendert eine grosse Aktionskarte fuer die priorisierten Hauptaktionen."""
+    icon_html = ""
+    if karte.icon:
+        icon_name = karte.icon[len(":material/"):-1]
+        icon_html = (
+            f"<span class='material-icons' style='font-size: 2.4rem; display:block; margin: 0 auto 0.5rem; color: #2563eb;'>{icon_name}</span>"
+        )
+
     with st.container(border=True):
-        st.subheader(karte.titel)
+        st.markdown(
+            f"<div style='text-align:center; margin-bottom: 0.5rem;'><div style='font-size: 2rem; font-weight: 700; margin: 0;'>{icon_html}{karte.titel}</div></div>",
+            unsafe_allow_html=True,
+        )
         st.write(karte.beschreibung)
 
         if st.button(
-            karte.button_text,
+            "Öffnen",
             use_container_width=True,
             type=karte.button_typ,
+            key=f"dashboard_hauptaktion_{karte.titel}",
         ):
             st.switch_page(karte.seitenpfad)
 
 
 def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
     """Rendert eine kompaktere Aktionskarte fuer weitere Dashboard-Ziele."""
+    icon_html = ""
+    if karte.icon:
+        icon_name = karte.icon[len(":material/"):-1]
+        icon_html = (
+            f"<span class='material-icons' style='font-size: 2rem; display:block; margin: 0 auto 0.4rem; color: #2563eb;'>{icon_name}</span>"
+        )
+
     with st.container(border=True):
-        st.markdown(f"**{karte.titel}**")
+        st.markdown(
+            f"<div style='text-align:center; margin-bottom: 0.4rem;'><div style='font-size: 1.4rem; font-weight: 700; margin: 0;'>{icon_html}{karte.titel}</div></div>",
+            unsafe_allow_html=True,
+        )
         st.caption(karte.beschreibung)
 
         if st.button(
-            karte.button_text,
+            "Öffnen",
             use_container_width=True,
             type=karte.button_typ,
+            key=f"dashboard_nebenaktion_{karte.titel}",
         ):
             st.switch_page(karte.seitenpfad)
 

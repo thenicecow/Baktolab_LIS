@@ -20,13 +20,14 @@ from functions.patienten.erfassung import (
     merke_erfolgreiche_speicherung,
     speichere_patient,
 )
+from ui.header import show_header
 
 
 def main() -> None:
     """Rendert die Patientenerfassung und ruft die Fachlogik auf."""
     initialisiere_formularzustand()
 
-    st.title("Patient erfassen")
+    show_header("Patient erfassen")
     st.write("Hier kannst du einen neuen Patienten erfassen.")
     st.info("Die Patienten-ID wird automatisch erzeugt.")
 
