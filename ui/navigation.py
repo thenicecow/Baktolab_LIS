@@ -51,7 +51,7 @@ def erstelle_navigation():
                 url_path=KULTUREN_ABLESEN_URL_PFAD,
             ),
             st.Page(
-                "views/addition_calculator.py",
+                "views/resistenzmonitoring.py",
                 title="Resistenzmonitoring",
                 icon=":material/functions:",
                 url_path=RESISTENZRECHNER_URL_PFAD,
