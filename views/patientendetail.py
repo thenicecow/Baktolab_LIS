@@ -44,6 +44,43 @@ from functions.patienten.navigation import (
 )
 
 
+def _inject_patient_detail_button_styles() -> None:
+    """Injiziert page-spezifische CSS, damit Buttons auf dieser Seite anders aussehen.
+
+    Die App hat bereits globale Button-Stile in `app.py`. Diese Funktion fügt eine
+    zusätzliche CSS-Regel hinzu, die nachladet und so die globalen Stile nur für
+    die geöffnete Seite überschreibt. Passe die HEX-Farben nach Wunsch an.
+    """
+    st.markdown(
+        """
+        <style>
+        /* Spezifische Button-Farbe fuer die Patientendetail-Seite */
+        .stButton > button,
+        .stDownloadButton > button,
+        .stForm button,
+        button[kind="primary"],
+        button[kind="secondary"] {
+            background: #10b981 !important; /* gruen-emerald */
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+        }
+
+        .stButton > button:hover,
+        .stDownloadButton > button:hover,
+        .stForm button:hover,
+        button[kind="primary"]:hover,
+        button[kind="secondary"]:hover {
+            background: #059669 !important; /* dunkleres gruen */
+            color: #ffffff !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def zeige_erfolgsmeldungen() -> None:
     """Zeigt gespeicherte Erfolgsmeldungen an."""
     bearbeitungserfolg = hole_und_entferne_bearbeitungserfolgsmeldung()
@@ -347,6 +384,8 @@ def zeige_material_log(materialien: list[Material]) -> None:
 def main() -> None:
     """Rendert die Patientendetailansicht."""
     show_header("Patientendetails")
+    # Page-specific button styles
+    _inject_patient_detail_button_styles()
     zeige_erfolgsmeldungen()
     zeige_ansatzhinweis_nach_speicherung()
 
