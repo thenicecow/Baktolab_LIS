@@ -8,4 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     npm \
  && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /tmp/requirements.txt
+RUN python -m pip install --upgrade pip \
+ && python -m pip install -r /tmp/requirements.txt
+
 USER vscode

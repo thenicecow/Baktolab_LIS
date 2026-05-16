@@ -2,6 +2,7 @@
 .*
 !.gitignore
 !.streamlit
+!.devcontainer/
 
 .streamlit/secrets.toml
 
