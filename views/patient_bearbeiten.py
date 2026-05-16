@@ -24,6 +24,7 @@ from functions.patienten.navigation import (
     aktiviere_patientendetailansicht,
     deaktiviere_patientenbearbeitung,
 )
+from ui.header import show_header
 
 
 def kehre_zur_patientendetailansicht_zurueck(patient_id: str) -> None:

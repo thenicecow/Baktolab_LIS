@@ -22,12 +22,14 @@ TITEL_ICONS = {
 
 STANDARD_BANNER_HINTERGRUENDE = {
     "Dashboard": "linear-gradient(90deg, #2563eb 0%, #60a5fa 50%, #93c5fd 100%)",
+    "Patient bearbeiten": "#94A3B8",
     "Patientendetails": "#94A3B8",
     "Weitere Aktionen": "linear-gradient(90deg, #64748B 0%, #94A3B8 50%, #CBD5E1 100%)",
 }
 
 STANDARD_TITLE_TEXT_COLORS = {
     "Dashboard": "#1d4ed8",
+    "Patient bearbeiten": "#94A3B8",
     "Patientendetails": "#94A3B8",
     "Weitere Aktionen": "#475569",
 }
