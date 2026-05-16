@@ -31,6 +31,7 @@ from functions.kulturen.navigation import (
     hat_gueltige_befund_route,
     hole_material_id_fuer_befund,
 )
+from ui.header import show_header
 
 
 ABKUERZUNGEN: tuple[tuple[str, str], ...] = (
@@ -406,6 +407,7 @@ def zeige_ausgeschriebene_abkuerzungen() -> None:
 
 def main() -> None:
     """Rendert die interne Befundansicht fuer das aktuell validierte Material."""
+    show_header("Befund")
     zeige_aktionsleiste()
 
     materialreferenz = hole_material_id_fuer_befund()

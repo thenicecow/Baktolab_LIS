@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import streamlit as st
 
+from functions.dashboard.logik import hole_akzentfarbe_fuer_titel
 
-# Mapping von Seitentiteln zu Icons
+
 TITEL_ICONS = {
     "Dashboard": ":material/dashboard:",
     "Patient erfassen": ":material/person_add:",
-    "Patientenübersicht": ":material/people:",
     "Patientenuebersicht": ":material/people:",
     "Material erfassen": ":material/science:",
     "Kulturen ablesen": ":material/biotech:",
@@ -20,27 +20,15 @@ TITEL_ICONS = {
     "Weitere Aktionen": ":material/menu:",
 }
 
-# Mapping von Seitentiteln zu farbigen Gradients
-BANNER_GRADIENTS = {
+STANDARD_BANNER_HINTERGRUENDE = {
     "Dashboard": "linear-gradient(90deg, #2563eb 0%, #60a5fa 50%, #93c5fd 100%)",
-    "Patient erfassen": "linear-gradient(90deg, #7C3AED 0%, #4338CA 50%, #818CF8 100%)",
-    "Material erfassen": "linear-gradient(90deg, #3F766E 0%, #24B8A6 50%, #99F6E4 100%)",
-    "Patientenübersicht": "linear-gradient(90deg, #DC2626 0%, #EF4444 50%, #FCA5A5 100%)",
-    "Patientenuebersicht": "linear-gradient(90deg, #DC2626 0%, #EF4444 50%, #FCA5A5 100%)",
-    "Resistenzmonitoring": "linear-gradient(90deg, #F59E0B 0%, #FCD34D 50%, #FDE68A 100%)",
-    "Kulturen ablesen": "linear-gradient(90deg, #10B981 0%, #34D399 50%, #6EE7B7 100%)",
+    "Patientendetails": "#94A3B8",
     "Weitere Aktionen": "linear-gradient(90deg, #64748B 0%, #94A3B8 50%, #CBD5E1 100%)",
 }
 
-# Mapping von Seitentiteln zu Titeltextfarben
-TITLE_TEXT_COLORS = {
+STANDARD_TITLE_TEXT_COLORS = {
     "Dashboard": "#1d4ed8",
-    "Patient erfassen": "#7C3AED",
-    "Material erfassen": "#0F766E",
-    "Patientenübersicht": "#DC2626",
-    "Patientenuebersicht": "#DC2626",
-    "Resistenzmonitoring": "#B45309",
-    "Kulturen ablesen": "#059669",
+    "Patientendetails": "#94A3B8",
     "Weitere Aktionen": "#475569",
 }
 
@@ -52,25 +40,55 @@ def _render_material_icon(icon_code: str) -> str:
 
     icon_name = icon_code[len(":material/"):-1]
     return (
-        f"<span class='material-icons' style='vertical-align: middle; font-size: 1.2em; margin-right: 0.45rem;'>"
+        "<span class='material-icons' "
+        "style='vertical-align: middle; font-size: 1.2em; margin-right: 0.45rem;'>"
         f"{icon_name}</span>"
     )
 
 
-def show_header(title: str | None = None) -> None:
-    """Zeigt den Kopfbereich der Anwendung mit optionalem Seitentitel und Logo an.
+def _hole_banner_hintergrund_fuer_titel(title: str | None) -> str:
+    """Liefert den farbigen Balken fuer den Kopfbereich einer Seite."""
+    akzentfarbe = hole_akzentfarbe_fuer_titel(title)
+    if akzentfarbe is not None:
+        return akzentfarbe
 
-    Args:
-        title: Optionaler Seitentitel für die aktuelle Ansicht.
-    """
+    if title is None:
+        return STANDARD_BANNER_HINTERGRUENDE["Dashboard"]
+
+    return STANDARD_BANNER_HINTERGRUENDE.get(
+        title,
+        STANDARD_BANNER_HINTERGRUENDE["Dashboard"],
+    )
+
+
+def _hole_titelfarbe_fuer_titel(title: str | None) -> str:
+    """Liefert die Titelfarbe fuer den Kopfbereich einer Seite."""
+    akzentfarbe = hole_akzentfarbe_fuer_titel(title)
+    if akzentfarbe is not None:
+        return akzentfarbe
+
+    if title is None:
+        return STANDARD_TITLE_TEXT_COLORS["Dashboard"]
+
+    return STANDARD_TITLE_TEXT_COLORS.get(
+        title,
+        STANDARD_TITLE_TEXT_COLORS["Dashboard"],
+    )
+
+
+def show_header(title: str | None = None) -> None:
+    """Zeigt den Kopfbereich der Anwendung mit optionalem Seitentitel und Logo an."""
     st.markdown(
         "<link href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>",
         unsafe_allow_html=True,
     )
 
-    gradient = BANNER_GRADIENTS.get(title, BANNER_GRADIENTS["Dashboard"])
+    banner_hintergrund = _hole_banner_hintergrund_fuer_titel(title)
     st.markdown(
-        f"<div style='height: 30px; width: 100%; border-radius: 10px; background: {gradient}; margin-bottom: 18px;'></div>",
+        (
+            "<div style='height: 30px; width: 100%; border-radius: 10px; "
+            f"background: {banner_hintergrund}; margin-bottom: 18px;'></div>"
+        ),
         unsafe_allow_html=True,
     )
 
@@ -81,9 +99,12 @@ def show_header(title: str | None = None) -> None:
             icon_code = TITEL_ICONS.get(title, "")
             icon_html = _render_material_icon(icon_code) if icon_code else ""
             title_text = f"{icon_html}{title}" if icon_html else title
-            title_color = TITLE_TEXT_COLORS.get(title, "#1d4ed8")
+            title_color = _hole_titelfarbe_fuer_titel(title)
             st.markdown(
-                f"<div style='font-size: 3.6rem; line-height: 1.05; margin: 0; font-weight: 700; color: {title_color};'>{title_text}</div>",
+                (
+                    "<div style='font-size: 3.6rem; line-height: 1.05; margin: 0; "
+                    f"font-weight: 700; color: {title_color};'>{title_text}</div>"
+                ),
                 unsafe_allow_html=True,
             )
 

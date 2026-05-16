@@ -45,31 +45,10 @@ from functions.patienten.navigation import (
 
 
 def _inject_patient_detail_button_styles() -> None:
-    """Injiziert seitenbezogene Button-Stile inklusive roter Loeschaktion."""
+    """Injiziert auf dieser Seite nur die rote Hervorhebung fuer die Loeschaktion."""
     st.markdown(
         """
         <style>
-        .stButton > button,
-        .stDownloadButton > button,
-        .stForm button,
-        button[kind="primary"],
-        button[kind="secondary"] {
-            background: #10b981 !important;
-            color: #ffffff !important;
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 8px !important;
-        }
-
-        .stButton > button:hover,
-        .stDownloadButton > button:hover,
-        .stForm button:hover,
-        button[kind="primary"]:hover,
-        button[kind="secondary"]:hover {
-            background: #059669 !important;
-            color: #ffffff !important;
-        }
-
         .st-key-patient_loeschaktion button {
             background: #DC2626 !important;
             color: #ffffff !important;

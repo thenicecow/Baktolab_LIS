@@ -15,74 +15,132 @@ from functions.dashboard.logik import (
 from ui.header import show_header
 
 
+STANDARD_AKZENTFARBE = "#2563EB"
+
+
 def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
     """Rendert eine grosse Aktionskarte fuer die priorisierten Hauptaktionen."""
+    akzentfarbe = karte.color or STANDARD_AKZENTFARBE
+    hintergrundfarbe = f"{akzentfarbe}18"
     icon_html = ""
-    title_color = karte.color or "#2563eb"
-    card_class = (
-        f"dashboard-card-{karte.titel.lower().replace(' ', '-').replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 'ss')}"
-    )
+
     if karte.icon:
         icon_name = karte.icon[len(":material/"):-1]
         icon_html = (
-            f"<span class='material-icons' style='font-size: 2.4rem; display:block; margin: 0 auto 0.5rem; color: {title_color};'>{icon_name}</span>"
+            f"<span class='material-icons' style='font-size: 2.4rem; display:block; "
+            f"margin: 0 auto 0.55rem; color: {akzentfarbe};'>{icon_name}</span>"
         )
 
-    st.markdown(f"<div class='{card_class}'>", unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown(
-            f"<div style='text-align:center; margin-bottom: 0.5rem;'><div style='font-size: 2rem; font-weight: 700; margin: 0; color: {title_color};'>{icon_html}{karte.titel}</div></div>",
+            f"""
+            <div style="
+                background: linear-gradient(180deg, {hintergrundfarbe} 0%, #ffffff 92%);
+                border-top: 0.45rem solid {akzentfarbe};
+                border-left: 0.35rem solid {akzentfarbe};
+                border-radius: 14px;
+                padding: 1.15rem 1rem 1rem 1rem;
+                margin-bottom: 0.9rem;
+            ">
+                <div style="text-align: center;">
+                    {icon_html}
+                    <div style="
+                        font-size: 2rem;
+                        font-weight: 700;
+                        line-height: 1.2;
+                        color: {akzentfarbe};
+                    ">
+                        {karte.titel}
+                    </div>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        st.write(karte.beschreibung)
         st.markdown(
-            f"<style>.{card_class} .stButton button, .{card_class} button[kind='primary'], .{card_class} button[kind='secondary'] {{ background: {title_color} !important; border-color: {title_color} !important; color: white !important; }} .{card_class} .stButton button:hover, .{card_class} button[kind='primary']:hover, .{card_class} button[kind='secondary']:hover {{ background: {title_color} !important; color: white !important; }} .{card_class} .stButton button:focus, .{card_class} button[kind='primary']:focus, .{card_class} button[kind='secondary']:focus {{ outline: none !important; box-shadow: none !important; }} </style>",
+            f"""
+            <div style="
+                color: #334155;
+                min-height: 4.5rem;
+                line-height: 1.55;
+                margin-bottom: 0.6rem;
+            ">
+                {karte.beschreibung}
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
         if st.button(
-            "Öffnen",
+            "Oeffnen",
             use_container_width=True,
             type=karte.button_typ,
             key=f"dashboard_hauptaktion_{karte.titel}",
         ):
             st.switch_page(karte.seitenpfad)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
     """Rendert eine kompaktere Aktionskarte fuer weitere Dashboard-Ziele."""
+    akzentfarbe = karte.color or STANDARD_AKZENTFARBE
+    hintergrundfarbe = f"{akzentfarbe}18"
     icon_html = ""
-    title_color = karte.color or "#2563eb"
-    card_class = (
-        f"dashboard-card-{karte.titel.lower().replace(' ', '-').replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 'ss')}"
-    )
+
     if karte.icon:
         icon_name = karte.icon[len(":material/"):-1]
         icon_html = (
-            f"<span class='material-icons' style='font-size: 2rem; display:block; margin: 0 auto 0.4rem; color: {title_color};'>{icon_name}</span>"
+            f"<span class='material-icons' style='font-size: 2rem; display:block; "
+            f"margin: 0 auto 0.45rem; color: {akzentfarbe};'>{icon_name}</span>"
         )
 
-    st.markdown(f"<div class='{card_class}'>", unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown(
-            f"<div style='text-align:center; margin-bottom: 0.4rem;'><div style='font-size: 1.4rem; font-weight: 700; margin: 0; color: {title_color};'>{icon_html}{karte.titel}</div></div>",
+            f"""
+            <div style="
+                background: linear-gradient(180deg, {hintergrundfarbe} 0%, #ffffff 92%);
+                border-top: 0.35rem solid {akzentfarbe};
+                border-left: 0.3rem solid {akzentfarbe};
+                border-radius: 14px;
+                padding: 0.95rem 0.9rem 0.85rem 0.9rem;
+                margin-bottom: 0.75rem;
+            ">
+                <div style="text-align: center;">
+                    {icon_html}
+                    <div style="
+                        font-size: 1.35rem;
+                        font-weight: 700;
+                        line-height: 1.25;
+                        color: {akzentfarbe};
+                    ">
+                        {karte.titel}
+                    </div>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        st.caption(karte.beschreibung)
         st.markdown(
-            f"<style>.{card_class} button {{ background-color: {title_color} !important; border-color: {title_color} !important; color: white !important; }}</style>",
+            f"""
+            <div style="
+                color: #475569;
+                min-height: 5.3rem;
+                line-height: 1.5;
+                margin-bottom: 0.55rem;
+                font-size: 0.95rem;
+            ">
+                {karte.beschreibung}
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
         if st.button(
-            "Öffnen",
+            "Oeffnen",
             use_container_width=True,
             type=karte.button_typ,
             key=f"dashboard_nebenaktion_{karte.titel}",
         ):
             st.switch_page(karte.seitenpfad)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def main() -> None:
@@ -112,8 +170,6 @@ def main() -> None:
         for spalte, karte in zip(nebenaktions_spalten, nebenaktionen):
             with spalte:
                 zeige_nebenaktionskarte(karte)
-
-
 
 
 main()

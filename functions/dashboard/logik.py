@@ -25,6 +25,15 @@ class DashboardAktionskarte:
     color: str | None = None
 
 
+AKZENTFARBEN_NACH_TITEL: dict[str, str] = {
+    "Patient erfassen": "#8B5CF6",
+    "Material erfassen": "#14B8A6",
+    "Patientenuebersicht": "#64748B",
+    "Resistenzmonitoring": "#F59E0B",
+    "Kulturen ablesen": "#22C55E",
+    "Befund": "#16A34A",
+}
+
 DASHBOARD_UNTERTITEL = (
     "Zentrale Startseite fuer das Laborinformationssystem im Modul "
     "Biomedizinische Labordiagnostik."
@@ -38,16 +47,28 @@ DASHBOARD_HINWEIS = (
 )
 
 
+def hole_akzentfarbe_fuer_titel(titel: str | None) -> str | None:
+    """Liefert die definierte Akzentfarbe fuer Dashboard-Karten und Unterseiten."""
+    if titel is None:
+        return None
+
+    bereinigt = titel.strip()
+    if not bereinigt:
+        return None
+
+    return AKZENTFARBEN_NACH_TITEL.get(bereinigt)
+
+
 _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
     DashboardAktionskarte(
-        titel="Patienten erfassen",
+        titel="Patient erfassen",
         beschreibung="Neue Patienten anlegen und Stammdaten erfassen.",
         button_text="Patientenerfassung oeffnen",
         seitenpfad="views/patienten_erfassen.py",
         button_typ="primary",
         groesse="gross",
         icon=":material/person_add:",
-        color="#7C3AED",
+        color=hole_akzentfarbe_fuer_titel("Patient erfassen"),
     ),
     DashboardAktionskarte(
         titel="Material erfassen",
@@ -57,7 +78,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         button_typ="primary",
         groesse="gross",
         icon=":material/science:",
-        color="#0F766E",
+        color=hole_akzentfarbe_fuer_titel("Material erfassen"),
     ),
     DashboardAktionskarte(
         titel="Patientenuebersicht",
@@ -66,7 +87,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         seitenpfad="views/patientenuebersicht.py",
         groesse="klein",
         icon=":material/groups:",
-        color="#DC2626",
+        color=hole_akzentfarbe_fuer_titel("Patientenuebersicht"),
     ),
     DashboardAktionskarte(
         titel="Resistenzmonitoring",
@@ -78,7 +99,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         seitenpfad="views/resistenzmonitoring.py",
         groesse="klein",
         icon=":material/functions:",
-        color="#B45309",
+        color=hole_akzentfarbe_fuer_titel("Resistenzmonitoring"),
     ),
     DashboardAktionskarte(
         titel="Kulturen ablesen",
@@ -90,7 +111,7 @@ _DASHBOARD_AKTIONSKARTEN: tuple[DashboardAktionskarte, ...] = (
         seitenpfad="views/kulturen_ablesen.py",
         groesse="klein",
         icon=":material/biotech:",
-        color="#059669",
+        color=hole_akzentfarbe_fuer_titel("Kulturen ablesen"),
     ),
 )
 
