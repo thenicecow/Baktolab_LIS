@@ -1,4 +1,4 @@
-"""Streamlit-Seite fuer das Dashboard."""
+"""Streamlit-Seite für das Dashboard."""
 
 from __future__ import annotations
 
@@ -8,7 +8,9 @@ from functions.dashboard.logik import (
     DASHBOARD_HINWEIS,
     DASHBOARD_UNTERTITEL,
     DashboardAktionskarte,
+    hole_akzentfarbe_fuer_titel,
     hole_anzeige_name,
+    hole_anzeigetext_fuer_titel,
     hole_hauptaktionskarten,
     hole_nebenaktionskarten,
 )
@@ -19,9 +21,10 @@ STANDARD_AKZENTFARBE = "#2563EB"
 
 
 def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
-    """Rendert eine grosse Aktionskarte fuer die priorisierten Hauptaktionen."""
-    akzentfarbe = karte.color or STANDARD_AKZENTFARBE
+    """Rendert eine grosse Aktionskarte für die priorisierten Hauptaktionen."""
+    akzentfarbe = karte.color or hole_akzentfarbe_fuer_titel(karte.titel) or STANDARD_AKZENTFARBE
     hintergrundfarbe = f"{akzentfarbe}18"
+    anzeigetitel = hole_anzeigetext_fuer_titel(karte.titel) or karte.titel
     icon_html = ""
 
     if karte.icon:
@@ -50,7 +53,7 @@ def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
                         line-height: 1.2;
                         color: {akzentfarbe};
                     ">
-                        {karte.titel}
+                        {anzeigetitel}
                     </div>
                 </div>
             </div>
@@ -72,7 +75,7 @@ def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
         )
 
         if st.button(
-            "Oeffnen",
+            "Öffnen",
             use_container_width=True,
             type=karte.button_typ,
             key=f"dashboard_hauptaktion_{karte.titel}",
@@ -81,9 +84,10 @@ def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
 
 
 def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
-    """Rendert eine kompaktere Aktionskarte fuer weitere Dashboard-Ziele."""
-    akzentfarbe = karte.color or STANDARD_AKZENTFARBE
+    """Rendert eine kompaktere Aktionskarte für weitere Dashboard-Ziele."""
+    akzentfarbe = karte.color or hole_akzentfarbe_fuer_titel(karte.titel) or STANDARD_AKZENTFARBE
     hintergrundfarbe = f"{akzentfarbe}18"
+    anzeigetitel = hole_anzeigetext_fuer_titel(karte.titel) or karte.titel
     icon_html = ""
 
     if karte.icon:
@@ -112,7 +116,7 @@ def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
                         line-height: 1.25;
                         color: {akzentfarbe};
                     ">
-                        {karte.titel}
+                        {anzeigetitel}
                     </div>
                 </div>
             </div>
@@ -135,7 +139,7 @@ def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
         )
 
         if st.button(
-            "Oeffnen",
+            "Öffnen",
             use_container_width=True,
             type=karte.button_typ,
             key=f"dashboard_nebenaktion_{karte.titel}",

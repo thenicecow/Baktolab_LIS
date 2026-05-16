@@ -1,4 +1,4 @@
-"""Streamlit-Seite fuer das Resistenzmonitoring."""
+"""Streamlit-Seite für das Resistenzmonitoring."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ def main() -> None:
     show_header("Resistenzmonitoring")
 
     st.write(
-        "Hier kannst du eine einfache Resistenzauswertung fuer einen ausgewählten Keim "
-        "und ein Antibiotikum durchfuehren."
+        "Hier kannst du eine einfache Resistenzauswertung für einen ausgewählten Keim "
+        "und ein Antibiotikum durchführen."
     )
 
     submitted, keim, antibiotikum, total, resistant, periode = (
@@ -24,11 +24,11 @@ def main() -> None:
     )
 
     if not submitted:
-        st.info("Fuelle das Formular aus und klicke auf 'Berechnen und speichern'.")
+        st.info("Fülle das Formular aus und klicke auf 'Berechnen und speichern'.")
         return
 
     if total <= 0:
-        st.error("Die Gesamtzahl getesteter Isolate muss groesser als 0 sein.")
+        st.error("Die Gesamtzahl getesteter Isolate muss grösser als 0 sein.")
         return
 
     if resistant < 0 or resistant > total:

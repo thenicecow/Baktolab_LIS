@@ -28,24 +28,24 @@ from ui.header import show_header
 
 
 def kehre_zur_patientendetailansicht_zurueck(patient_id: str) -> None:
-    """Wechselt nach der Bearbeitung intern zur Detailansicht des Patienten zurueck."""
+    """Wechselt nach der Bearbeitung intern zur Detailansicht des Patienten zurück."""
     deaktiviere_patientenbearbeitung()
 
     if not aktiviere_patientendetailansicht(patient_id):
-        st.error("Die Patientendetailansicht konnte nicht geoeffnet werden.")
+        st.error("Die Patientendetailansicht konnte nicht geöffnet werden.")
         return
 
     st.rerun()
 
 
 def kehre_zur_patientenuebersicht_zurueck() -> None:
-    """Beendet die interne Bearbeitung und zeigt wieder die Patientenuebersicht an."""
+    """Beendet die interne Bearbeitung und zeigt wieder die Patientenübersicht an."""
     deaktiviere_patientenbearbeitung()
     st.rerun()
 
 
 def main() -> None:
-    """Rendert die Bearbeitungsmaske fuer einen bestehenden Patienten."""
+    """Rendert die Bearbeitungsmaske für einen bestehenden Patienten."""
     show_header("Patient bearbeiten")
     st.write("Hier kannst du die Stammdaten eines bestehenden Patienten bearbeiten.")
 
@@ -53,7 +53,7 @@ def main() -> None:
     if patientenakte is None:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
+            label="Zurück zur Patientenübersicht",
             icon=":material/groups:",
         )
         return
@@ -95,7 +95,7 @@ def main() -> None:
                     key=GEBURTSJAHR_SCHLUESSEL,
                 )
 
-            st.caption("Jahre bis einschliesslich 1900 sind auswaehlbar.")
+            st.caption("Jahre bis einschliesslich 1900 sind auswählbar.")
 
         with rechte_spalte:
             st.text_input("Nachname", key=NACHNAME_SCHLUESSEL)
@@ -125,7 +125,7 @@ def main() -> None:
 
         with rechte_button_spalte:
             speichern = st.form_submit_button(
-                "Aenderungen speichern",
+                "Änderungen speichern",
                 type="primary",
                 use_container_width=True,
             )
@@ -140,7 +140,7 @@ def main() -> None:
             kehre_zur_patientendetailansicht_zurueck(patient.id)
 
     if st.button(
-        "Zurueck zur Patientenuebersicht",
+        "Zurück zur Patientenübersicht",
         use_container_width=True,
     ):
         kehre_zur_patientenuebersicht_zurueck()

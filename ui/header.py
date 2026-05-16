@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import streamlit as st
 
-from functions.dashboard.logik import hole_akzentfarbe_fuer_titel
+from functions.dashboard.logik import (
+    hole_akzentfarbe_fuer_titel,
+    hole_anzeigetext_fuer_titel,
+)
 
 
 TITEL_ICONS = {
@@ -49,7 +52,7 @@ def _render_material_icon(icon_code: str) -> str:
 
 
 def _hole_banner_hintergrund_fuer_titel(title: str | None) -> str:
-    """Liefert den farbigen Balken fuer den Kopfbereich einer Seite."""
+    """Liefert den farbigen Balken für den Kopfbereich einer Seite."""
     akzentfarbe = hole_akzentfarbe_fuer_titel(title)
     if akzentfarbe is not None:
         return akzentfarbe
@@ -64,7 +67,7 @@ def _hole_banner_hintergrund_fuer_titel(title: str | None) -> str:
 
 
 def _hole_titelfarbe_fuer_titel(title: str | None) -> str:
-    """Liefert die Titelfarbe fuer den Kopfbereich einer Seite."""
+    """Liefert die Titelfarbe für den Kopfbereich einer Seite."""
     akzentfarbe = hole_akzentfarbe_fuer_titel(title)
     if akzentfarbe is not None:
         return akzentfarbe
@@ -100,7 +103,8 @@ def show_header(title: str | None = None) -> None:
         if title:
             icon_code = TITEL_ICONS.get(title, "")
             icon_html = _render_material_icon(icon_code) if icon_code else ""
-            title_text = f"{icon_html}{title}" if icon_html else title
+            anzeigetitel = hole_anzeigetext_fuer_titel(title) or title
+            title_text = f"{icon_html}{anzeigetitel}" if icon_html else anzeigetitel
             title_color = _hole_titelfarbe_fuer_titel(title)
             st.markdown(
                 (
