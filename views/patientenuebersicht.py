@@ -124,20 +124,22 @@ def zeige_tabellenkopf() -> None:
 
 def zeige_loeschaktion(patient: Patient) -> None:
     """Zeigt die abgesicherte Loeschaktion fuer einen Patienten in der Uebersicht an."""
-    with st.popover("Loeschen", use_container_width=True):
-        st.warning(
-            f"Patient {patient.vorname} {patient.nachname} wird mit allen "
-            "zugehoerigen Materialien und Kulturdaten dauerhaft geloescht."
-        )
-        st.caption("Diese Aktion kann nicht rueckgaengig gemacht werden.")
+    with st.container(key=f"patient_loeschtrigger_{patient.id}"):
+        with st.popover("Loeschen", use_container_width=True):
+            st.warning(
+                f"Patient {patient.vorname} {patient.nachname} wird mit allen "
+                "zugehoerigen Materialien und Kulturdaten dauerhaft geloescht."
+            )
+            st.caption("Diese Aktion kann nicht rueckgaengig gemacht werden.")
 
-        if st.button(
-            "Loeschen bestaetigen",
-            key=f"patient_loeschen_{patient.id}",
-            type="primary",
-            use_container_width=True,
-        ):
-            bestaetige_und_loesche_patient(patient)
+            with st.container(key=f"patient_loeschbestaetigung_{patient.id}"):
+                if st.button(
+                    "Loeschen bestaetigen",
+                    key=f"patient_loeschen_{patient.id}",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    bestaetige_und_loesche_patient(patient)
 
 
 def zeige_patientenzeile(patient: Patient) -> None:
@@ -194,6 +196,46 @@ def main() -> None:
         )
 
     show_header("Patientenuebersicht")
+    st.markdown(
+        """
+        <style>
+        div[class*="st-key-patient_loeschtrigger_"] button,
+        div[class*="st-key-patient_loeschbestaetigung_"] button {
+            background: #DC2626 !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+        }
+
+        div[class*="st-key-patient_loeschtrigger_"] button:hover,
+        div[class*="st-key-patient_loeschbestaetigung_"] button:hover {
+            background: #B91C1C !important;
+            color: #ffffff !important;
+            border: none !important;
+        }
+
+        div[class*="st-key-patient_loeschtrigger_"] button:focus,
+        div[class*="st-key-patient_loeschtrigger_"] button:active,
+        div[class*="st-key-patient_loeschtrigger_"] button:focus-visible,
+        div[class*="st-key-patient_loeschbestaetigung_"] button:focus,
+        div[class*="st-key-patient_loeschbestaetigung_"] button:active,
+        div[class*="st-key-patient_loeschbestaetigung_"] button:focus-visible {
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        div[class*="st-key-patient_loeschtrigger_"] button:disabled,
+        div[class*="st-key-patient_loeschbestaetigung_"] button:disabled {
+            background: #FCA5A5 !important;
+            color: #ffffff !important;
+            border: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     st.write("Hier siehst du alle erfassten Patienten.")
     zeige_erfolgsmeldungen()
 

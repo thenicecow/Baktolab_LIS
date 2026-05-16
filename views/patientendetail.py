@@ -45,22 +45,16 @@ from functions.patienten.navigation import (
 
 
 def _inject_patient_detail_button_styles() -> None:
-    """Injiziert page-spezifische CSS, damit Buttons auf dieser Seite anders aussehen.
-
-    Die App hat bereits globale Button-Stile in `app.py`. Diese Funktion fügt eine
-    zusätzliche CSS-Regel hinzu, die nachladet und so die globalen Stile nur für
-    die geöffnete Seite überschreibt. Passe die HEX-Farben nach Wunsch an.
-    """
+    """Injiziert seitenbezogene Button-Stile inklusive roter Loeschaktion."""
     st.markdown(
         """
         <style>
-        /* Spezifische Button-Farbe fuer die Patientendetail-Seite */
         .stButton > button,
         .stDownloadButton > button,
         .stForm button,
         button[kind="primary"],
         button[kind="secondary"] {
-            background: #10b981 !important; /* gruen-emerald */
+            background: #10b981 !important;
             color: #ffffff !important;
             border: none !important;
             box-shadow: none !important;
@@ -72,8 +66,36 @@ def _inject_patient_detail_button_styles() -> None:
         .stForm button:hover,
         button[kind="primary"]:hover,
         button[kind="secondary"]:hover {
-            background: #059669 !important; /* dunkleres gruen */
+            background: #059669 !important;
             color: #ffffff !important;
+        }
+
+        .st-key-patient_loeschaktion button {
+            background: #DC2626 !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+        }
+
+        .st-key-patient_loeschaktion button:hover {
+            background: #B91C1C !important;
+            color: #ffffff !important;
+            border: none !important;
+        }
+
+        .st-key-patient_loeschaktion button:focus,
+        .st-key-patient_loeschaktion button:active,
+        .st-key-patient_loeschaktion button:focus-visible {
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .st-key-patient_loeschaktion button:disabled {
+            background: #FCA5A5 !important;
+            color: #ffffff !important;
+            border: none !important;
         }
         </style>
         """,
@@ -244,19 +266,20 @@ def zeige_loeschsektion(patient: Patient) -> None:
             key=LOESCHEN_BESTAETIGUNG_SCHLUESSEL,
         )
 
-        if st.button(
-            "Patient endgueltig loeschen",
-            use_container_width=True,
-            disabled=not bool(
-                st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
-            ),
-        ):
-            erfolgsmeldung = loesche_patient(patient.id)
+        with st.container(key="patient_loeschaktion"):
+            if st.button(
+                "Patient endgueltig loeschen",
+                use_container_width=True,
+                disabled=not bool(
+                    st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
+                ),
+            ):
+                erfolgsmeldung = loesche_patient(patient.id)
 
-            if erfolgsmeldung is not None:
-                bereinige_patientbezogenen_zustand_nach_loeschung()
-                merke_erfolgreiche_loeschung(erfolgsmeldung)
-                st.switch_page("views/patientenuebersicht.py")
+                if erfolgsmeldung is not None:
+                    bereinige_patientbezogenen_zustand_nach_loeschung()
+                    merke_erfolgreiche_loeschung(erfolgsmeldung)
+                    st.switch_page("views/patientenuebersicht.py")
 
 
 def zeige_filterleiste() -> tuple[str | None, str | None]:
@@ -384,7 +407,6 @@ def zeige_material_log(materialien: list[Material]) -> None:
 def main() -> None:
     """Rendert die Patientendetailansicht."""
     show_header("Patientendetails")
-    # Page-specific button styles
     _inject_patient_detail_button_styles()
     zeige_erfolgsmeldungen()
     zeige_ansatzhinweis_nach_speicherung()

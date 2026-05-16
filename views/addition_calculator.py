@@ -211,21 +211,31 @@ def zeige_loeschsektion(patient: Patient) -> None:
         st.markdown(
             """
             <style>
-            div.stButton > button[kind="primary"] {
-                background-color: #d62728 !important;
-                color: white !important;
+            .st-key-patient_loeschaktion button {
+                background: #DC2626 !important;
+                color: #ffffff !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 8px !important;
+            }
+
+            .st-key-patient_loeschaktion button:hover {
+                background: #B91C1C !important;
+                color: #ffffff !important;
                 border: none !important;
             }
 
-            div.stButton > button[kind="primary"]:hover {
-                background-color: #b22222 !important;
-                color: white !important;
+            .st-key-patient_loeschaktion button:focus,
+            .st-key-patient_loeschaktion button:active,
+            .st-key-patient_loeschaktion button:focus-visible {
+                outline: none !important;
                 border: none !important;
+                box-shadow: none !important;
             }
 
-            div.stButton > button[kind="primary"]:disabled {
-                background-color: #f2a3a3 !important;
-                color: white !important;
+            .st-key-patient_loeschaktion button:disabled {
+                background: #FCA5A5 !important;
+                color: #ffffff !important;
                 border: none !important;
             }
             </style>
@@ -233,20 +243,21 @@ def zeige_loeschsektion(patient: Patient) -> None:
             unsafe_allow_html=True,
         )
 
-        if st.button(
-            "Patient endgueltig loeschen",
-            use_container_width=True,
-            type="primary",
-            disabled=not bool(
-                st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
-            ),
-        ):
-            erfolgsmeldung = loesche_patient(patient.id)
+        with st.container(key="patient_loeschaktion"):
+            if st.button(
+                "Patient endgueltig loeschen",
+                use_container_width=True,
+                type="primary",
+                disabled=not bool(
+                    st.session_state.get(LOESCHEN_BESTAETIGUNG_SCHLUESSEL, False)
+                ),
+            ):
+                erfolgsmeldung = loesche_patient(patient.id)
 
-            if erfolgsmeldung is not None:
-                bereinige_patientbezogenen_zustand_nach_loeschung()
-                merke_erfolgreiche_loeschung(erfolgsmeldung)
-                st.switch_page("views/patientenuebersicht.py")
+                if erfolgsmeldung is not None:
+                    bereinige_patientbezogenen_zustand_nach_loeschung()
+                    merke_erfolgreiche_loeschung(erfolgsmeldung)
+                    st.switch_page("views/patientenuebersicht.py")
 
 
 def zeige_filterleiste() -> tuple[str | None, str | None]:
