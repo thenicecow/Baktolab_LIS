@@ -194,6 +194,11 @@ def ist_kontaminantenrolle(rolle: str | None) -> bool:
     return rolle.strip().casefold() == ROLLE_KONTAMINANTE.casefold()
 
 
+def ist_keim_fachlich_mitbeurteilt(keimbeurteilung: BeurteilterKeim | None) -> bool:
+    """Leitet aus der vorhandenen Keimbeurteilung ab, ob ein Keim fachlich mitbeurteilt wurde."""
+    return keimbeurteilung is not None
+
+
 def soll_resistenzempfehlung_ausgeblendet_werden(
     rolle: str,
     keimbeurteilung: BeurteilterKeim | None,
@@ -202,9 +207,10 @@ def soll_resistenzempfehlung_ausgeblendet_werden(
     if ist_kontaminantenrolle(rolle):
         return True
 
-    if keimbeurteilung is None:
-        return False
+    if not ist_keim_fachlich_mitbeurteilt(keimbeurteilung):
+        return True
 
+    assert keimbeurteilung is not None
     return ist_kontaminantenrolle(keimbeurteilung.rolle) or ist_kontaminantenrolle(
         keimbeurteilung.effektive_rolle
     )
@@ -213,20 +219,17 @@ def soll_resistenzempfehlung_ausgeblendet_werden(
 def baue_resistenzempfehlung(
     rolle: str,
     keimbeurteilung: BeurteilterKeim | None,
-    beurteilung: UrinBeurteilung | None,
 ) -> str | None:
     """Erzeugt die sichtbare Resistenzempfehlung fuer einen einzelnen Keim."""
     if soll_resistenzempfehlung_ausgeblendet_werden(rolle, keimbeurteilung):
         return None
 
-    if keimbeurteilung is not None and keimbeurteilung.ergebnis:
+    assert keimbeurteilung is not None
+    if keimbeurteilung.ergebnis:
         empfehlung = loese_abkuerzung_auf(keimbeurteilung.ergebnis)
         if keimbeurteilung.begruendung.strip():
             empfehlung = f"{empfehlung}; {keimbeurteilung.begruendung.strip()}"
         return empfehlung
-
-    if beurteilung is not None and beurteilung.gesamtbeurteilung:
-        return loese_abkuerzung_auf(beurteilung.gesamtbeurteilung)
 
     return "Keine spezifische Folgeinformation hinterlegt."
 
@@ -261,7 +264,6 @@ def baue_keimbloecke(
                 "resistenzempfehlung": baue_resistenzempfehlung(
                     keim.rolle,
                     keimbeurteilung,
-                    beurteilung,
                 ),
                 "rolle": formatiere_text(keim.rolle),
             }

@@ -288,6 +288,42 @@ class KernpfadSmokeTests(unittest.TestCase):
         )
         self.assertIsNone(keimbloecke[1]["resistenzempfehlung"])
 
+    def test_befund_blendet_resistenzempfehlung_fuer_nicht_mitbeurteilten_pathogenen_keim_aus(
+        self,
+    ) -> None:
+        """Prueft, dass ein ausgeschlossener pathogener Keim keine Resistenzempfehlung erhaelt."""
+        kulturdaten = Kulturdaten(
+            wachstum=True,
+            keime=[
+                KulturKeim(
+                    keim_id="Escherichia coli",
+                    keimzahl_code="p5",
+                    rolle="pathogen",
+                ),
+                KulturKeim(
+                    keim_id="Klebsiella pneumoniae",
+                    keimzahl_code="k4",
+                    rolle="pathogen",
+                ),
+            ],
+        )
+        material = self.baue_material(
+            patient_id="patient-1",
+            kulturdaten=kulturdaten,
+        )
+
+        beurteilung = beurteile_urin_allgemeine_bakteriologie(kulturdaten)
+        keimbloecke = befund_ansicht.baue_keimbloecke(material, beurteilung)
+
+        self.assertEqual(len(keimbloecke), 2)
+        self.assertIsInstance(keimbloecke[0]["resistenzempfehlung"], str)
+        self.assertIn(
+            "Identifikation und Resistenztestung",
+            keimbloecke[0]["resistenzempfehlung"] or "",
+        )
+        self.assertEqual(keimbloecke[1]["rolle"], "pathogen")
+        self.assertIsNone(keimbloecke[1]["resistenzempfehlung"])
+
 
 if __name__ == "__main__":
     unittest.main()
