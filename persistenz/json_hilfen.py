@@ -215,7 +215,6 @@ def kulturkeim_als_dict(kulturkeim: KulturKeim) -> dict[str, Any]:
         "keim_id": kulturkeim.keim_id.strip(),
         "keimzahl_code": keimzahl_code,
         "rolle": kulturkeim.rolle.strip(),
-        "keimgruppe": kulturkeim.keimgruppe.strip(),
     }
 
 
@@ -233,7 +232,7 @@ def kulturkeim_aus_dict(daten: Mapping[str, Any]) -> KulturKeim:
         keim_id=lese_textpflichtfeld(daten, "keim_id"),
         keimzahl_code=keimzahl_code,
         rolle=lese_textpflichtfeld(daten, "rolle"),
-        keimgruppe=lese_textpflichtfeld(daten, "keimgruppe"),
+        keimgruppe=lese_textfeld_mit_standard(daten, "keimgruppe", ""),
     )
 
 

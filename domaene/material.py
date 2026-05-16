@@ -26,7 +26,7 @@ class KulturKeim:
     keim_id: str
     keimzahl_code: str
     rolle: str
-    keimgruppe: str
+    keimgruppe: str = ""
 
 
 @dataclass(slots=True)

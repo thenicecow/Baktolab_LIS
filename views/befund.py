@@ -147,22 +147,20 @@ def baue_keimschluessel(
     keim_id: str,
     keimzahl_code: str,
     rolle: str,
-    keimgruppe: str,
-) -> tuple[str, str, str, str]:
+) -> tuple[str, str, str]:
     """Erzeugt einen stabilen Vergleichsschluessel fuer Keime und Keimbeurteilungen."""
     return (
         keim_id.strip(),
         keimzahl_code.strip(),
         rolle.strip(),
-        keimgruppe.strip(),
     )
 
 
 def baue_beurteilungsindex(
     beurteilung: UrinBeurteilung | None,
-) -> dict[tuple[str, str, str, str], list[BeurteilterKeim]]:
+) -> dict[tuple[str, str, str], list[BeurteilterKeim]]:
     """Indexiert vorhandene Keimbeurteilungen fuer die Befunddarstellung."""
-    index: dict[tuple[str, str, str, str], list[BeurteilterKeim]] = {}
+    index: dict[tuple[str, str, str], list[BeurteilterKeim]] = {}
 
     if beurteilung is None:
         return index
@@ -172,7 +170,6 @@ def baue_beurteilungsindex(
             keimbeurteilung.keim_id,
             keimbeurteilung.keimzahl_code,
             keimbeurteilung.rolle,
-            keimbeurteilung.keimgruppe,
         )
         index.setdefault(schluessel, []).append(keimbeurteilung)
 
@@ -252,7 +249,6 @@ def baue_keimbloecke(
             keim.keim_id,
             keim.keimzahl_code,
             keim.rolle,
-            keim.keimgruppe,
         )
         passende_beurteilungen = beurteilungsindex.get(schluessel, [])
         keimbeurteilung = passende_beurteilungen.pop(0) if passende_beurteilungen else None
@@ -268,7 +264,6 @@ def baue_keimbloecke(
                     beurteilung,
                 ),
                 "rolle": formatiere_text(keim.rolle),
-                "keimgruppe": formatiere_text(keim.keimgruppe),
             }
         )
 
@@ -290,7 +285,6 @@ def baue_zusaetzliche_flora(material: Material, beurteilung: UrinBeurteilung | N
             keim.keim_id,
             keim.keimzahl_code,
             keim.rolle,
-            keim.keimgruppe,
         )
         passende_beurteilungen = beurteilungsindex.get(schluessel, [])
         keimbeurteilung = passende_beurteilungen.pop(0) if passende_beurteilungen else None
@@ -367,7 +361,6 @@ def zeige_keimdarstellung(material: Material, beurteilung: UrinBeurteilung | Non
                 )
 
             st.markdown(f"**Rolle:** {keimblock['rolle']}")
-            st.markdown(f"**Keimgruppe:** {keimblock['keimgruppe']}")
 
 
 def zeige_befundinhalt(

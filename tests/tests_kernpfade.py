@@ -189,17 +189,11 @@ class KernpfadSmokeTests(unittest.TestCase):
             initialisiere_formularzustand(material)
 
             fake_streamlit.session_state[
-                baue_formularschluessel(material.id, "keim_id_0")
+                baue_formularschluessel(material.id, "keimauswahl_0")
             ] = "Escherichia coli"
             fake_streamlit.session_state[
                 baue_formularschluessel(material.id, "keimzahl_code_0")
             ] = "p5"
-            fake_streamlit.session_state[
-                baue_formularschluessel(material.id, "rolle_0")
-            ] = "pathogen"
-            fake_streamlit.session_state[
-                baue_formularschluessel(material.id, "keimgruppe_0")
-            ] = "gramnegative_staebchen"
 
             setze_keimzahl_als_unbestaetigt(material.id, 0)
             self.assertFalse(
@@ -217,6 +211,7 @@ class KernpfadSmokeTests(unittest.TestCase):
         self.assertEqual(len(kulturdaten.keime), 1)
         self.assertEqual(kulturdaten.keime[0].keim_id, "Escherichia coli")
         self.assertEqual(kulturdaten.keime[0].keimzahl_code, "p5")
+        self.assertEqual(kulturdaten.keime[0].rolle, "pathogen")
         self.assertEqual(fake_streamlit.fehlermeldungen, [])
 
     def test_beurteilung_liefert_id_und_resi_fuer_pathogenen_urin_keim(self) -> None:
@@ -228,7 +223,6 @@ class KernpfadSmokeTests(unittest.TestCase):
                     keim_id="Escherichia coli",
                     keimzahl_code="p5",
                     rolle="pathogen",
-                    keimgruppe="gramnegative_staebchen",
                 )
             ],
         )
@@ -249,13 +243,11 @@ class KernpfadSmokeTests(unittest.TestCase):
                     keim_id="Escherichia coli",
                     keimzahl_code="p5",
                     rolle="pathogen",
-                    keimgruppe="gramnegative_staebchen",
                 ),
                 KulturKeim(
                     keim_id="Lactobacillus spp.",
                     keimzahl_code="p5",
                     rolle="kontaminante",
-                    keimgruppe="andere",
                 ),
             ],
         )
@@ -271,7 +263,6 @@ class KernpfadSmokeTests(unittest.TestCase):
                     keim_id="Escherichia coli",
                     keimzahl_code="p5",
                     rolle="pathogen",
-                    keimgruppe="gramnegative_staebchen",
                     effektive_rolle="pathogen",
                     ergebnis=ERGEBNIS_ID_RESI,
                     begruendung="Ein einzelner relevanter pathogener Keim wird weiterverarbeitet.",
@@ -280,7 +271,6 @@ class KernpfadSmokeTests(unittest.TestCase):
                     keim_id="Lactobacillus spp.",
                     keimzahl_code="p5",
                     rolle="kontaminante",
-                    keimgruppe="andere",
                     effektive_rolle="kontaminante",
                     ergebnis="uriflor",
                     begruendung="Kontaminationsflora ohne Resistenzempfehlung.",

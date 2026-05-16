@@ -16,10 +16,27 @@ from functions.kulturen.beurteilung import UrinBeurteilung
 
 
 ROLLEN: tuple[str, ...] = ("pathogen", "kontaminante")
-KEIMGRUPPEN: tuple[str, ...] = ("gramnegative_staebchen", "gpk_gps", "andere")
 KEIMZAHL_CODES: tuple[str, ...] = tuple(
     code for code in ("k4", "p4", "p5", "g5") if code in ERLAUBTE_KEIMZAHL_CODES
 )
+KEIM_ROLLEN_NACH_KEIM: dict[str, str] = {
+    "Escherichia coli": "pathogen",
+    "Klebsiella pneumoniae": "pathogen",
+    "Proteus mirabilis": "pathogen",
+    "Enterococcus faecalis": "kontaminante",
+    "Staphylococcus saprophyticus": "pathogen",
+    "Pseudomonas aeruginosa": "pathogen",
+    "Enterobacter cloacae complex": "pathogen",
+    "Vergrünende Streptokokken": "kontaminante",
+    "Koagulase negative Staphylokokken": "kontaminante",
+    "Enterococcus faecium": "pathogen",
+}
+VORDEFINIERTE_KEIME: tuple[str, ...] = tuple(KEIM_ROLLEN_NACH_KEIM)
+SONSTIGER_KEIM_OPTION = "Sonstiger Keim"
+KEIM_ID_AUSWAHL_OPTIONEN: tuple[str, ...] = VORDEFINIERTE_KEIME + (SONSTIGER_KEIM_OPTION,)
+VORDEFINIERTE_KEIME_NACH_CASEFOLD: dict[str, str] = {
+    keim.casefold(): keim for keim in VORDEFINIERTE_KEIME
+}
 
 PROJEKTWURZEL = Path(__file__).resolve().parent.parent.parent
 REFERENZBILD_ORDNER = PROJEKTWURZEL / "assets" / "referenzbilder"
@@ -55,6 +72,162 @@ def hole_standard_keimzahl_code() -> str:
 def baue_formularschluessel(material_id: str, feldname: str) -> str:
     """Erzeugt einen stabilen Session-State-Schluessel fuer das Kulturformular."""
     return f"kulturen_ablesen_{material_id}_{feldname}"
+
+
+def baue_keimauswahl_schluessel(material_id: str, index: int) -> str:
+    """Erzeugt den Session-State-Schluessel fuer die Dropdown-Auswahl eines Keims."""
+    return baue_formularschluessel(material_id, f"keimauswahl_{index}")
+
+
+def baue_sonstiger_keimname_schluessel(material_id: str, index: int) -> str:
+    """Erzeugt den Session-State-Schluessel fuer den Freitext bei sonstigem Keim."""
+    return baue_formularschluessel(material_id, f"sonstiger_keimname_{index}")
+
+
+def bereinige_textwert(wert: object) -> str:
+    """Bereinigt einen beliebigen Eingabewert defensiv zu einem Text."""
+    if not isinstance(wert, str):
+        return ""
+
+    return wert.strip()
+
+
+def ordne_keimwert_fuer_auswahl_zu(keimwert: str) -> tuple[str | None, str]:
+    """Ordnet einen vorhandenen Keimwert der Dropdown-Auswahl und dem Freitext zu."""
+    bereinigt = bereinige_textwert(keimwert)
+    if not bereinigt:
+        return None, ""
+
+    if bereinigt.casefold() == SONSTIGER_KEIM_OPTION.casefold():
+        return SONSTIGER_KEIM_OPTION, bereinigt
+
+    vordefinierter_keim = VORDEFINIERTE_KEIME_NACH_CASEFOLD.get(bereinigt.casefold())
+    if vordefinierter_keim is not None:
+        return vordefinierter_keim, ""
+
+    return SONSTIGER_KEIM_OPTION, bereinigt
+
+
+def hole_ausgewaehlte_keimauswahl(material_id: str, index: int) -> str | None:
+    """Liest die aktuell ausgewaehlte Keimoption fuer einen Keim."""
+    auswahl_schluessel = baue_keimauswahl_schluessel(material_id, index)
+
+    if auswahl_schluessel not in st.session_state:
+        keim_id = bereinige_textwert(
+            st.session_state.get(
+                baue_formularschluessel(material_id, f"keim_id_{index}"),
+                "",
+            )
+        )
+        keimauswahl, _sonstiger_keimname = ordne_keimwert_fuer_auswahl_zu(keim_id)
+        return keimauswahl
+
+    bereinigt = bereinige_textwert(st.session_state.get(auswahl_schluessel))
+    if not bereinigt:
+        return None
+
+    if bereinigt.casefold() == SONSTIGER_KEIM_OPTION.casefold():
+        return SONSTIGER_KEIM_OPTION
+
+    return VORDEFINIERTE_KEIME_NACH_CASEFOLD.get(bereinigt.casefold())
+
+
+def hole_sonstigen_keimnamen(material_id: str, index: int) -> str:
+    """Liest den Freitext fuer einen sonstigen Keim defensiv aus dem Session State."""
+    sonstiger_keimname_schluessel = baue_sonstiger_keimname_schluessel(material_id, index)
+
+    if sonstiger_keimname_schluessel in st.session_state:
+        return bereinige_textwert(st.session_state.get(sonstiger_keimname_schluessel))
+
+    keim_id = bereinige_textwert(
+        st.session_state.get(
+            baue_formularschluessel(material_id, f"keim_id_{index}"),
+            "",
+        )
+    )
+    keimauswahl, sonstiger_keimname = ordne_keimwert_fuer_auswahl_zu(keim_id)
+    if keimauswahl == SONSTIGER_KEIM_OPTION:
+        return sonstiger_keimname
+
+    return ""
+
+
+def hole_endgueltigen_keimnamen(material_id: str, index: int) -> str:
+    """Liefert den endgueltigen Keimnamen aus Dropdown und optionalem Freitext."""
+    keimauswahl = hole_ausgewaehlte_keimauswahl(material_id, index)
+    auswahl_schluessel = baue_keimauswahl_schluessel(material_id, index)
+
+    if keimauswahl is None:
+        if auswahl_schluessel in st.session_state:
+            return ""
+
+        return bereinige_textwert(
+            st.session_state.get(
+                baue_formularschluessel(material_id, f"keim_id_{index}"),
+                "",
+            )
+        )
+
+    if keimauswahl == SONSTIGER_KEIM_OPTION:
+        return hole_sonstigen_keimnamen(material_id, index)
+
+    return keimauswahl
+
+
+def hole_automatische_rolle_fuer_keimauswahl(keimauswahl: str | None) -> str | None:
+    """Liefert die fachlich vorgegebene Rolle fuer einen bekannten Keim."""
+    if not isinstance(keimauswahl, str):
+        return None
+
+    bereinigt = keimauswahl.strip()
+    if not bereinigt or bereinigt.casefold() == SONSTIGER_KEIM_OPTION.casefold():
+        return None
+
+    vordefinierter_keim = VORDEFINIERTE_KEIME_NACH_CASEFOLD.get(bereinigt.casefold())
+    if vordefinierter_keim is None:
+        return None
+
+    return KEIM_ROLLEN_NACH_KEIM.get(vordefinierter_keim)
+
+
+def synchronisiere_keim_id_aus_eingabe(material_id: str, index: int) -> str:
+    """Synchronisiert den endgueltigen Keimnamen in das bisherige Feld ``keim_id``."""
+    keim_id = hole_endgueltigen_keimnamen(material_id, index)
+    st.session_state[baue_formularschluessel(material_id, f"keim_id_{index}")] = keim_id
+    return keim_id
+
+
+def hole_rolle_aus_eingabe(material_id: str, index: int) -> str:
+    """Liest die fachlich gueltige Rolle ohne den Widget-State nachtraeglich zu aendern."""
+    rollenschluessel = baue_formularschluessel(material_id, f"rolle_{index}")
+    keimauswahl = hole_ausgewaehlte_keimauswahl(material_id, index)
+    automatische_rolle = hole_automatische_rolle_fuer_keimauswahl(keimauswahl)
+
+    if automatische_rolle is not None:
+        return automatische_rolle
+
+    aktuelle_rolle = bereinige_textwert(st.session_state.get(rollenschluessel))
+
+    if keimauswahl == SONSTIGER_KEIM_OPTION:
+        if aktuelle_rolle in ROLLEN:
+            return aktuelle_rolle
+        return ROLLEN[0]
+
+    if aktuelle_rolle in ROLLEN:
+        return aktuelle_rolle
+
+    return ""
+
+
+def synchronisiere_rolle_aus_eingabe(material_id: str, index: int) -> str:
+    """Bereitet die Rolle passend zur aktuellen Keimauswahl vor dem Rendern des Widgets vor."""
+    rollenschluessel = baue_formularschluessel(material_id, f"rolle_{index}")
+    rolle = hole_rolle_aus_eingabe(material_id, index)
+
+    if rolle and st.session_state.get(rollenschluessel) != rolle:
+        st.session_state[rollenschluessel] = rolle
+
+    return rolle
 
 
 def baue_keimzahl_bestaetigt_schluessel(material_id: str, index: int) -> str:
@@ -180,14 +353,25 @@ def initialisiere_formularzustand(material: Material) -> None:
     st.session_state[keimanzahl_schluessel] = max(1, keimanzahl)
 
     for index, keim in enumerate(kulturdaten.keime):
+        keimauswahl, sonstiger_keimname = ordne_keimwert_fuer_auswahl_zu(keim.keim_id)
+        automatische_rolle = hole_automatische_rolle_fuer_keimauswahl(keimauswahl)
+        rolle = bereinige_textwert(keim.rolle)
+
+        if automatische_rolle is not None:
+            rolle = automatische_rolle
+        elif rolle not in ROLLEN:
+            rolle = ROLLEN[0]
+
         st.session_state[baue_formularschluessel(material.id, f"keim_id_{index}")] = keim.keim_id
+        if keimauswahl is not None:
+            st.session_state[baue_keimauswahl_schluessel(material.id, index)] = keimauswahl
+        st.session_state[
+            baue_sonstiger_keimname_schluessel(material.id, index)
+        ] = sonstiger_keimname
         st.session_state[baue_formularschluessel(material.id, f"keimzahl_code_{index}")] = (
             keim.keimzahl_code
         )
-        st.session_state[baue_formularschluessel(material.id, f"rolle_{index}")] = keim.rolle
-        st.session_state[baue_formularschluessel(material.id, f"keimgruppe_{index}")] = (
-            keim.keimgruppe
-        )
+        st.session_state[baue_formularschluessel(material.id, f"rolle_{index}")] = rolle
         st.session_state[baue_keimzahl_bestaetigt_schluessel(material.id, index)] = True
         st.session_state[baue_bestaetigte_keimzahl_schluessel(material.id, index)] = (
             keim.keimzahl_code
@@ -222,15 +406,8 @@ def hole_wachstum(material_id: str) -> bool:
 
 def hole_aktuellen_keimeintrag(material_id: str, index: int) -> dict[str, object]:
     """Liest einen einzelnen lokalen Keimeintrag aus dem Session State."""
-    keim_id = st.session_state.get(baue_formularschluessel(material_id, f"keim_id_{index}"), "")
-    rolle = st.session_state.get(
-        baue_formularschluessel(material_id, f"rolle_{index}"),
-        ROLLEN[0],
-    )
-    keimgruppe = st.session_state.get(
-        baue_formularschluessel(material_id, f"keimgruppe_{index}"),
-        KEIMGRUPPEN[0],
-    )
+    keim_id = synchronisiere_keim_id_aus_eingabe(material_id, index)
+    rolle = hole_rolle_aus_eingabe(material_id, index)
 
     ausgewaehlte_keimzahl = hole_ausgewaehlte_keimzahl(material_id, index)
     bestaetigte_keimzahl = hole_bestaetigte_keimzahl(material_id, index)
@@ -239,12 +416,11 @@ def hole_aktuellen_keimeintrag(material_id: str, index: int) -> dict[str, object
     )
 
     return {
-        "keim_id": str(keim_id).strip(),
+        "keim_id": keim_id,
         "keimzahl_code": bestaetigte_keimzahl or "",
         "ausgewaehlte_keimzahl_code": ausgewaehlte_keimzahl,
         "keimzahl_bestaetigt": keimzahl_bestaetigt,
-        "rolle": str(rolle).strip(),
-        "keimgruppe": str(keimgruppe).strip(),
+        "rolle": rolle,
     }
 
 
@@ -271,7 +447,6 @@ def hole_formularvorschau(material_id: str) -> dict[str, object]:
             continue
 
         rolle = str(keimeintrag["rolle"]).strip()
-        keimgruppe = str(keimeintrag["keimgruppe"]).strip()
         ausgewaehlte_keimzahl = str(keimeintrag["ausgewaehlte_keimzahl_code"]).strip()
 
         if bool(keimeintrag["keimzahl_bestaetigt"]):
@@ -280,7 +455,6 @@ def hole_formularvorschau(material_id: str) -> dict[str, object]:
                     "keim_id": keim_id,
                     "keimzahl_code": str(keimeintrag["keimzahl_code"]).strip(),
                     "rolle": rolle,
-                    "keimgruppe": keimgruppe,
                 }
             )
             continue
@@ -290,7 +464,6 @@ def hole_formularvorschau(material_id: str) -> dict[str, object]:
                 "keim_id": keim_id,
                 "ausgewaehlte_keimzahl_code": ausgewaehlte_keimzahl,
                 "rolle": rolle,
-                "keimgruppe": keimgruppe,
             }
         )
 
@@ -330,8 +503,8 @@ def baue_kulturdaten_aus_formularvorschau(
 
 def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
     """Zeigt Referenzbild und Bestaetigungslogik fuer die gewaehlte Keimzahl eines Keims."""
-    keim_id = st.session_state.get(baue_formularschluessel(material_id, f"keim_id_{index}"), "")
-    if not isinstance(keim_id, str) or not keim_id.strip():
+    keim_id = synchronisiere_keim_id_aus_eingabe(material_id, index)
+    if not keim_id:
         return
 
     ausgewaehlte_keimzahl = hole_ausgewaehlte_keimzahl(material_id, index)
@@ -396,6 +569,43 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
                 st.rerun()
 
 
+def zeige_rollenauswahl(material_id: str, index: int) -> None:
+    """Rendert die Rollenauswahl passend zur aktuellen Keimauswahl."""
+    rollenschluessel = baue_formularschluessel(material_id, f"rolle_{index}")
+    keimauswahl = hole_ausgewaehlte_keimauswahl(material_id, index)
+    automatische_rolle = hole_automatische_rolle_fuer_keimauswahl(keimauswahl)
+
+    synchronisiere_rolle_aus_eingabe(material_id, index)
+
+    if automatische_rolle is not None:
+        st.selectbox(
+            "Rolle",
+            options=list(ROLLEN),
+            key=rollenschluessel,
+            disabled=True,
+        )
+        st.caption("Rolle wird fuer diesen Keim automatisch gesetzt.")
+        return
+
+    if keimauswahl == SONSTIGER_KEIM_OPTION:
+        st.selectbox(
+            "Rolle",
+            options=list(ROLLEN),
+            key=rollenschluessel,
+        )
+        return
+
+    st.selectbox(
+        "Rolle",
+        options=list(ROLLEN),
+        key=rollenschluessel,
+        index=None,
+        placeholder="Bitte zuerst Keim auswaehlen",
+        disabled=True,
+    )
+    st.caption("Die Rolle wird nach der Keimauswahl gesetzt.")
+
+
 def zeige_keimeingabe(material_id: str) -> None:
     """Rendert die Eingabemaske fuer eine variable Anzahl Keime."""
     st.markdown("**Keime erfassen**")
@@ -404,13 +614,24 @@ def zeige_keimeingabe(material_id: str) -> None:
         with st.container(border=True):
             st.caption(f"Keim {index + 1}")
 
-            st.text_input(
+            st.selectbox(
                 "Keim-ID",
-                key=baue_formularschluessel(material_id, f"keim_id_{index}"),
-                placeholder="z. B. Escherichia coli",
+                options=list(KEIM_ID_AUSWAHL_OPTIONEN),
+                key=baue_keimauswahl_schluessel(material_id, index),
+                index=None,
+                placeholder="Bitte Keim auswaehlen",
             )
 
-            linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
+            if hole_ausgewaehlte_keimauswahl(material_id, index) == SONSTIGER_KEIM_OPTION:
+                st.text_input(
+                    "Keimname eingeben",
+                    key=baue_sonstiger_keimname_schluessel(material_id, index),
+                    placeholder="z. B. Lactobacillus spp.",
+                )
+
+            synchronisiere_keim_id_aus_eingabe(material_id, index)
+
+            linke_spalte, rechte_spalte = st.columns(2)
 
             with linke_spalte:
                 st.selectbox(
@@ -421,19 +642,8 @@ def zeige_keimeingabe(material_id: str) -> None:
                     args=(material_id, index),
                 )
 
-            with mittlere_spalte:
-                st.selectbox(
-                    "Rolle",
-                    options=list(ROLLEN),
-                    key=baue_formularschluessel(material_id, f"rolle_{index}"),
-                )
-
             with rechte_spalte:
-                st.selectbox(
-                    "Keimgruppe",
-                    options=list(KEIMGRUPPEN),
-                    key=baue_formularschluessel(material_id, f"keimgruppe_{index}"),
-                )
+                zeige_rollenauswahl(material_id, index)
 
             zeige_keimzahl_bestaetigung(material_id, index)
 
@@ -474,7 +684,6 @@ def zeige_vorschau(material_id: str) -> None:
                         "keim_id": "Keim-ID",
                         "keimzahl_code": "Bestaetigte Keimzahl",
                         "rolle": "Rolle",
-                        "keimgruppe": "Keimgruppe",
                     }
                 ),
                 use_container_width=True,
@@ -489,7 +698,6 @@ def zeige_vorschau(material_id: str) -> None:
                         "keim_id": "Keim-ID",
                         "ausgewaehlte_keimzahl_code": "Ausgewaehlte Keimzahl",
                         "rolle": "Rolle",
-                        "keimgruppe": "Keimgruppe",
                     }
                 ),
                 use_container_width=True,

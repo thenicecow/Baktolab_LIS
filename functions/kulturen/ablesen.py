@@ -42,7 +42,6 @@ def hole_kulturdaten_oder_standard(material: Material) -> Kulturdaten:
                 keim_id=keim.keim_id,
                 keimzahl_code=keim.keimzahl_code,
                 rolle=keim.rolle,
-                keimgruppe=keim.keimgruppe,
             )
             for keim in kulturdaten.keime
         ],
@@ -68,7 +67,6 @@ def baue_kulturdaten_aus_formularwerten(
             keim_id=eintrag["keim_id"].strip(),
             keimzahl_code=eintrag["keimzahl_code"].strip(),
             rolle=eintrag["rolle"].strip(),
-            keimgruppe=eintrag["keimgruppe"].strip(),
         )
         for eintrag in keime
         if eintrag["keim_id"].strip()

@@ -19,14 +19,22 @@ ERGEBNIS_URIKONT = "urikont"
 ROLLE_PATHOGEN = "pathogen"
 ROLLE_KONTAMINANTE = "kontaminante"
 
-KEIMGRUPPE_GRAMNEGATIVE_STAEBCHEN = "gramnegative_staebchen"
-
 KEIMZAHL_RANG: dict[str, int] = {
     "k4": 1,
     "p4": 2,
     "p5": 3,
     "g5": 4,
 }
+
+GRAMNEGATIVE_STAEBCHEN_MUSTER: tuple[str, ...] = (
+    "escherichia",
+    "e. coli",
+    "e.coli",
+    "klebsiella",
+    "proteus",
+    "pseudomonas",
+    "enterobacter",
+)
 
 SONDERKEIME_NUR_BEDINGT_PATHOGEN: tuple[str, ...] = (
     "enterococcus spp.",
@@ -42,7 +50,6 @@ class BeurteilterKeim:
     keim_id: str
     keimzahl_code: str
     rolle: str
-    keimgruppe: str
     effektive_rolle: str
     ergebnis: str | None
     begruendung: str
@@ -136,8 +143,6 @@ def _validiere_keime(keime: list[KulturKeim]) -> UrinBeurteilung:
             )
         if keim.rolle not in {ROLLE_PATHOGEN, ROLLE_KONTAMINANTE}:
             fehler.append(f"Keim {index} hat eine ungueltige Rolle: {keim.rolle}.")
-        if not keim.keimgruppe.strip():
-            fehler.append(f"Keim {index} hat keine Keimgruppe.")
 
     if fehler:
         return UrinBeurteilung(
@@ -162,11 +167,10 @@ def _normalisiere_keime(keime: list[KulturKeim]) -> list[KulturKeim]:
             continue
 
         keim_id = keim.keim_id.strip()
-        keimgruppe = keim.keimgruppe.strip()
         rolle = keim.rolle.strip()
         keimzahl_code = keim.keimzahl_code.strip()
 
-        if not keim_id or not keimgruppe or rolle not in {ROLLE_PATHOGEN, ROLLE_KONTAMINANTE}:
+        if not keim_id or rolle not in {ROLLE_PATHOGEN, ROLLE_KONTAMINANTE}:
             continue
 
         if keimzahl_code not in KEIMZAHL_RANG:
@@ -177,7 +181,6 @@ def _normalisiere_keime(keime: list[KulturKeim]) -> list[KulturKeim]:
                 keim_id=keim_id,
                 keimzahl_code=keimzahl_code,
                 rolle=rolle,
-                keimgruppe=keimgruppe,
             )
         )
 
@@ -201,6 +204,15 @@ def _trenne_relevante_keime(keime: list[KulturKeim]) -> tuple[list[KulturKeim], 
     return hohe_keime, hinweise
 
 
+def _ist_gramnegatives_staebchen(keim: KulturKeim) -> bool:
+    """Leitet gramnegative Staebchen defensiv aus dem Keimnamen ab."""
+    keimname = keim.keim_id.strip().casefold()
+    if not keimname:
+        return False
+
+    return any(muster in keimname for muster in GRAMNEGATIVE_STAEBCHEN_MUSTER)
+
+
 def _beurteile_reine_k4_konstellation(
     keime: list[KulturKeim],
     hinweise: list[str],
@@ -208,7 +220,7 @@ def _beurteile_reine_k4_konstellation(
     """Beurteilt Konstellationen, in denen ausschliesslich k4 vorliegt."""
     if len(keime) == 1:
         keim = keime[0]
-        if keim.keimgruppe == KEIMGRUPPE_GRAMNEGATIVE_STAEBCHEN:
+        if _ist_gramnegatives_staebchen(keim):
             return UrinBeurteilung(
                 gesamtbeurteilung=ERGEBNIS_ID_RESI,
                 ist_gueltig=True,
@@ -217,7 +229,6 @@ def _beurteile_reine_k4_konstellation(
                         keim_id=keim.keim_id,
                         keimzahl_code=keim.keimzahl_code,
                         rolle=keim.rolle,
-                        keimgruppe=keim.keimgruppe,
                         effektive_rolle=keim.rolle,
                         ergebnis=ERGEBNIS_ID_RESI,
                         begruendung="Ein einzelner k4-Keim aus gramnegativen Staebchen wird weiterverarbeitet.",
@@ -234,7 +245,6 @@ def _beurteile_reine_k4_konstellation(
                     keim_id=keim.keim_id,
                     keimzahl_code=keim.keimzahl_code,
                     rolle=keim.rolle,
-                    keimgruppe=keim.keimgruppe,
                     effektive_rolle=keim.rolle,
                     ergebnis=ERGEBNIS_KEIMFLORA,
                     begruendung="Ein einzelner k4-Keim ausserhalb gramnegativer Staebchen wird als Keimflora beurteilt.",
@@ -251,7 +261,6 @@ def _beurteile_reine_k4_konstellation(
                 keim_id=keim.keim_id,
                 keimzahl_code=keim.keimzahl_code,
                 rolle=keim.rolle,
-                keimgruppe=keim.keimgruppe,
                 effektive_rolle=keim.rolle,
                 ergebnis=ERGEBNIS_KEIMFLORA,
                 begruendung="Mehrere Keime im Bereich k4 werden insgesamt als Keimflora beurteilt.",
@@ -345,7 +354,6 @@ def _beurteile_einzelkeim_ab_p4(
                 keim_id=keim.keim_id,
                 keimzahl_code=keim.keimzahl_code,
                 rolle=keim.rolle,
-                keimgruppe=keim.keimgruppe,
                 effektive_rolle=effektive_rolle,
                 ergebnis=ergebnis,
                 begruendung=begruendung,
@@ -546,7 +554,6 @@ def _baue_beurteilten_keim(
         keim_id=keim.keim_id,
         keimzahl_code=keim.keimzahl_code,
         rolle=keim.rolle,
-        keimgruppe=keim.keimgruppe,
         effektive_rolle=effektive_rolle,
         ergebnis=ergebnis,
         begruendung=begruendung,
