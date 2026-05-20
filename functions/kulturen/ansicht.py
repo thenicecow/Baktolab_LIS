@@ -647,7 +647,11 @@ def zeige_keimeingabe(material_id: str) -> None:
 
             zeige_keimzahl_bestaetigung(material_id, index)
 
-    if st.button("Weiteren Keim hinzufuegen", use_container_width=True):
+    if st.button(
+        "Weiteren Keim hinzufuegen",
+        icon=":material/add:",
+        use_container_width=True,
+    ):
         erhoehe_keimanzahl(material_id)
         st.rerun()
 
