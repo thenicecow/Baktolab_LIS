@@ -104,5 +104,5 @@ def loesche_patient(patient_id: str) -> str | None:
 
     return (
         f"Patient {geloeschter_patient.vorname} "
-        f"{geloeschter_patient.nachname} wurde erfolgreich geloescht."
+        f"{geloeschter_patient.nachname} wurde erfolgreich gelöscht."
     )

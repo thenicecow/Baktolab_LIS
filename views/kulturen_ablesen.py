@@ -237,7 +237,7 @@ def speichere_kulturdaten(material: Material) -> bool:
     material.kulturdaten = kulturdaten
     st.success(
         "Die Kulturdaten wurden erfolgreich gespeichert. "
-        "Die Beurteilung muss bei geaenderten Eingaben neu berechnet werden."
+        "Die Beurteilung muss bei geänderten Eingaben neu berechnet werden."
     )
     return True
 
@@ -398,4 +398,3 @@ def main() -> None:
 
 
 main()
-

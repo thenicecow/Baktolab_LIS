@@ -527,7 +527,7 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
         )
 
         if ist_keimzahl_bestaetigt(material_id, index):
-            st.success(f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestaetigt.")
+            st.success(f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestätigt.")
         else:
             st.warning(
                 f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestaetigt "
