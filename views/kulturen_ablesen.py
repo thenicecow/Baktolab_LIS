@@ -32,31 +32,50 @@ from functions.kulturen.beurteilung import (
     UrinBeurteilung,
     beurteile_urin_allgemeine_bakteriologie,
 )
-from ui.header import show_header
 from functions.kulturen.navigation import (
     aktiviere_befund,
+    aktiviere_kulturen_ablesen,
     deaktiviere_befund,
     deaktiviere_kulturen_ablesen,
     hat_gueltige_befund_route,
-    hole_material_id_fuer_kulturen_ablesen,
     ist_befund_aktiv,
 )
 from functions.patienten.navigation import aktiviere_patientendetailansicht
+from persistenz import PatientenRepository
+from ui.header import show_header
 from views.befund import main as rendere_befundansicht
+
+
+PATIENTENAUSWAHL_SCHLUESSEL = "kulturen_ablesen_patientenauswahl_patient_id"
+PATIENTENAUSWAHL_MATERIALKONTEXT_SCHLUESSEL = (
+    "kulturen_ablesen_patientenauswahl_material_id"
+)
+
+
+def hole_ausgewaehlte_patienten_id_auswahl() -> str | None:
+    """Liest die aktuell im Dropdown gewählte Patienten-ID aus dem Session State."""
+    patient_id = st.session_state.get(PATIENTENAUSWAHL_SCHLUESSEL)
+
+    if not isinstance(patient_id, str):
+        return None
+
+    bereinigt = patient_id.strip()
+    return bereinigt or None
 
 
 def kehre_zur_patientendetailansicht_zurueck() -> None:
     """Kehrt moeglichst in die Detailansicht des aktuell bearbeiteten Patienten zurueck."""
-    patient_id: str | None = None
+    patient_id = hole_ausgewaehlte_patienten_id_auswahl()
 
-    try:
-        materialkontext = lade_materialkontext_fuer_kulturen_ablesen()
-    except Exception:
-        materialkontext = None
+    if patient_id is None:
+        try:
+            materialkontext = lade_materialkontext_fuer_kulturen_ablesen()
+        except Exception:
+            materialkontext = None
 
-    if materialkontext is not None:
-        patient, _material = materialkontext
-        patient_id = patient.id
+        if materialkontext is not None:
+            patient, _material = materialkontext
+            patient_id = patient.id
 
     deaktiviere_befund()
     deaktiviere_kulturen_ablesen()
@@ -112,27 +131,152 @@ def zeige_befund_innerhalb_kulturen_ablesen() -> None:
     rendere_befundansicht()
 
 
-def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | None:
-    """Laedt und zeigt den Materialkontext fuer die Kulturseite an."""
-    st.caption(f"Aktuelle Materialreferenz: {materialreferenz}")
+def lade_verfuegbare_patienten() -> list[Patient] | None:
+    """Lädt alle bereits erfassten Patienten für die Auswahl auf der Seite."""
+    repository = PatientenRepository()
 
     try:
-        materialkontext = lade_materialkontext_fuer_kulturen_ablesen()
+        return repository.lade_alle_patienten()
+    except Exception:
+        st.error(baue_technische_fehlernachricht("Die Patienten konnten nicht geladen werden."))
+        return None
+
+
+def baue_material_sortierschluessel(material: Material) -> tuple[int, int, float, str]:
+    """Erzeugt einen stabilen Sortierschlüssel für die Auswahl des bevorzugten Materials."""
+    return (
+        material.eingangsdatum.toordinal(),
+        material.abnahmedatum.toordinal(),
+        material.erstellt_am.timestamp() if material.erstellt_am is not None else float("-inf"),
+        material.id,
+    )
+
+
+def waehle_bevorzugtes_material_fuer_patient(materialien: list[Material]) -> Material | None:
+    """Wählt für einen Patienten das zuletzt passende Material für Kulturen ablesen aus."""
+    unterstuetzte_materialien = [
+        material
+        for material in materialien
+        if ist_material_fuer_kulturen_ablesen_unterstuetzt(material)
+    ]
+
+    if not unterstuetzte_materialien:
+        return None
+
+    return max(unterstuetzte_materialien, key=baue_material_sortierschluessel)
+
+
+def initialisiere_patientenauswahl(
+    patienten_ids: list[str],
+    aktuelle_patient_id: str | None,
+    aktuelle_material_id: str | None,
+) -> None:
+    """Synchronisiert die Dropdown-Auswahl mit einem bestehenden Materialkontext."""
+    gespeicherte_materialreferenz = st.session_state.get(
+        PATIENTENAUSWAHL_MATERIALKONTEXT_SCHLUESSEL
+    )
+
+    if aktuelle_material_id is not None and gespeicherte_materialreferenz != aktuelle_material_id:
+        if aktuelle_patient_id is not None and aktuelle_patient_id in patienten_ids:
+            st.session_state[PATIENTENAUSWAHL_SCHLUESSEL] = aktuelle_patient_id
+        else:
+            st.session_state.pop(PATIENTENAUSWAHL_SCHLUESSEL, None)
+
+        st.session_state[PATIENTENAUSWAHL_MATERIALKONTEXT_SCHLUESSEL] = aktuelle_material_id
+        return
+
+    ausgewaehlte_patient_id = st.session_state.get(PATIENTENAUSWAHL_SCHLUESSEL)
+    if not isinstance(ausgewaehlte_patient_id, str) or ausgewaehlte_patient_id not in patienten_ids:
+        if aktuelle_patient_id is not None and aktuelle_patient_id in patienten_ids:
+            st.session_state[PATIENTENAUSWAHL_SCHLUESSEL] = aktuelle_patient_id
+        else:
+            st.session_state.pop(PATIENTENAUSWAHL_SCHLUESSEL, None)
+
+    if aktuelle_material_id is None:
+        st.session_state.pop(PATIENTENAUSWAHL_MATERIALKONTEXT_SCHLUESSEL, None)
+
+
+def zeige_patientenauswahl(
+    patienten: list[Patient],
+    aktuelle_patient_id: str | None,
+    aktuelle_material_id: str | None,
+) -> str | None:
+    """Rendert das Dropdown für alle vorhandenen Patienten und liefert die gewählte ID."""
+    patienten_nach_id = {patient.id: patient for patient in patienten}
+    patienten_ids = list(patienten_nach_id.keys())
+
+    initialisiere_patientenauswahl(
+        patienten_ids=patienten_ids,
+        aktuelle_patient_id=aktuelle_patient_id,
+        aktuelle_material_id=aktuelle_material_id,
+    )
+
+    with st.container(border=True):
+        st.markdown("**Patientenauswahl**")
+        st.selectbox(
+            "Patient",
+            options=patienten_ids,
+            index=None,
+            key=PATIENTENAUSWAHL_SCHLUESSEL,
+            placeholder="Patient auswählen",
+            format_func=lambda patient_id: formatiere_patient_label(patienten_nach_id[patient_id]),
+        )
+
+    return hole_ausgewaehlte_patienten_id_auswahl()
+
+
+def ermittle_materialkontext_fuer_patientenauswahl(
+    patient_id: str,
+    aktueller_patient: Patient | None,
+    aktuelles_material: Material | None,
+) -> tuple[Patient, Material] | None:
+    """Lädt zum gewählten Patienten den kompatiblen Materialkontext für die Seite."""
+    if (
+        aktueller_patient is not None
+        and aktuelles_material is not None
+        and patient_id == aktueller_patient.id
+    ):
+        return aktueller_patient, aktuelles_material
+
+    repository = PatientenRepository()
+
+    try:
+        patientenakte = repository.lade_patientenakte_nach_id(patient_id)
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Das ausgewaehlte Material konnte nicht geladen werden."
+                "Der ausgewählte Patient konnte nicht geladen werden."
             )
         )
         return None
 
-    if materialkontext is None:
-        st.warning(
-            "Zur gesetzten Materialreferenz konnte kein vorhandenes Material gefunden werden."
+    if patientenakte is None:
+        st.warning("Der ausgewählte Patient wurde nicht gefunden.")
+        return None
+
+    patient, materialien = patientenakte
+    material = waehle_bevorzugtes_material_fuer_patient(materialien)
+
+    if material is None:
+        st.info(
+            f"Für {formatiere_patient_label(patient)} ist noch kein passendes Material "
+            "für 'Kulturen ablesen' erfasst."
         )
         return None
 
-    patient, material = materialkontext
+    if aktuelles_material is None or aktuelles_material.id != material.id:
+        if not aktiviere_kulturen_ablesen(material.id):
+            st.error("Das passende Material konnte nicht für 'Kulturen ablesen' aktiviert werden.")
+            return None
+
+        st.rerun()
+
+    return patient, material
+
+
+def zeige_materialkontext(patient: Patient, material: Material) -> None:
+    """Zeigt den aktuell verwendeten Patienten- und Materialkontext an."""
+    st.caption(f"Aktuelle Materialreferenz: {material.id}")
 
     with st.container(border=True):
         st.markdown("**Aktuelles Material**")
@@ -144,8 +288,6 @@ def zeige_materialkontext(materialreferenz: str) -> tuple[Patient, Material] | N
         st.caption(
             "Alle Eingaben auf dieser Seite werden direkt bei diesem Material gespeichert."
         )
-
-    return patient, material
 
 
 def pruefe_kulturworkflow_voraussetzungen(material: Material) -> bool:
@@ -169,26 +311,56 @@ def pruefe_kulturworkflow_voraussetzungen(material: Material) -> bool:
 
 
 def lade_und_validiere_materialkontext() -> tuple[Patient, Material] | None:
-    """Laedt den Materialkontext und validiert die Kernvoraussetzungen der Seite."""
-    materialreferenz = hole_material_id_fuer_kulturen_ablesen()
+    """Lädt Patientenliste, Auswahl und den dazu passenden Materialkontext der Seite."""
+    patienten = lade_verfuegbare_patienten()
+    if patienten is None:
+        return None
 
-    if materialreferenz is None:
-        st.info(
-            "Es ist aktuell kein Material für 'Kulturen ablesen' ausgewählt. "
-            "Öffne die Seite über die Patientendetailansicht oder direkt nach dem "
-            "Speichern eines passenden Materials."
+    if not patienten:
+        st.info("Es sind noch keine Patienten erfasst. Bitte erfasse zuerst einen Patienten.")
+        return None
+
+    try:
+        aktueller_materialkontext = lade_materialkontext_fuer_kulturen_ablesen()
+    except Exception:
+        st.error(
+            baue_technische_fehlernachricht(
+                "Der aktuelle Materialkontext konnte nicht geladen werden."
+            )
         )
         return None
 
-    materialkontext = zeige_materialkontext(materialreferenz)
+    aktueller_patient: Patient | None = None
+    aktuelles_material: Material | None = None
+
+    if aktueller_materialkontext is not None:
+        aktueller_patient, aktuelles_material = aktueller_materialkontext
+
+    ausgewaehlte_patient_id = zeige_patientenauswahl(
+        patienten=patienten,
+        aktuelle_patient_id=aktueller_patient.id if aktueller_patient is not None else None,
+        aktuelle_material_id=aktuelles_material.id if aktuelles_material is not None else None,
+    )
+
+    if ausgewaehlte_patient_id is None:
+        st.info("Bitte wähle einen Patienten aus, um mit 'Kulturen ablesen' zu arbeiten.")
+        return None
+
+    materialkontext = ermittle_materialkontext_fuer_patientenauswahl(
+        patient_id=ausgewaehlte_patient_id,
+        aktueller_patient=aktueller_patient,
+        aktuelles_material=aktuelles_material,
+    )
     if materialkontext is None:
         return None
 
-    _patient, material = materialkontext
+    patient, material = materialkontext
+    zeige_materialkontext(patient, material)
+
     if not pruefe_kulturworkflow_voraussetzungen(material):
         return None
 
-    return materialkontext
+    return patient, material
 
 
 def hole_gespeicherte_beurteilung(material: Material) -> UrinBeurteilung | None:
@@ -380,11 +552,12 @@ def main() -> None:
         )
 
     zeige_aktionsleiste()
-    zeige_kurzanleitung()
 
     materialkontext = lade_und_validiere_materialkontext()
     if materialkontext is None:
         return
+
+    zeige_kurzanleitung()
 
     _patient, material = materialkontext
     initialisiere_formularzustand(material)
