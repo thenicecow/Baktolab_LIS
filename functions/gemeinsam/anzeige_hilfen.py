@@ -59,7 +59,7 @@ def hole_aktuellen_user_id() -> str:
 
 def baue_technische_fehlernachricht(aktion: str) -> str:
     """Erzeugt eine einheitliche technische Fehlermeldung."""
-    return f"{aktion} Bitte pruefe die Datenablage und versuche es erneut."
+    return f"{aktion} Bitte prüfe die Datenablage und versuche es erneut."
 
 
 def loese_materialtyp_label_auf(materialtyp_code: str | None) -> str:
@@ -73,11 +73,11 @@ def loese_materialtyp_label_auf(materialtyp_code: str | None) -> str:
 
     materialtyp_code_normalisiert = normalisiere_materialtyp_code(bereinigt)
     if materialtyp_code_normalisiert is None:
-        return f"Ungueltiger Materialtyp ({bereinigt})"
+        return f"Ungültiger Materialtyp ({bereinigt})"
 
     lookup_wert = MATERIALTYPEN_NACH_CODE.get(materialtyp_code_normalisiert)
     if lookup_wert is None:
-        return f"Ungueltiger Materialtyp ({bereinigt})"
+        return f"Ungültiger Materialtyp ({bereinigt})"
 
     return lookup_wert.label
 
@@ -93,7 +93,7 @@ def loese_analyse_label_auf(analyse_code: str | None) -> str:
 
     lookup_wert = ANALYSEN_NACH_CODE.get(bereinigt)
     if lookup_wert is None:
-        return f"Ungueltige Analyse ({bereinigt})"
+        return f"Ungültige Analyse ({bereinigt})"
 
     return lookup_wert.label
 

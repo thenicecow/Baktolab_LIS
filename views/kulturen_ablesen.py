@@ -93,7 +93,7 @@ def zeige_aktionsleiste() -> None:
 
     with linke_spalte:
         if st.button(
-            "Zurueck zur Patientendetailansicht",
+            "Zurück zur Patientendetailansicht",
             use_container_width=True,
         ):
             kehre_zur_patientendetailansicht_zurueck()
@@ -101,27 +101,27 @@ def zeige_aktionsleiste() -> None:
     with mittlere_spalte:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
+            label="Zurück zur Patientenübersicht",
             icon=":material/groups:",
         )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurueck zum Dashboard",
+            label="Zurück zum Dashboard",
             icon=":material/dashboard:",
         )
 
 
 def zeige_kurzanleitung() -> None:
     """Zeigt eine kurze, gut sichtbare Anleitung fuer die Arbeitsschritte."""
-    with st.expander("Kurzanleitung fuer diese Seite", expanded=True):
+    with st.expander("Kurzanleitung für diese Seite", expanded=True):
         st.markdown(
             """
 1. Lege zuerst fest, ob Wachstum vorliegt.
-2. Erfasse nur die vorhandenen Keime und bestaetige jede Keimzahl anhand des Referenzbilds.
-3. Speichere die Eingabe oder berechne die Beurteilung, sobald alle Angaben vollstaendig sind.
-4. Mit 'Validieren und Befund oeffnen' wird der Befund nur nach einer gueltigen Beurteilung geoeffnet.
+2. Erfasse nur die vorhandenen Keime und bestätige jede Keimzahl anhand des Referenzbilds.
+3. Speichere die Eingabe oder berechne die Beurteilung, sobald alle Angaben vollständig sind.
+4. Mit 'Validieren und Befund öffnen' wird der Befund nur nach einer gültigen Beurteilung geöffnet.
 """
         )
 
@@ -294,16 +294,16 @@ def pruefe_kulturworkflow_voraussetzungen(material: Material) -> bool:
     """Prueft die Mindestvoraussetzungen fuer den Kulturworkflow des Materials."""
     if not ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
         st.warning(
-            "Fuer dieses Material ist 'Kulturen ablesen' aktuell nicht freigeschaltet. "
-            "Unterstuetzt wird nur Material vom Typ 'Urin' mit der Analyse "
-            "'Allgemeine Bakteriologie'. Kehre zur Patientendetailansicht zurueck, "
-            "um ein anderes Material auszuwaehlen oder den Fall dort weiterzubearbeiten."
+            "Für dieses Material ist 'Kulturen ablesen' aktuell nicht freigeschaltet. "
+            "Unterstützt wird nur Material vom Typ 'Urin' mit der Analyse "
+            "'Allgemeine Bakteriologie'. Kehre zur Patientendetailansicht zurück, "
+            "um ein anderes Material auszuwählen oder den Fall dort weiterzubearbeiten."
         )
         return False
 
     if not hat_verfuegbare_keimzahl_codes():
         st.error(
-            "Es sind aktuell keine gueltigen Keimzahl-Codes fuer 'Kulturen ablesen' hinterlegt."
+            "Es sind aktuell keine gültigen Keimzahl-Codes für 'Kulturen ablesen' hinterlegt."
         )
         return False
 
@@ -459,7 +459,7 @@ def validiere_und_oeffne_befund(material: Material) -> UrinBeurteilung | None:
         return None
 
     if not aktiviere_befund(material.id):
-        st.error("Die Befundansicht konnte nicht geoeffnet werden.")
+        st.error("Die Befundansicht konnte nicht geöffnet werden.")
         return beurteilung
 
     st.rerun()
@@ -478,13 +478,13 @@ def zeige_kulturdatenformular(material: Material) -> None:
 
     if hole_wachstum(material.id):
         st.caption(
-            "Erfasse nur die vorhandenen Keime. Jede ausgewaehlte Keimzahl muss vor "
-            "dem Speichern oder Beurteilen anhand des Referenzbilds bestaetigt werden."
+            "Erfasse nur die vorhandenen Keime. Jede ausgewählte Keimzahl muss vor "
+            "dem Speichern oder Beurteilen anhand des Referenzbilds bestätigt werden."
         )
         zeige_keimeingabe(material.id)
     else:
         st.caption(
-            "Bei 'nein' werden keine Keime erfasst. Die Beurteilung fuehrt dann zu "
+            "Bei 'nein' werden keine Keime erfasst. Die Beurteilung führt dann zu "
             "'Kein Wachstum'."
         )
 
@@ -518,7 +518,7 @@ def verarbeite_aktionsbuttons(
 
     with button_spalte_rechts:
         if st.button(
-            "Validieren und Befund oeffnen",
+            "Validieren und Befund öffnen",
             type="primary",
             use_container_width=True,
         ):
@@ -547,8 +547,8 @@ def main() -> None:
     if ist_befund_aktiv():
         deaktiviere_befund()
         st.warning(
-            "Die Befundansicht konnte nicht geoeffnet werden, "
-            "weil kein gueltiger Materialkontext vorhanden ist."
+            "Die Befundansicht konnte nicht geöffnet werden, "
+            "weil kein gültiger Materialkontext vorhanden ist."
         )
 
     zeige_aktionsleiste()

@@ -99,7 +99,7 @@ def beurteile_urin_allgemeine_bakteriologie(kulturdaten: Kulturdaten) -> UrinBeu
         return UrinBeurteilung(
             gesamtbeurteilung=None,
             ist_gueltig=False,
-            hinweise=["Bei Wachstum wurde kein vollstaendiger Keimeintrag gefunden."],
+            hinweise=["Bei Wachstum wurde kein vollständiger Keimeintrag gefunden."],
         )
 
     relevante_keime, ignorierte_k4_keime = _trenne_relevante_keime(keime)
@@ -125,24 +125,24 @@ def _validiere_keime(keime: list[KulturKeim]) -> UrinBeurteilung:
         return UrinBeurteilung(
             gesamtbeurteilung=None,
             ist_gueltig=False,
-            hinweise=["Die Kulturdaten enthalten keine gueltige Keimliste."],
+            hinweise=["Die Kulturdaten enthalten keine gültige Keimliste."],
         )
 
     fehler: list[str] = []
 
     for index, keim in enumerate(keime, start=1):
         if not isinstance(keim, KulturKeim):
-            fehler.append(f"Keim {index} ist kein gueltiger KulturKeim-Eintrag.")
+            fehler.append(f"Keim {index} ist kein gültiger KulturKeim-Eintrag.")
             continue
 
         if not keim.keim_id.strip():
             fehler.append(f"Keim {index} hat keine Keim-ID.")
         if keim.keimzahl_code not in KEIMZAHL_RANG:
             fehler.append(
-                f"Keim {index} hat einen ungueltigen Keimzahl-Code: {keim.keimzahl_code}."
+                f"Keim {index} hat einen ungültigen Keimzahl-Code: {keim.keimzahl_code}."
             )
         if keim.rolle not in {ROLLE_PATHOGEN, ROLLE_KONTAMINANTE}:
-            fehler.append(f"Keim {index} hat eine ungueltige Rolle: {keim.rolle}.")
+            fehler.append(f"Keim {index} hat eine ungültige Rolle: {keim.rolle}.")
 
     if fehler:
         return UrinBeurteilung(
@@ -231,7 +231,7 @@ def _beurteile_reine_k4_konstellation(
                         rolle=keim.rolle,
                         effektive_rolle=keim.rolle,
                         ergebnis=ERGEBNIS_ID_RESI,
-                        begruendung="Ein einzelner k4-Keim aus gramnegativen Staebchen wird weiterverarbeitet.",
+                        begruendung="Ein einzelner k4-Keim aus gramnegativen Stäbchen wird weiterverarbeitet.",
                     )
                 ],
                 hinweise=hinweise,
@@ -247,7 +247,7 @@ def _beurteile_reine_k4_konstellation(
                     rolle=keim.rolle,
                     effektive_rolle=keim.rolle,
                     ergebnis=ERGEBNIS_KEIMFLORA,
-                    begruendung="Ein einzelner k4-Keim ausserhalb gramnegativer Staebchen wird als Keimflora beurteilt.",
+                    begruendung="Ein einzelner k4-Keim ausserhalb gramnegativer Stäbchen wird als Keimflora beurteilt.",
                 )
             ],
             hinweise=hinweise,
@@ -394,7 +394,7 @@ def _beurteile_zwei_keime_ab_p4(
                     _baue_beurteilten_keim(
                         zweiter_keim,
                         ERGEBNIS_KEIMFLORA_ZUSAETZLICH,
-                        "Der zweite pathogene Keim faellt in dieser Spezialregel in kfzus.",
+                        "Der zweite pathogene Keim fällt in dieser Spezialregel in kfzus.",
                     ),
                 ],
                 hinweise=hinweise,
@@ -407,7 +407,7 @@ def _beurteile_zwei_keime_ab_p4(
                 _baue_beurteilten_keim(
                     eintrag,
                     ERGEBNIS_ID_RESI,
-                    "Zwei pathogene Keime werden grundsaetzlich weiterverarbeitet.",
+                    "Zwei pathogene Keime werden grundsätzlich weiterverarbeitet.",
                 )
                 for eintrag in pathogene
             ],
@@ -427,7 +427,7 @@ def _beurteile_zwei_keime_ab_p4(
                 _baue_beurteilten_keim(
                     kontaminanten[0],
                     ERGEBNIS_KEIMFLORA_ZUSAETZLICH,
-                    "Der zusaetzliche Kontaminationskeim faellt in kfzus.",
+                    "Der zusätzliche Kontaminationskeim fällt in kfzus.",
                 ),
             ],
             hinweise=hinweise,

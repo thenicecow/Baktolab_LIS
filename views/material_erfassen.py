@@ -33,7 +33,7 @@ from persistenz import PatientenRepository
 
 
 def ist_direkter_kulturworkflow(materialtyp_code: str, analyse_code: str) -> bool:
-    """Prüft, ob nach dem Speichern direkt 'Kulturen ablesen' folgt."""
+    """Prueft, ob nach dem Speichern direkt 'Kulturen ablesen' folgt."""
     return (
         materialtyp_code == UNTERSTUETZTER_MATERIALTYP_CODE
         and analyse_code == UNTERSTUETZTER_ANALYSE_CODE

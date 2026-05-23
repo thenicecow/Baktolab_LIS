@@ -79,13 +79,13 @@ def loesche_patient(patient_id: str) -> str | None:
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der ausgewaehlte Patient konnte nicht geladen werden."
+                "Der ausgewählte Patient konnte nicht geladen werden."
             )
         )
         return None
 
     if patient is None:
-        st.error("Der ausgewaehlte Patient wurde nicht gefunden.")
+        st.error("Der ausgewählte Patient wurde nicht gefunden.")
         return None
 
     try:
@@ -93,13 +93,13 @@ def loesche_patient(patient_id: str) -> str | None:
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der Patient konnte nicht geloescht werden."
+                "Der Patient konnte nicht gelöscht werden."
             )
         )
         return None
 
     if geloeschter_patient is None:
-        st.error("Der ausgewaehlte Patient wurde nicht gefunden.")
+        st.error("Der ausgewählte Patient wurde nicht gefunden.")
         return None
 
     return (

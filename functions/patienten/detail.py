@@ -93,13 +93,13 @@ def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der ausgewaehlte Patient konnte nicht geladen werden."
+                "Der ausgewählte Patient konnte nicht geladen werden."
             )
         )
         return None
 
     if patientenakte is None:
-        st.warning("Der ausgewaehlte Patient wurde nicht gefunden.")
+        st.warning("Der ausgewählte Patient wurde nicht gefunden.")
         return None
 
     return patientenakte

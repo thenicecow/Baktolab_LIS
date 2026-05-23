@@ -67,7 +67,7 @@ def get_mdr_hints(organism: str, ab_class: str, resistant_n: int) -> list[Hinwei
             (
                 "warning",
                 "Carbapenem-Resistenz bei Enterobacterales ist besonders relevant. "
-                "Bestaetigung, Abklaerung und Hygienemassnahmen gemaess Spitalhygiene-Richtlinien pruefen.",
+                "Bestätigung, Abklärung und Hygienemassnahmen gemäss Spitalhygiene-Richtlinien prüfen.",
             )
         )
 
@@ -76,7 +76,7 @@ def get_mdr_hints(organism: str, ab_class: str, resistant_n: int) -> list[Hinwei
             (
                 "info",
                 "Cephalosporin-Resistenz bei Enterobacterales kann auf ESBL oder AmpC hindeuten. "
-                "Interpretation gemaess Spitalhygiene-Richtlinien einordnen.",
+                "Interpretation gemäss Spitalhygiene-Richtlinien einordnen.",
             )
         )
 
@@ -84,8 +84,8 @@ def get_mdr_hints(organism: str, ab_class: str, resistant_n: int) -> list[Hinwei
         hints.append(
             (
                 "warning",
-                "Penicillin-Resistenz bei S. aureus ist haeufig. "
-                "MRSA wird jedoch ueber Oxacillin oder Cefoxitin beurteilt, nicht ueber Penicillin.",
+                "Penicillin-Resistenz bei S. aureus ist häufig. "
+                "MRSA wird jedoch über Oxacillin oder Cefoxitin beurteilt, nicht über Penicillin.",
             )
         )
 
@@ -94,9 +94,8 @@ def get_mdr_hints(organism: str, ab_class: str, resistant_n: int) -> list[Hinwei
             (
                 "warning",
                 "Carbapenem-Resistenz bei Pseudomonas aeruginosa kann klinisch relevant sein. "
-                "Abklaerung und Therapie nach lokalen Richtlinien pruefen.",
+                "Abklärung und Therapie nach lokalen Richtlinien prüfen.",
             )
         )
 
     return hints
-

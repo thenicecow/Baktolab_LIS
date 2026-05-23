@@ -97,12 +97,12 @@ def speichere_material(
 
     materialtyp_code_bereinigt = materialtyp_code.strip()
     if not ist_gueltiger_materialtyp_code(materialtyp_code_bereinigt):
-        st.error("Bitte waehle einen gueltigen Materialtyp aus.")
+        st.error("Bitte wähle einen gültigen Materialtyp aus.")
         return None
 
     analyse_code_bereinigt = analyse_code.strip()
     if not ist_gueltiger_analyse_code(analyse_code_bereinigt):
-        st.error("Bitte waehle eine gueltige Analyse aus.")
+        st.error("Bitte wähle eine gültige Analyse aus.")
         return None
 
     try:
@@ -110,13 +110,13 @@ def speichere_material(
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der ausgewaehlte Patient konnte nicht geladen werden."
+                "Der ausgewählte Patient konnte nicht geladen werden."
             )
         )
         return None
 
     if patientenakte is None:
-        st.error("Der ausgewaehlte Patient wurde nicht gefunden.")
+        st.error("Der ausgewählte Patient wurde nicht gefunden.")
         return None
 
     patient, materialien = patientenakte
@@ -170,7 +170,7 @@ def baue_ansatzhinweis(material: Material) -> dict[str, object]:
     )
 
     ansatzhinweis: dict[str, object] = {
-        "titel": f"Ansatzhinweis fuer {material_label} und {analyse_label}",
+        "titel": f"Ansatzhinweis für {material_label} und {analyse_label}",
         "zeilen": zeilen,
     }
 

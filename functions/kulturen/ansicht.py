@@ -485,13 +485,13 @@ def baue_kulturdaten_aus_formularvorschau(
     unbestaetigte_keime = vorschau.get("unbestaetigte_keime", [])
     if isinstance(unbestaetigte_keime, list) and unbestaetigte_keime:
         st.error(
-            "Bitte bestaetige alle ausgewaehlten Keimzahlen anhand der Referenzbilder, "
+            "Bitte bestätige alle ausgewählten Keimzahlen anhand der Referenzbilder, "
             "bevor du speicherst oder die Beurteilung berechnest."
         )
         return None
 
     if vorschau["wachstum"] and not vorschau["keime"]:
-        st.error("Bitte erfasse mindestens einen Keim oder waehle bei Wachstum 'nein'.")
+        st.error("Bitte erfasse mindestens einen Keim oder wähle bei Wachstum 'nein'.")
         return None
 
     return baue_kulturdaten_aus_formularwerten(
@@ -520,17 +520,17 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
     referenzbild_anzeigen = soll_referenzbild_angezeigt_werden(material_id, index)
 
     with st.container(border=True):
-        st.markdown("**Visuelle Pruefung der Keimzahl**")
+        st.markdown("**Visuelle Prüfung der Keimzahl**")
         st.caption(
-            "Bitte pruefe die ausgewaehlte Keimzahl anhand des Referenzbilds und "
-            "bestaetige oder lehne sie anschliessend ab."
+            "Bitte prüfe die ausgewählte Keimzahl anhand des Referenzbilds und "
+            "bestätige oder lehne sie anschliessend ab."
         )
 
         if ist_keimzahl_bestaetigt(material_id, index):
             st.success(f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestätigt.")
         else:
             st.warning(
-                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestaetigt "
+                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestätigt "
                 "und wird noch nicht gespeichert oder beurteilt."
             )
 
@@ -550,7 +550,7 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
 
         with linke_spalte:
             if st.button(
-                "Bestaetigen",
+                "Bestätigen",
                 key=baue_formularschluessel(material_id, f"keimzahl_bestaetigen_{index}"),
                 type="primary",
                 use_container_width=True,
@@ -584,7 +584,7 @@ def zeige_rollenauswahl(material_id: str, index: int) -> None:
             key=rollenschluessel,
             disabled=True,
         )
-        st.caption("Rolle wird fuer diesen Keim automatisch gesetzt.")
+        st.caption("Rolle wird für diesen Keim automatisch gesetzt.")
         return
 
     if keimauswahl == SONSTIGER_KEIM_OPTION:
@@ -600,7 +600,7 @@ def zeige_rollenauswahl(material_id: str, index: int) -> None:
         options=list(ROLLEN),
         key=rollenschluessel,
         index=None,
-        placeholder="Bitte zuerst Keim auswaehlen",
+        placeholder="Bitte zuerst Keim auswählen",
         disabled=True,
     )
     st.caption("Die Rolle wird nach der Keimauswahl gesetzt.")
@@ -619,7 +619,7 @@ def zeige_keimeingabe(material_id: str) -> None:
                 options=list(KEIM_ID_AUSWAHL_OPTIONEN),
                 key=baue_keimauswahl_schluessel(material_id, index),
                 index=None,
-                placeholder="Bitte Keim auswaehlen",
+                placeholder="Bitte Keim auswählen",
             )
 
             if hole_ausgewaehlte_keimauswahl(material_id, index) == SONSTIGER_KEIM_OPTION:
@@ -648,7 +648,7 @@ def zeige_keimeingabe(material_id: str) -> None:
             zeige_keimzahl_bestaetigung(material_id, index)
 
     if st.button(
-        "Weiteren Keim hinzufuegen",
+        "Weiteren Keim hinzufügen",
         icon=":material/add:",
         use_container_width=True,
     ):
@@ -681,12 +681,12 @@ def zeige_vorschau(material_id: str) -> None:
             return
 
         if keime:
-            st.markdown("**Bestaetigte Keime**")
+            st.markdown("**Bestätigte Keime**")
             st.dataframe(
                 pd.DataFrame(keime).rename(
                     columns={
                         "keim_id": "Keim-ID",
-                        "keimzahl_code": "Bestaetigte Keimzahl",
+                        "keimzahl_code": "Bestätigte Keimzahl",
                         "rolle": "Rolle",
                     }
                 ),
@@ -695,12 +695,12 @@ def zeige_vorschau(material_id: str) -> None:
             )
 
         if unbestaetigte_keime:
-            st.warning("Fuer mindestens einen Keim fehlt noch die Bestaetigung der Keimzahl.")
+            st.warning("Für mindestens einen Keim fehlt noch die Bestätigung der Keimzahl.")
             st.dataframe(
                 pd.DataFrame(unbestaetigte_keime).rename(
                     columns={
                         "keim_id": "Keim-ID",
-                        "ausgewaehlte_keimzahl_code": "Ausgewaehlte Keimzahl",
+                        "ausgewaehlte_keimzahl_code": "Ausgewählte Keimzahl",
                         "rolle": "Rolle",
                     }
                 ),

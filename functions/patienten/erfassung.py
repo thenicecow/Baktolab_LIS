@@ -25,7 +25,7 @@ GESCHLECHTER: tuple[str, ...] = (
 MONATE: tuple[tuple[int, str], ...] = (
     (1, "Januar"),
     (2, "Februar"),
-    (3, "Maerz"),
+    (3, "März"),
     (4, "April"),
     (5, "Mai"),
     (6, "Juni"),
@@ -155,11 +155,11 @@ def speichere_patient() -> str | None:
     geschlecht = str(st.session_state[GESCHLECHT_SCHLUESSEL]).strip()
 
     if not vorname or not nachname:
-        st.error("Vorname und Nachname muessen ausgefuellt werden.")
+        st.error("Vorname und Nachname müssen ausgefüllt werden.")
         return None
 
     if geburtsdatum is None:
-        st.error("Bitte ein gueltiges Geburtsdatum erfassen.")
+        st.error("Bitte ein gültiges Geburtsdatum erfassen.")
         return None
 
     user_id = hole_aktuellen_user_id()

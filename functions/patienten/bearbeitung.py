@@ -23,7 +23,7 @@ STANDARD_GESCHLECHTER: tuple[str, ...] = (
 MONATE: tuple[tuple[int, str], ...] = (
     (1, "Januar"),
     (2, "Februar"),
-    (3, "Maerz"),
+    (3, "März"),
     (4, "April"),
     (5, "Mai"),
     (6, "Juni"),
@@ -158,7 +158,7 @@ def lade_patientenakte_fuer_bearbeitung() -> tuple[Patient, list[Material]] | No
     patient_id = hole_patienten_id_fuer_bearbeitung()
 
     if patient_id is None:
-        st.error("Es wurde kein Patient fuer die Bearbeitung ausgewaehlt.")
+        st.error("Es wurde kein Patient für die Bearbeitung ausgewählt.")
         return None
 
     repository = PatientenRepository()
@@ -168,13 +168,13 @@ def lade_patientenakte_fuer_bearbeitung() -> tuple[Patient, list[Material]] | No
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der ausgewaehlte Patient konnte nicht geladen werden."
+                "Der ausgewählte Patient konnte nicht geladen werden."
             )
         )
         return None
 
     if patientenakte is None:
-        st.error("Der ausgewaehlte Patient wurde nicht gefunden.")
+        st.error("Der ausgewählte Patient wurde nicht gefunden.")
         return None
 
     return patientenakte
@@ -196,15 +196,15 @@ def speichere_patientaenderungen(
     geschlecht = str(st.session_state[GESCHLECHT_SCHLUESSEL]).strip()
 
     if not vorname or not nachname:
-        st.error("Vorname und Nachname muessen ausgefuellt werden.")
+        st.error("Vorname und Nachname müssen ausgefüllt werden.")
         return None
 
     if geburtsdatum is None:
-        st.error("Bitte ein gueltiges Geburtsdatum erfassen.")
+        st.error("Bitte ein gültiges Geburtsdatum erfassen.")
         return None
 
     if not geschlecht:
-        st.error("Bitte ein Geschlecht auswaehlen.")
+        st.error("Bitte ein Geschlecht auswählen.")
         return None
 
     aktualisierter_patient = Patient(
@@ -227,7 +227,7 @@ def speichere_patientaenderungen(
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Die Aenderungen am Patienten konnten nicht gespeichert werden."
+                "Die Änderungen am Patienten konnten nicht gespeichert werden."
             )
         )
         return None

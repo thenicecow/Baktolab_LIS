@@ -36,9 +36,9 @@ from ui.header import show_header
 
 ABKUERZUNGEN: tuple[tuple[str, str], ...] = (
     ("kw", "Kein Wachstum"),
-    ("ID + Resi", "Identifikation und Resistenztestung durchfuehren"),
+    ("ID + Resi", "Identifikation und Resistenztestung durchführen"),
     ("kf", "Keimflora"),
-    ("kfzus", "Zusaetzlicher Keim im Sinne von Keimflora"),
+    ("kfzus", "Zusätzlicher Keim im Sinne von Keimflora"),
     ("uriflor", "Urinflora beziehungsweise Kontaminationsflora"),
     ("urikont", "Hinweis auf Urinkontamination"),
 )
@@ -71,7 +71,7 @@ def zeige_aktionsleiste() -> None:
 
     with linke_spalte:
         if st.button(
-            "Zurueck zu Kulturen ablesen",
+            "Zurück zu Kulturen ablesen",
             use_container_width=True,
         ):
             kehre_zu_kulturen_ablesen_zurueck()
@@ -79,14 +79,14 @@ def zeige_aktionsleiste() -> None:
     with mittlere_spalte:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
+            label="Zurück zur Patientenübersicht",
             icon=":material/groups:",
         )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurueck zum Dashboard",
+            label="Zurück zum Dashboard",
             icon=":material/dashboard:",
         )
 
@@ -104,7 +104,7 @@ def loese_abkuerzung_auf(kuerzel: str | None) -> str:
         if code == bereinigt:
             return bedeutung
 
-    return "Keine hinterlegte Erklaerung vorhanden."
+    return "Keine hinterlegte Erklärung vorhanden."
 
 
 def loese_keimzahl_auf(keimzahl_code: str | None) -> str:
@@ -278,7 +278,7 @@ def baue_zusaetzliche_flora(material: Material, beurteilung: UrinBeurteilung | N
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        return "Keine zusaetzliche Flora. Es wurde kein Wachstum dokumentiert."
+        return "Keine zusätzliche Flora. Es wurde kein Wachstum dokumentiert."
 
     beurteilungsindex = baue_beurteilungsindex(beurteilung)
     flora_beschreibungen: list[str] = []
@@ -307,7 +307,7 @@ def baue_zusaetzliche_flora(material: Material, beurteilung: UrinBeurteilung | N
         code = beurteilung.gesamtbeurteilung
         return f"{code}: {loese_abkuerzung_auf(code)}"
 
-    return "Keine zusaetzliche Flora dokumentiert."
+    return "Keine zusätzliche Flora dokumentiert."
 
 
 def zeige_befundkopf(patient: Patient, material: Material) -> None:
@@ -374,7 +374,7 @@ def zeige_befundinhalt(
     """Rendert den eigentlichen Befund im Stil des Mockups."""
     material_label = loese_materialtyp_label_auf(material.materialtyp_code)
     flora_text = baue_zusaetzliche_flora(material, beurteilung)
-    validiert_durch = hole_aktuellen_user_id() or "Nicht verfuegbar"
+    validiert_durch = hole_aktuellen_user_id() or "Nicht verfügbar"
 
     with st.container(border=True):
         zeige_befundkopf(patient, material)
@@ -386,7 +386,7 @@ def zeige_befundinhalt(
 
         zeige_keimdarstellung(material, beurteilung)
 
-        st.markdown(f"**Zusaetzliche Flora:** {flora_text}")
+        st.markdown(f"**Zusätzliche Flora:** {flora_text}")
 
         if beurteilung is not None and beurteilung.hinweise:
             for hinweis in beurteilung.hinweise:
@@ -399,7 +399,7 @@ def zeige_befundinhalt(
 def zeige_ausgeschriebene_abkuerzungen() -> None:
     """Zeigt die im Befund verwendeten Abkuerzungen in einem dezenten Zusatzbereich an."""
     with st.container(border=True):
-        st.caption("Ausgeschriebene Abkuerzungen")
+        st.caption("Ausgeschriebene Abkürzungen")
 
         for code, bedeutung in ABKUERZUNGEN:
             st.markdown(f"`{code}`: {bedeutung}")
@@ -430,14 +430,14 @@ def main() -> None:
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der Befund konnte fuer das ausgewaehlte Material nicht geladen werden."
+                "Der Befund konnte für das ausgewählte Material nicht geladen werden."
             )
         )
         return
 
     if materialkontext is None:
         st.warning(
-            "Zum aktuellen Befund konnte kein gueltiger Materialkontext gefunden werden."
+            "Zum aktuellen Befund konnte kein gültiger Materialkontext gefunden werden."
         )
         return
 
@@ -450,4 +450,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

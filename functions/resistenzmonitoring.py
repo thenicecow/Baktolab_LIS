@@ -22,7 +22,7 @@ STANDARD_SPALTEN: tuple[str, ...] = (
 MONATSNAMEN: tuple[str, ...] = (
     "Januar",
     "Februar",
-    "Maerz",
+    "März",
     "April",
     "Mai",
     "Juni",
@@ -37,7 +37,7 @@ MONATSNAMEN: tuple[str, ...] = (
 MONAT_NACH_NUMMER: dict[str, int] = {
     monat: index for index, monat in enumerate(MONATSNAMEN, start=1)
 }
-MONAT_NACH_NUMMER["März"] = 3
+MONAT_NACH_NUMMER["Maerz"] = 3
 
 
 def hole_leeres_verlaufs_dataframe() -> pd.DataFrame:
