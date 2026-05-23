@@ -192,7 +192,7 @@ def baue_einleitungssatz(material: Material) -> str:
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        return "Aus dem von Ihnen eingesandten Material wurde kein Wachstum dokumentiert."
+        return "In diesem Material sind keine Bakterien gewachsen."
 
     return "Aus dem von Ihnen eingesandten Material wurden folgende Keime identifiziert:"
 
@@ -288,7 +288,7 @@ def baue_zusaetzliche_flora(material: Material, beurteilung: UrinBeurteilung | N
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        return "Keine zusaetzliche Flora. Es wurde kein Wachstum dokumentiert."
+        return "Keine zusaetzliche Flora. In diesem Material sind keine Bakterien gewachsen."
 
     beurteilungsindex = baue_beurteilungsindex(beurteilung)
     flora_beschreibungen: list[str] = []
@@ -325,7 +325,7 @@ def hole_keimstatus(material: Material) -> str | None:
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        return "Kein Wachstum"
+        return "In diesem Material sind keine Bakterien gewachsen."
 
     if not kulturdaten.keime:
         return "Noch keine Keime erfasst"
@@ -479,7 +479,7 @@ def zeige_keimdarstellung(material: Material, beurteilung: UrinBeurteilung | Non
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        st.markdown("**Keimstatus:** Kein Wachstum")
+        st.markdown("**Befundlage:** In diesem Material sind keine Bakterien gewachsen.")
         return
 
     keimbloecke = baue_keimbloecke(material, beurteilung)

@@ -27,7 +27,7 @@ KEIM_ROLLEN_NACH_KEIM: dict[str, str] = {
     "Staphylococcus saprophyticus": "pathogen",
     "Pseudomonas aeruginosa": "pathogen",
     "Enterobacter cloacae complex": "pathogen",
-    "Vergrünende Streptokokken": "kontaminante",
+    "Vergruenende Streptokokken": "kontaminante",
     "Koagulase negative Staphylokokken": "kontaminante",
     "Enterococcus faecium": "pathogen",
 }
@@ -37,6 +37,9 @@ KEIM_ID_AUSWAHL_OPTIONEN: tuple[str, ...] = VORDEFINIERTE_KEIME + (SONSTIGER_KEI
 VORDEFINIERTE_KEIME_NACH_CASEFOLD: dict[str, str] = {
     keim.casefold(): keim for keim in VORDEFINIERTE_KEIME
 }
+
+WACHSTUM_VORHANDEN_OPTION = "wachstum_vorhanden"
+KEIN_WACHSTUM_OPTION = "kein_wachstum"
 
 PROJEKTWURZEL = Path(__file__).resolve().parent.parent.parent
 REFERENZBILD_ORDNER = PROJEKTWURZEL / "assets" / "referenzbilder"
@@ -67,6 +70,42 @@ def hole_standard_keimzahl_code() -> str:
         return ""
 
     return KEIMZAHL_CODES[0]
+
+
+def hole_wachstumsoptionen() -> tuple[str, str]:
+    """Liefert die expliziten Auswahlwerte fuer den Wachstumszustand."""
+    return (WACHSTUM_VORHANDEN_OPTION, KEIN_WACHSTUM_OPTION)
+
+
+def hole_wachstumsoption_label(option: str) -> str:
+    """Liefert die menschenlesbare Beschriftung fuer eine Wachstumsoption."""
+    if option == KEIN_WACHSTUM_OPTION:
+        return "Kein Wachstum"
+
+    return "Bakterienwachstum vorhanden"
+
+
+def formatiere_wachstum_fuer_anzeige(wachstum: bool) -> str:
+    """Formatiert einen Wachstumswert fuer sichtbare Texte."""
+    if wachstum:
+        return "Bakterienwachstum vorhanden"
+
+    return "Kein Wachstum"
+
+
+def formatiere_gesamtbeurteilung_fuer_anzeige(gesamtbeurteilung: str | None) -> str:
+    """Loest die Gesamtbeurteilung fuer sichtbare Anzeigen minimal auf."""
+    if not isinstance(gesamtbeurteilung, str):
+        return "-"
+
+    bereinigt = gesamtbeurteilung.strip()
+    if not bereinigt:
+        return "-"
+
+    if bereinigt == "kw":
+        return "Kein Wachstum"
+
+    return bereinigt
 
 
 def baue_formularschluessel(material_id: str, feldname: str) -> str:
@@ -245,6 +284,25 @@ def baue_referenzbild_anzeigen_schluessel(material_id: str, index: int) -> str:
     return baue_formularschluessel(material_id, f"referenzbild_anzeigen_{index}")
 
 
+def hole_wachstumsoption(material_id: str) -> str:
+    """Liest die aktuell gesetzte Wachstumsoption defensiv aus dem Session State."""
+    schluessel = baue_formularschluessel(material_id, "wachstum")
+    wert = st.session_state.get(schluessel, WACHSTUM_VORHANDEN_OPTION)
+
+    if not isinstance(wert, str):
+        return WACHSTUM_VORHANDEN_OPTION
+
+    bereinigt = wert.strip()
+
+    if bereinigt in {"nein", KEIN_WACHSTUM_OPTION}:
+        return KEIN_WACHSTUM_OPTION
+
+    if bereinigt in {"ja", WACHSTUM_VORHANDEN_OPTION}:
+        return WACHSTUM_VORHANDEN_OPTION
+
+    return WACHSTUM_VORHANDEN_OPTION
+
+
 def hole_ausgewaehlte_keimzahl(material_id: str, index: int) -> str:
     """Liest die aktuell ausgewaehlte Keimzahl eines Keims aus dem Session State."""
     standard_keimzahl_code = hole_standard_keimzahl_code()
@@ -347,7 +405,11 @@ def initialisiere_formularzustand(material: Material) -> None:
     wachstum_schluessel = baue_formularschluessel(material.id, "wachstum")
     keimanzahl_schluessel = baue_formularschluessel(material.id, "keimanzahl")
 
-    st.session_state[wachstum_schluessel] = "nein" if kulturdaten.wachstum is False else "ja"
+    st.session_state[wachstum_schluessel] = (
+        KEIN_WACHSTUM_OPTION
+        if kulturdaten.wachstum is False
+        else WACHSTUM_VORHANDEN_OPTION
+    )
 
     keimanzahl = len(kulturdaten.keime) if kulturdaten.keime else 1
     st.session_state[keimanzahl_schluessel] = max(1, keimanzahl)
@@ -399,9 +461,8 @@ def erhoehe_keimanzahl(material_id: str) -> None:
 
 
 def hole_wachstum(material_id: str) -> bool:
-    """Liest, ob lokal Wachstum fuer das Material ausgewaehlt ist."""
-    schluessel = baue_formularschluessel(material_id, "wachstum")
-    return st.session_state.get(schluessel, "ja") == "ja"
+    """Liest, ob lokal Bakterienwachstum fuer das Material ausgewaehlt ist."""
+    return hole_wachstumsoption(material_id) == WACHSTUM_VORHANDEN_OPTION
 
 
 def hole_aktuellen_keimeintrag(material_id: str, index: int) -> dict[str, object]:
@@ -485,13 +546,15 @@ def baue_kulturdaten_aus_formularvorschau(
     unbestaetigte_keime = vorschau.get("unbestaetigte_keime", [])
     if isinstance(unbestaetigte_keime, list) and unbestaetigte_keime:
         st.error(
-            "Bitte bestätige alle ausgewählten Keimzahlen anhand der Referenzbilder, "
+            "Bitte bestaetige alle ausgewaehlten Keimzahlen anhand der Referenzbilder, "
             "bevor du speicherst oder die Beurteilung berechnest."
         )
         return None
 
     if vorschau["wachstum"] and not vorschau["keime"]:
-        st.error("Bitte erfasse mindestens einen Keim oder wähle bei Wachstum 'nein'.")
+        st.error(
+            "Bitte erfasse mindestens einen Keim oder waehle ausdruecklich 'Kein Wachstum'."
+        )
         return None
 
     return baue_kulturdaten_aus_formularwerten(
@@ -520,17 +583,17 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
     referenzbild_anzeigen = soll_referenzbild_angezeigt_werden(material_id, index)
 
     with st.container(border=True):
-        st.markdown("**Visuelle Prüfung der Keimzahl**")
+        st.markdown("**Visuelle Pruefung der Keimzahl**")
         st.caption(
-            "Bitte prüfe die ausgewählte Keimzahl anhand des Referenzbilds und "
-            "bestätige oder lehne sie anschliessend ab."
+            "Bitte pruefe die ausgewaehlte Keimzahl anhand des Referenzbilds und "
+            "bestaetige oder lehne sie anschliessend ab."
         )
 
         if ist_keimzahl_bestaetigt(material_id, index):
-            st.success(f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestätigt.")
+            st.success(f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestaetigt.")
         else:
             st.warning(
-                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestätigt "
+                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestaetigt "
                 "und wird noch nicht gespeichert oder beurteilt."
             )
 
@@ -550,7 +613,7 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
 
         with linke_spalte:
             if st.button(
-                "Bestätigen",
+                "Bestaetigen",
                 key=baue_formularschluessel(material_id, f"keimzahl_bestaetigen_{index}"),
                 type="primary",
                 use_container_width=True,
@@ -584,7 +647,7 @@ def zeige_rollenauswahl(material_id: str, index: int) -> None:
             key=rollenschluessel,
             disabled=True,
         )
-        st.caption("Rolle wird für diesen Keim automatisch gesetzt.")
+        st.caption("Rolle wird fuer diesen Keim automatisch gesetzt.")
         return
 
     if keimauswahl == SONSTIGER_KEIM_OPTION:
@@ -600,7 +663,7 @@ def zeige_rollenauswahl(material_id: str, index: int) -> None:
         options=list(ROLLEN),
         key=rollenschluessel,
         index=None,
-        placeholder="Bitte zuerst Keim auswählen",
+        placeholder="Bitte zuerst Keim auswaehlen",
         disabled=True,
     )
     st.caption("Die Rolle wird nach der Keimauswahl gesetzt.")
@@ -619,7 +682,7 @@ def zeige_keimeingabe(material_id: str) -> None:
                 options=list(KEIM_ID_AUSWAHL_OPTIONEN),
                 key=baue_keimauswahl_schluessel(material_id, index),
                 index=None,
-                placeholder="Bitte Keim auswählen",
+                placeholder="Bitte Keim auswaehlen",
             )
 
             if hole_ausgewaehlte_keimauswahl(material_id, index) == SONSTIGER_KEIM_OPTION:
@@ -637,7 +700,8 @@ def zeige_keimeingabe(material_id: str) -> None:
                 st.selectbox(
                     "Keimzahl",
                     options=list(KEIMZAHL_CODES),
-                    key=baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
+                    key=baue_formularschluessel(material.id, f"keimzahl_code_{index}")
+                    if False else baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
                     on_change=setze_keimzahl_als_unbestaetigt,
                     args=(material_id, index),
                 )
@@ -648,7 +712,7 @@ def zeige_keimeingabe(material_id: str) -> None:
             zeige_keimzahl_bestaetigung(material_id, index)
 
     if st.button(
-        "Weiteren Keim hinzufügen",
+        "Weiteren Keim hinzufuegen",
         icon=":material/add:",
         use_container_width=True,
     ):
@@ -663,7 +727,9 @@ def zeige_vorschau(material_id: str) -> None:
     st.subheader("Aktuelle Vorschau")
 
     with st.container(border=True):
-        st.write(f"Wachstum: {'ja' if vorschau['wachstum'] else 'nein'}")
+        st.write(
+            f"Bakterienwachstum: {formatiere_wachstum_fuer_anzeige(bool(vorschau['wachstum']))}"
+        )
 
         keime = vorschau.get("keime", [])
         unbestaetigte_keime = vorschau.get("unbestaetigte_keime", [])
@@ -675,18 +741,18 @@ def zeige_vorschau(material_id: str) -> None:
 
         if not keime and not unbestaetigte_keime:
             if vorschau["wachstum"]:
-                st.info("Aktuell sind noch keine vollständigen Keimeinträge erfasst.")
+                st.info("Aktuell sind noch keine vollstaendigen Keimeintraege erfasst.")
             else:
-                st.info("Es ist aktuell 'kein Wachstum' ausgewählt.")
+                st.info("Es ist aktuell ausdruecklich 'Kein Wachstum' ausgewaehlt.")
             return
 
         if keime:
-            st.markdown("**Bestätigte Keime**")
+            st.markdown("**Bestaetigte Keime**")
             st.dataframe(
                 pd.DataFrame(keime).rename(
                     columns={
                         "keim_id": "Keim-ID",
-                        "keimzahl_code": "Bestätigte Keimzahl",
+                        "keimzahl_code": "Bestaetigte Keimzahl",
                         "rolle": "Rolle",
                     }
                 ),
@@ -695,12 +761,12 @@ def zeige_vorschau(material_id: str) -> None:
             )
 
         if unbestaetigte_keime:
-            st.warning("Für mindestens einen Keim fehlt noch die Bestätigung der Keimzahl.")
+            st.warning("Fuer mindestens einen Keim fehlt noch die Bestaetigung der Keimzahl.")
             st.dataframe(
                 pd.DataFrame(unbestaetigte_keime).rename(
                     columns={
                         "keim_id": "Keim-ID",
-                        "ausgewaehlte_keimzahl_code": "Ausgewählte Keimzahl",
+                        "ausgewaehlte_keimzahl_code": "Ausgewaehlte Keimzahl",
                         "rolle": "Rolle",
                     }
                 ),
@@ -714,11 +780,14 @@ def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
     st.subheader("Beurteilung")
 
     if beurteilung is None:
-        st.info("Für dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
+        st.info("Fuer dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
         return
 
     with st.container(border=True):
-        st.markdown(f"**Gesamtbeurteilung:** {beurteilung.gesamtbeurteilung}")
+        st.markdown(
+            f"**Gesamtbeurteilung:** "
+            f"{formatiere_gesamtbeurteilung_fuer_anzeige(beurteilung.gesamtbeurteilung)}"
+        )
 
         if beurteilung.hinweise:
             for hinweis in beurteilung.hinweise:

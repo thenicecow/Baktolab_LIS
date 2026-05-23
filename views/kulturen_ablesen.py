@@ -19,10 +19,13 @@ from functions.kulturen.ablesen import (
     speichere_kulturdaten_fuer_material,
 )
 from functions.kulturen.ansicht import (
+    KEIN_WACHSTUM_OPTION,
     baue_formularschluessel,
     baue_kulturdaten_aus_formularvorschau,
     hat_verfuegbare_keimzahl_codes,
     hole_wachstum,
+    hole_wachstumsoption_label,
+    hole_wachstumsoptionen,
     initialisiere_formularzustand,
     zeige_beurteilung,
     zeige_keimeingabe,
@@ -53,7 +56,7 @@ PATIENTENAUSWAHL_MATERIALKONTEXT_SCHLUESSEL = (
 
 
 def hole_ausgewaehlte_patienten_id_auswahl() -> str | None:
-    """Liest die aktuell im Dropdown gewählte Patienten-ID aus dem Session State."""
+    """Liest die aktuell im Dropdown gewaehlte Patienten-ID aus dem Session State."""
     patient_id = st.session_state.get(PATIENTENAUSWAHL_SCHLUESSEL)
 
     if not isinstance(patient_id, str):
@@ -93,7 +96,7 @@ def zeige_aktionsleiste() -> None:
 
     with linke_spalte:
         if st.button(
-            "Zurück zur Patientendetailansicht",
+            "Zurueck zur Patientendetailansicht",
             use_container_width=True,
         ):
             kehre_zur_patientendetailansicht_zurueck()
@@ -101,27 +104,27 @@ def zeige_aktionsleiste() -> None:
     with mittlere_spalte:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurück zur Patientenübersicht",
+            label="Zurueck zur Patientenuebersicht",
             icon=":material/groups:",
         )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurück zum Dashboard",
+            label="Zurueck zum Dashboard",
             icon=":material/dashboard:",
         )
 
 
 def zeige_kurzanleitung() -> None:
     """Zeigt eine kurze, gut sichtbare Anleitung fuer die Arbeitsschritte."""
-    with st.expander("Kurzanleitung für diese Seite", expanded=True):
+    with st.expander("Kurzanleitung fuer diese Seite", expanded=True):
         st.markdown(
             """
-1. Lege zuerst fest, ob Wachstum vorliegt.
-2. Erfasse nur die vorhandenen Keime und bestätige jede Keimzahl anhand des Referenzbilds.
-3. Speichere die Eingabe oder berechne die Beurteilung, sobald alle Angaben vollständig sind.
-4. Mit 'Validieren und Befund öffnen' wird der Befund nur nach einer gültigen Beurteilung geöffnet.
+1. Lege zuerst fest, ob Bakterienwachstum vorliegt oder ob ausdruecklich kein Wachstum vorhanden ist.
+2. Erfasse nur dann Keime, wenn Bakterienwachstum vorhanden ist, und bestaetige jede Keimzahl anhand des Referenzbilds.
+3. Speichere die Eingabe oder berechne die Beurteilung, sobald alle Angaben vollstaendig sind.
+4. Mit 'Validieren und Befund oeffnen' wird der Befund nur nach einer gueltigen Beurteilung geoeffnet.
 """
         )
 
@@ -132,7 +135,7 @@ def zeige_befund_innerhalb_kulturen_ablesen() -> None:
 
 
 def lade_verfuegbare_patienten() -> list[Patient] | None:
-    """Lädt alle bereits erfassten Patienten für die Auswahl auf der Seite."""
+    """Laedt alle bereits erfassten Patienten fuer die Auswahl auf der Seite."""
     repository = PatientenRepository()
 
     try:
@@ -143,7 +146,7 @@ def lade_verfuegbare_patienten() -> list[Patient] | None:
 
 
 def baue_material_sortierschluessel(material: Material) -> tuple[int, int, float, str]:
-    """Erzeugt einen stabilen Sortierschlüssel für die Auswahl des bevorzugten Materials."""
+    """Erzeugt einen stabilen Sortierschluessel fuer die Auswahl des bevorzugten Materials."""
     return (
         material.eingangsdatum.toordinal(),
         material.abnahmedatum.toordinal(),
@@ -153,7 +156,7 @@ def baue_material_sortierschluessel(material: Material) -> tuple[int, int, float
 
 
 def waehle_bevorzugtes_material_fuer_patient(materialien: list[Material]) -> Material | None:
-    """Wählt für einen Patienten das zuletzt passende Material für Kulturen ablesen aus."""
+    """Waehlt fuer einen Patienten das zuletzt passende Material fuer Kulturen ablesen aus."""
     unterstuetzte_materialien = [
         material
         for material in materialien
@@ -201,7 +204,7 @@ def zeige_patientenauswahl(
     aktuelle_patient_id: str | None,
     aktuelle_material_id: str | None,
 ) -> str | None:
-    """Rendert das Dropdown für alle vorhandenen Patienten und liefert die gewählte ID."""
+    """Rendert das Dropdown fuer alle vorhandenen Patienten und liefert die gewaehlte ID."""
     patienten_nach_id = {patient.id: patient for patient in patienten}
     patienten_ids = list(patienten_nach_id.keys())
 
@@ -218,7 +221,7 @@ def zeige_patientenauswahl(
             options=patienten_ids,
             index=None,
             key=PATIENTENAUSWAHL_SCHLUESSEL,
-            placeholder="Patient auswählen",
+            placeholder="Patient auswaehlen",
             format_func=lambda patient_id: formatiere_patient_label(patienten_nach_id[patient_id]),
         )
 
@@ -230,7 +233,7 @@ def ermittle_materialkontext_fuer_patientenauswahl(
     aktueller_patient: Patient | None,
     aktuelles_material: Material | None,
 ) -> tuple[Patient, Material] | None:
-    """Lädt zum gewählten Patienten den kompatiblen Materialkontext für die Seite."""
+    """Laedt zum gewaehlten Patienten den kompatiblen Materialkontext fuer die Seite."""
     if (
         aktueller_patient is not None
         and aktuelles_material is not None
@@ -245,13 +248,13 @@ def ermittle_materialkontext_fuer_patientenauswahl(
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der ausgewählte Patient konnte nicht geladen werden."
+                "Der ausgewaehlte Patient konnte nicht geladen werden."
             )
         )
         return None
 
     if patientenakte is None:
-        st.warning("Der ausgewählte Patient wurde nicht gefunden.")
+        st.warning("Der ausgewaehlte Patient wurde nicht gefunden.")
         return None
 
     patient, materialien = patientenakte
@@ -259,14 +262,14 @@ def ermittle_materialkontext_fuer_patientenauswahl(
 
     if material is None:
         st.info(
-            f"Für {formatiere_patient_label(patient)} ist noch kein passendes Material "
-            "für 'Kulturen ablesen' erfasst."
+            f"Fuer {formatiere_patient_label(patient)} ist noch kein passendes Material "
+            "fuer 'Kulturen ablesen' erfasst."
         )
         return None
 
     if aktuelles_material is None or aktuelles_material.id != material.id:
         if not aktiviere_kulturen_ablesen(material.id):
-            st.error("Das passende Material konnte nicht für 'Kulturen ablesen' aktiviert werden.")
+            st.error("Das passende Material konnte nicht fuer 'Kulturen ablesen' aktiviert werden.")
             return None
 
         st.rerun()
@@ -294,16 +297,16 @@ def pruefe_kulturworkflow_voraussetzungen(material: Material) -> bool:
     """Prueft die Mindestvoraussetzungen fuer den Kulturworkflow des Materials."""
     if not ist_material_fuer_kulturen_ablesen_unterstuetzt(material):
         st.warning(
-            "Für dieses Material ist 'Kulturen ablesen' aktuell nicht freigeschaltet. "
-            "Unterstützt wird nur Material vom Typ 'Urin' mit der Analyse "
-            "'Allgemeine Bakteriologie'. Kehre zur Patientendetailansicht zurück, "
-            "um ein anderes Material auszuwählen oder den Fall dort weiterzubearbeiten."
+            "Fuer dieses Material ist 'Kulturen ablesen' aktuell nicht freigeschaltet. "
+            "Unterstuetzt wird nur Material vom Typ 'Urin' mit der Analyse "
+            "'Allgemeine Bakteriologie'. Kehre zur Patientendetailansicht zurueck, "
+            "um ein anderes Material auszuwaehlen oder den Fall dort weiterzubearbeiten."
         )
         return False
 
     if not hat_verfuegbare_keimzahl_codes():
         st.error(
-            "Es sind aktuell keine gültigen Keimzahl-Codes für 'Kulturen ablesen' hinterlegt."
+            "Es sind aktuell keine gueltigen Keimzahl-Codes fuer 'Kulturen ablesen' hinterlegt."
         )
         return False
 
@@ -311,7 +314,7 @@ def pruefe_kulturworkflow_voraussetzungen(material: Material) -> bool:
 
 
 def lade_und_validiere_materialkontext() -> tuple[Patient, Material] | None:
-    """Lädt Patientenliste, Auswahl und den dazu passenden Materialkontext der Seite."""
+    """Laedt Patientenliste, Auswahl und den dazu passenden Materialkontext der Seite."""
     patienten = lade_verfuegbare_patienten()
     if patienten is None:
         return None
@@ -343,7 +346,7 @@ def lade_und_validiere_materialkontext() -> tuple[Patient, Material] | None:
     )
 
     if ausgewaehlte_patient_id is None:
-        st.info("Bitte wähle einen Patienten aus, um mit 'Kulturen ablesen' zu arbeiten.")
+        st.info("Bitte waehle einen Patienten aus, um mit 'Kulturen ablesen' zu arbeiten.")
         return None
 
     materialkontext = ermittle_materialkontext_fuer_patientenauswahl(
@@ -409,7 +412,7 @@ def speichere_kulturdaten(material: Material) -> bool:
     material.kulturdaten = kulturdaten
     st.success(
         "Die Kulturdaten wurden erfolgreich gespeichert. "
-        "Die Beurteilung muss bei geänderten Eingaben neu berechnet werden."
+        "Die Beurteilung muss bei geaenderten Eingaben neu berechnet werden."
     )
     return True
 
@@ -459,7 +462,7 @@ def validiere_und_oeffne_befund(material: Material) -> UrinBeurteilung | None:
         return None
 
     if not aktiviere_befund(material.id):
-        st.error("Die Befundansicht konnte nicht geöffnet werden.")
+        st.error("Die Befundansicht konnte nicht geoeffnet werden.")
         return beurteilung
 
     st.rerun()
@@ -470,22 +473,27 @@ def zeige_kulturdatenformular(material: Material) -> None:
     """Rendert den Eingabebereich fuer Wachstum und Keime."""
     st.subheader("Kulturdaten")
     st.radio(
-        "Wachstum",
-        options=("ja", "nein"),
+        "Bakterienwachstum",
+        options=hole_wachstumsoptionen(),
         key=baue_formularschluessel(material.id, "wachstum"),
+        format_func=hole_wachstumsoption_label,
         horizontal=True,
     )
 
     if hole_wachstum(material.id):
         st.caption(
-            "Erfasse nur die vorhandenen Keime. Jede ausgewählte Keimzahl muss vor "
-            "dem Speichern oder Beurteilen anhand des Referenzbilds bestätigt werden."
+            "Erfasse nur die vorhandenen Keime. Jede ausgewaehlte Keimzahl muss vor "
+            "dem Speichern oder Beurteilen anhand des Referenzbilds bestaetigt werden."
         )
         zeige_keimeingabe(material.id)
     else:
+        st.info(
+            "Es ist ausdruecklich 'Kein Wachstum' ausgewaehlt. "
+            "Fuer dieses Material muessen keine Keime erfasst werden."
+        )
         st.caption(
-            "Bei 'nein' werden keine Keime erfasst. Die Beurteilung führt dann zu "
-            "'Kein Wachstum'."
+            "Beim Speichern, Beurteilen und im Befund wird dieser Fall als "
+            "'keine Bakterien gewachsen' weitergefuehrt."
         )
 
 
@@ -518,7 +526,7 @@ def verarbeite_aktionsbuttons(
 
     with button_spalte_rechts:
         if st.button(
-            "Validieren und Befund öffnen",
+            "Validieren und Befund oeffnen",
             type="primary",
             use_container_width=True,
         ):
@@ -537,18 +545,18 @@ def main() -> None:
 
     show_header("Kulturen ablesen")
     st.info(
-        "Diese Seite ist aktuell nur für Urin mit der Analyse "
+        "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
         "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten, Beurteilung "
         "und Befund werden nur innerhalb dieses begrenzten Demo-Workflows "
-        "unterstützt. Andere Materialien oder Analysen werden in der App "
-        "dokumentiert, aber nicht über diese Seite weiterverarbeitet."
+        "unterstuetzt. Andere Materialien oder Analysen werden in der App "
+        "dokumentiert, aber nicht ueber diese Seite weiterverarbeitet."
     )
 
     if ist_befund_aktiv():
         deaktiviere_befund()
         st.warning(
-            "Die Befundansicht konnte nicht geöffnet werden, "
-            "weil kein gültiger Materialkontext vorhanden ist."
+            "Die Befundansicht konnte nicht geoeffnet werden, "
+            "weil kein gueltiger Materialkontext vorhanden ist."
         )
 
     zeige_aktionsleiste()
