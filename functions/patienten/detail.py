@@ -83,7 +83,7 @@ def lade_patientenakte() -> tuple[Patient, list[Material]] | None:
     patient_id = st.session_state.get(PATIENTENDETAIL_ID_SCHLUESSEL)
 
     if not isinstance(patient_id, str) or not patient_id.strip():
-        st.info("Es wurde noch kein Patient ausgewaehlt.")
+        st.info("Es wurde noch kein Patient ausgewählt.")
         return None
 
     repository = PatientenRepository()

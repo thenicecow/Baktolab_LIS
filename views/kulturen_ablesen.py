@@ -174,8 +174,8 @@ def lade_und_validiere_materialkontext() -> tuple[Patient, Material] | None:
 
     if materialreferenz is None:
         st.info(
-            "Es ist aktuell kein Material fuer 'Kulturen ablesen' ausgewaehlt. "
-            "Oeffne die Seite ueber die Patientendetailansicht oder direkt nach dem "
+            "Es ist aktuell kein Material für 'Kulturen ablesen' ausgewählt. "
+            "Öffne die Seite über die Patientendetailansicht oder direkt nach dem "
             "Speichern eines passenden Materials."
         )
         return None
@@ -365,11 +365,11 @@ def main() -> None:
 
     show_header("Kulturen ablesen")
     st.info(
-        "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
+        "Diese Seite ist aktuell nur für Urin mit der Analyse "
         "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten, Beurteilung "
         "und Befund werden nur innerhalb dieses begrenzten Demo-Workflows "
-        "unterstuetzt. Andere Materialien oder Analysen werden in der App "
-        "dokumentiert, aber nicht ueber diese Seite weiterverarbeitet."
+        "unterstützt. Andere Materialien oder Analysen werden in der App "
+        "dokumentiert, aber nicht über diese Seite weiterverarbeitet."
     )
 
     if ist_befund_aktiv():

@@ -675,9 +675,9 @@ def zeige_vorschau(material_id: str) -> None:
 
         if not keime and not unbestaetigte_keime:
             if vorschau["wachstum"]:
-                st.info("Aktuell sind noch keine vollstaendigen Keimeintraege erfasst.")
+                st.info("Aktuell sind noch keine vollständigen Keimeinträge erfasst.")
             else:
-                st.info("Es ist aktuell 'kein Wachstum' ausgewaehlt.")
+                st.info("Es ist aktuell 'kein Wachstum' ausgewählt.")
             return
 
         if keime:
@@ -714,7 +714,7 @@ def zeige_beurteilung(beurteilung: UrinBeurteilung | None) -> None:
     st.subheader("Beurteilung")
 
     if beurteilung is None:
-        st.info("Fuer dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
+        st.info("Für dieses Material ist aktuell noch keine berechnete Beurteilung gespeichert.")
         return
 
     with st.container(border=True):

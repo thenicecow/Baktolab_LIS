@@ -175,7 +175,7 @@ def baue_ansatzhinweis(material: Material) -> dict[str, object]:
     }
 
     if not zeilen:
-        ansatzhinweis["hinweistext"] = "Fuer diese Kombination ist kein Ansatzhinweis definiert."
+        ansatzhinweis["hinweistext"] = "Für diese Kombination ist kein Ansatzhinweis definiert."
 
     return ansatzhinweis
 
@@ -192,4 +192,3 @@ def merke_erfolgreiche_materialspeicherung(patient: Patient, material: Material)
     )
     st.session_state.pop(PATIENTENDETAIL_AUSGEWAEHLTES_MATERIAL_ID_SCHLUESSEL, None)
     st.session_state.pop(MATERIAL_ERFASSEN_PATIENT_ID_SCHLUESSEL, None)
-

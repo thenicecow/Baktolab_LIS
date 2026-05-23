@@ -413,15 +413,15 @@ def main() -> None:
     materialreferenz = hole_material_id_fuer_befund()
     if materialreferenz is None:
         st.info(
-            "Der Befund kann nur nach einer gueltigen Validierung aus "
-            "'Kulturen ablesen' geoeffnet werden."
+            "Der Befund kann nur nach einer gültigen Validierung aus "
+            "'Kulturen ablesen' geöffnet werden."
         )
         return
 
     if not hat_gueltige_befund_route():
         st.info(
-            "Der Befund kann nur nach einer gueltigen Validierung aus "
-            "'Kulturen ablesen' geoeffnet werden."
+            "Der Befund kann nur nach einer gültigen Validierung aus "
+            "'Kulturen ablesen' geöffnet werden."
         )
         return
 
@@ -450,5 +450,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
 
