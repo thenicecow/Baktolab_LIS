@@ -1,17 +1,22 @@
-"""Hilfen fuer Pfade und Dateinamen der Patientenpersistenz."""
+"""Hilfen fuer Pfade und Dateinamen der dateibasierten App-Persistenz."""
 
 from __future__ import annotations
 
 import posixpath
 
-from persistenz.konfiguration import hole_patienten_dateiname, hole_switchdrive_data_dir
+from persistenz.konfiguration import (
+    hole_patienten_dateiname,
+    hole_resistenzmonitoring_dateiname,
+    hole_resistenzmonitoring_ordnername,
+    hole_switchdrive_data_dir,
+)
 
 
 DATEIENDUNG_PATIENTENAKTE = ".json"
 
 
 def baue_datenwurzel(fs_root_folder: str) -> str:
-    """Baut die Datenwurzel fuer die Patientendaten im Dateisystem."""
+    """Baut die Datenwurzel fuer die App-Daten im Dateisystem."""
     basisordner = fs_root_folder.strip().replace("\\", "/").strip("/")
     datenordner = hole_switchdrive_data_dir()
 
@@ -29,6 +34,24 @@ def patientendaten_dateiname() -> str:
 def patientendaten_dateipfad() -> str:
     """Liefert den relativen Pfad der zentralen Patienten-JSON-Datei."""
     return patientendaten_dateiname()
+
+
+def resistenzmonitoring_ordnername() -> str:
+    """Liefert den relativen Ordnernamen fuer das Resistenzmonitoring."""
+    return hole_resistenzmonitoring_ordnername()
+
+
+def resistenzmonitoring_dateiname() -> str:
+    """Liefert den Dateinamen der zentralen Resistenzmonitoring-JSON-Datei."""
+    return hole_resistenzmonitoring_dateiname()
+
+
+def resistenzmonitoring_dateipfad() -> str:
+    """Liefert den relativen Pfad der Resistenzmonitoring-JSON-Datei im Unterordner."""
+    return posixpath.join(
+        resistenzmonitoring_ordnername(),
+        resistenzmonitoring_dateiname(),
+    )
 
 
 def patientenakten_dateiname(patient_id: str) -> str:
@@ -65,4 +88,3 @@ def _bereinige_patient_id(patient_id: str) -> str:
         raise ValueError("Patienten-ID enthaelt ungueltige Zeichen.")
 
     return bereinigt
-
