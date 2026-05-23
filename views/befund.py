@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from datetime import date
+from pathlib import Path
 
 import streamlit as st
 
 from domaene import Material, Patient
+from functions.befund_pdf import (
+    BefundPdfDaten,
+    BefundPdfKeimblock,
+    erstelle_befund_pdf,
+)
 from functions.gemeinsam.anzeige_hilfen import (
     baue_technische_fehlernachricht,
     formatiere_datum,
@@ -36,9 +44,9 @@ from ui.header import show_header
 
 ABKUERZUNGEN: tuple[tuple[str, str], ...] = (
     ("kw", "Kein Wachstum"),
-    ("ID + Resi", "Identifikation und Resistenztestung durchführen"),
+    ("ID + Resi", "Identifikation und Resistenztestung durchfuehren"),
     ("kf", "Keimflora"),
-    ("kfzus", "Zusätzlicher Keim im Sinne von Keimflora"),
+    ("kfzus", "Zusaetzlicher Keim im Sinne von Keimflora"),
     ("uriflor", "Urinflora beziehungsweise Kontaminationsflora"),
     ("urikont", "Hinweis auf Urinkontamination"),
 )
@@ -51,6 +59,8 @@ KEIMZAHL_BESCHREIBUNGEN: dict[str, str] = {
 }
 
 ZUSATZFLORA_CODES: frozenset[str] = frozenset({"kf", "kfzus", "uriflor", "urikont"})
+PROJEKTWURZEL = Path(__file__).resolve().parent.parent
+BAKTOLOGO_PFAD = PROJEKTWURZEL / "docs" / "images" / "BAKTOLABLOGO.jpeg"
 
 
 def kehre_zu_kulturen_ablesen_zurueck() -> None:
@@ -71,7 +81,7 @@ def zeige_aktionsleiste() -> None:
 
     with linke_spalte:
         if st.button(
-            "Zurück zu Kulturen ablesen",
+            "Zurueck zu Kulturen ablesen",
             use_container_width=True,
         ):
             kehre_zu_kulturen_ablesen_zurueck()
@@ -79,14 +89,14 @@ def zeige_aktionsleiste() -> None:
     with mittlere_spalte:
         st.page_link(
             "views/patientenuebersicht.py",
-            label="Zurück zur Patientenübersicht",
+            label="Zurueck zur Patientenuebersicht",
             icon=":material/groups:",
         )
 
     with rechte_spalte:
         st.page_link(
             "views/dashboard.py",
-            label="Zurück zum Dashboard",
+            label="Zurueck zum Dashboard",
             icon=":material/dashboard:",
         )
 
@@ -104,7 +114,7 @@ def loese_abkuerzung_auf(kuerzel: str | None) -> str:
         if code == bereinigt:
             return bedeutung
 
-    return "Keine hinterlegte Erklärung vorhanden."
+    return "Keine hinterlegte Erklaerung vorhanden."
 
 
 def loese_keimzahl_auf(keimzahl_code: str | None) -> str:
@@ -278,7 +288,7 @@ def baue_zusaetzliche_flora(material: Material, beurteilung: UrinBeurteilung | N
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        return "Keine zusätzliche Flora. Es wurde kein Wachstum dokumentiert."
+        return "Keine zusaetzliche Flora. Es wurde kein Wachstum dokumentiert."
 
     beurteilungsindex = baue_beurteilungsindex(beurteilung)
     flora_beschreibungen: list[str] = []
@@ -307,7 +317,135 @@ def baue_zusaetzliche_flora(material: Material, beurteilung: UrinBeurteilung | N
         code = beurteilung.gesamtbeurteilung
         return f"{code}: {loese_abkuerzung_auf(code)}"
 
-    return "Keine zusätzliche Flora dokumentiert."
+    return "Keine zusaetzliche Flora dokumentiert."
+
+
+def hole_keimstatus(material: Material) -> str | None:
+    """Liefert denselben Keimstatus wie in der sichtbaren Befundansicht."""
+    kulturdaten = hole_kulturdaten_oder_standard(material)
+
+    if kulturdaten.wachstum is False:
+        return "Kein Wachstum"
+
+    if not kulturdaten.keime:
+        return "Noch keine Keime erfasst"
+
+    return None
+
+
+def hole_logo_pfad_fuer_pdf() -> Path | None:
+    """Liefert das vorhandene Baktolab-Logo oder ``None`` als stabilen Fallback."""
+    if BAKTOLOGO_PFAD.exists():
+        return BAKTOLOGO_PFAD
+
+    return None
+
+
+def bereinige_dateiname_segment(text: str) -> str:
+    """Bereinigt einen Text fuer die Verwendung in einem Dateinamen."""
+    normalisiert = unicodedata.normalize("NFKD", text)
+    ascii_text = normalisiert.encode("ascii", "ignore").decode("ascii")
+    bereinigt = re.sub(r"[^a-zA-Z0-9_-]+", "-", ascii_text.strip().lower())
+    bereinigt = bereinigt.strip("-")
+    return bereinigt or "befund"
+
+
+def baue_pdf_dateiname(patient: Patient) -> str:
+    """Erzeugt einen sinnvollen Dateinamen fuer den Download des aktuellen Befunds."""
+    datum_segment = date.today().isoformat()
+    nachname = bereinige_dateiname_segment(patient.nachname)
+    vorname = bereinige_dateiname_segment(patient.vorname)
+    return f"befund_{datum_segment}_{nachname}_{vorname}.pdf"
+
+
+def baue_befund_pdf_daten(
+    patient: Patient,
+    material: Material,
+    beurteilung: UrinBeurteilung | None,
+) -> BefundPdfDaten:
+    """Baut die PDF-Daten direkt aus denselben fachlichen Bausteinen wie die Befundansicht."""
+    keimbloecke = [
+        BefundPdfKeimblock(
+            ueberschrift=str(keimblock["ueberschrift"]),
+            keim=str(keimblock["keim"]),
+            keimzahl=str(keimblock["keimzahl"]),
+            resistenzempfehlung=(
+                str(keimblock["resistenzempfehlung"])
+                if keimblock["resistenzempfehlung"]
+                else None
+            ),
+            rolle=str(keimblock["rolle"]) if keimblock["rolle"] else None,
+        )
+        for keimblock in baue_keimbloecke(material, beurteilung)
+    ]
+
+    return BefundPdfDaten(
+        titel="Mikrobiologischer Befund",
+        datum=hole_befunddatum(),
+        patientenzeilen=[
+            f"Vorname: {formatiere_text(patient.vorname)}",
+            f"Nachname: {formatiere_text(patient.nachname)}",
+            f"Geburtsdatum: {formatiere_datum(patient.geburtsdatum)}",
+            f"Geschlecht: {formatiere_text(patient.geschlecht)}",
+        ],
+        befundzeilen=[
+            f"Datum: {hole_befunddatum()}",
+            f"Material: {loese_materialtyp_label_auf(material.materialtyp_code)}",
+            f"Analyse: {loese_analyse_label_auf(material.klinische_frage_code)}",
+        ],
+        einleitung=baue_einleitungssatz(material),
+        keimstatus=hole_keimstatus(material),
+        keimbloecke=keimbloecke,
+        zusaetzliche_flora=baue_zusaetzliche_flora(material, beurteilung),
+        validiert_durch=hole_aktuellen_user_id() or "Nicht verfuegbar",
+        hinweise=list(beurteilung.hinweise) if beurteilung is not None else [],
+        ausgeschriebene_abkuerzungen=list(ABKUERZUNGEN),
+        logo_pfad=hole_logo_pfad_fuer_pdf(),
+    )
+
+
+def baue_befund_pdf_bytes(
+    patient: Patient,
+    material: Material,
+    beurteilung: UrinBeurteilung | None,
+) -> bytes | None:
+    """Erzeugt den aktuellen Befund defensiv als PDF-Bytes fuer den Download."""
+    try:
+        pdf_daten = baue_befund_pdf_daten(patient, material, beurteilung)
+        return erstelle_befund_pdf(pdf_daten)
+    except Exception:
+        return None
+
+
+def zeige_pdf_downloadbereich(
+    patient: Patient,
+    material: Material,
+    beurteilung: UrinBeurteilung | None,
+) -> None:
+    """Zeigt eine klar sichtbare Download-Aktion fuer den aktuellen PDF-Befund."""
+    pdf_bytes = baue_befund_pdf_bytes(patient, material, beurteilung)
+
+    with st.container(border=True):
+        st.markdown("**PDF-Download**")
+        st.caption(
+            "Der aktuell angezeigte Befund kann als professionell formatierte PDF-Datei heruntergeladen werden."
+        )
+
+        if pdf_bytes is None:
+            st.info(
+                "Der Befund konnte aktuell nicht als PDF vorbereitet werden. "
+                "Die sichtbare Befundansicht bleibt verfuegbar."
+            )
+            return
+
+        st.download_button(
+            "Befund als PDF herunterladen",
+            data=pdf_bytes,
+            file_name=baue_pdf_dateiname(patient),
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary",
+        )
 
 
 def zeige_befundkopf(patient: Patient, material: Material) -> None:
@@ -374,7 +512,7 @@ def zeige_befundinhalt(
     """Rendert den eigentlichen Befund im Stil des Mockups."""
     material_label = loese_materialtyp_label_auf(material.materialtyp_code)
     flora_text = baue_zusaetzliche_flora(material, beurteilung)
-    validiert_durch = hole_aktuellen_user_id() or "Nicht verfügbar"
+    validiert_durch = hole_aktuellen_user_id() or "Nicht verfuegbar"
 
     with st.container(border=True):
         zeige_befundkopf(patient, material)
@@ -386,7 +524,7 @@ def zeige_befundinhalt(
 
         zeige_keimdarstellung(material, beurteilung)
 
-        st.markdown(f"**Zusätzliche Flora:** {flora_text}")
+        st.markdown(f"**Zusaetzliche Flora:** {flora_text}")
 
         if beurteilung is not None and beurteilung.hinweise:
             for hinweis in beurteilung.hinweise:
@@ -399,7 +537,7 @@ def zeige_befundinhalt(
 def zeige_ausgeschriebene_abkuerzungen() -> None:
     """Zeigt die im Befund verwendeten Abkuerzungen in einem dezenten Zusatzbereich an."""
     with st.container(border=True):
-        st.caption("Ausgeschriebene Abkürzungen")
+        st.caption("Ausgeschriebene Abkuerzungen")
 
         for code, bedeutung in ABKUERZUNGEN:
             st.markdown(f"`{code}`: {bedeutung}")
@@ -413,15 +551,15 @@ def main() -> None:
     materialreferenz = hole_material_id_fuer_befund()
     if materialreferenz is None:
         st.info(
-            "Der Befund kann nur nach einer gültigen Validierung aus "
-            "'Kulturen ablesen' geöffnet werden."
+            "Der Befund kann nur nach einer gueltigen Validierung aus "
+            "'Kulturen ablesen' geoeffnet werden."
         )
         return
 
     if not hat_gueltige_befund_route():
         st.info(
-            "Der Befund kann nur nach einer gültigen Validierung aus "
-            "'Kulturen ablesen' geöffnet werden."
+            "Der Befund kann nur nach einer gueltigen Validierung aus "
+            "'Kulturen ablesen' geoeffnet werden."
         )
         return
 
@@ -430,20 +568,21 @@ def main() -> None:
     except Exception:
         st.error(
             baue_technische_fehlernachricht(
-                "Der Befund konnte für das ausgewählte Material nicht geladen werden."
+                "Der Befund konnte fuer das ausgewaehlte Material nicht geladen werden."
             )
         )
         return
 
     if materialkontext is None:
         st.warning(
-            "Zum aktuellen Befund konnte kein gültiger Materialkontext gefunden werden."
+            "Zum aktuellen Befund konnte kein gueltiger Materialkontext gefunden werden."
         )
         return
 
     patient, material = materialkontext
     beurteilung = baue_beurteilung_fuer_befund(material)
 
+    zeige_pdf_downloadbereich(patient, material, beurteilung)
     zeige_befundinhalt(patient, material, beurteilung)
     zeige_ausgeschriebene_abkuerzungen()
 
