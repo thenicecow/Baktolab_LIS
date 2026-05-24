@@ -19,6 +19,12 @@ ROLLEN: tuple[str, ...] = ("pathogen", "kontaminante")
 KEIMZAHL_CODES: tuple[str, ...] = tuple(
     code for code in ("k4", "p4", "p5", "g5") if code in ERLAUBTE_KEIMZAHL_CODES
 )
+KEIMZAHL_LABELS: dict[str, str] = {
+    "k4": "k4 (< 10'000 KBE)",
+    "p4": "p4 (10'000 KBE)",
+    "p5": "p5 (100'000 KBE)",
+    "g5": "g5 (> 100'000 KBE)",
+}
 KEIM_ROLLEN_NACH_KEIM: dict[str, str] = {
     "Escherichia coli": "pathogen",
     "Klebsiella pneumoniae": "pathogen",
@@ -44,10 +50,10 @@ KEIN_WACHSTUM_OPTION = "kein_wachstum"
 PROJEKTWURZEL = Path(__file__).resolve().parent.parent.parent
 REFERENZBILD_ORDNER = PROJEKTWURZEL / "assets" / "referenzbilder"
 REFERENZBILD_DATEIBASEN: dict[str, str] = {
-    "k4": "k4",
-    "p4": "p4",
-    "p5": "p5",
-    "g5": "g5",
+    "k4": "k4 (< 10'000 KBE)",
+    "p4": "p4 (10'000 KBE)",
+    "p5": "p5 (100'000 KBE)",
+    "g5": "g5 (> 100'000 KBE)",
 }
 REFERENZBILD_TITEL: dict[str, str] = {
     "k4": "Referenzbild K4",
@@ -57,6 +63,11 @@ REFERENZBILD_TITEL: dict[str, str] = {
 }
 REFERENZBILD_ENDUNGEN: tuple[str, ...] = (".png", ".jpg", ".jpeg")
 REFERENZBILD_BREITE_PIXEL = 140
+
+
+def formatiere_keimzahl_code(code: str) -> str:
+    """Liefert die sichtbare Beschriftung fuer einen Keimzahl-Code."""
+    return KEIMZAHL_LABELS.get(code, code.upper())
 
 
 def hat_verfuegbare_keimzahl_codes() -> bool:
@@ -590,10 +601,10 @@ def zeige_keimzahl_bestaetigung(material_id: str, index: int) -> None:
         )
 
         if ist_keimzahl_bestaetigt(material_id, index):
-            st.success(f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist bestaetigt.")
+            st.success(f"Die Keimzahl {formatiere_keimzahl_code(ausgewaehlte_keimzahl)} ist bestaetigt.")
         else:
             st.warning(
-                f"Die Keimzahl {ausgewaehlte_keimzahl.upper()} ist noch nicht bestaetigt "
+                f"Die Keimzahl {formatiere_keimzahl_code(ausgewaehlte_keimzahl)} ist noch nicht bestaetigt "
                 "und wird noch nicht gespeichert oder beurteilt."
             )
 
@@ -702,8 +713,15 @@ def zeige_keimeingabe(material_id: str) -> None:
                     options=list(KEIMZAHL_CODES),
                     key=baue_formularschluessel(material.id, f"keimzahl_code_{index}")
                     if False else baue_formularschluessel(material_id, f"keimzahl_code_{index}"),
+                    format_func=formatiere_keimzahl_code,
                     on_change=setze_keimzahl_als_unbestaetigt,
                     args=(material_id, index),
+                )
+                st.caption(
+                    "Bedeutung: k4 = < 10'000 Koloniebildende Einheiten, "
+                    "p4 = 10'000 Koloniebildende Einheiten, "
+                    "p5 = 100'000 Koloniebildende Einheiten, "
+                    "g5 = > 100'000 Koloniebildende Einheiten."
                 )
 
             with rechte_spalte:
