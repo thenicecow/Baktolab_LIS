@@ -168,6 +168,7 @@ def main() -> None:
             eingangsdatum = st.date_input(
                 "Eingangsdatum",
                 value=date.today(),
+                min_value=abnahmedatum,
                 max_value=date.today(),
                 format="DD.MM.YYYY",
             )
