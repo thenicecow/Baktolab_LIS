@@ -40,6 +40,120 @@ def ist_direkter_kulturworkflow(materialtyp_code: str, analyse_code: str) -> boo
     )
 
 
+def zeige_design_css() -> None:
+    """Ergänzt kleine lokale Styles für diese Seite."""
+    st.markdown(
+        """
+        <style>
+        .material-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 1.1rem 1.2rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+            min-height: 118px;
+        }
+
+        .material-card-title {
+            font-size: 0.82rem;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .material-card-value {
+            font-size: 1.9rem;
+            color: #1d4ed8;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .material-card-caption {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-top: 0.35rem;
+        }
+
+        .workflow-box {
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            border: 1px solid #bfdbfe;
+            background: #f8fbff;
+            margin-top: 0.7rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .workflow-active {
+            border-left: 7px solid #22c55e;
+        }
+
+        .workflow-inactive {
+            border-left: 7px solid #f59e0b;
+        }
+
+        .workflow-label {
+            font-size: 0.82rem;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .workflow-title {
+            font-size: 1.15rem;
+            color: #0f172a;
+            font-weight: 800;
+            margin-bottom: 0.2rem;
+        }
+
+        .workflow-text {
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .date-check {
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .date-check-good {
+            border-left: 7px solid #22c55e;
+        }
+
+        .date-check-info {
+            border-left: 7px solid #3b82f6;
+        }
+
+        .mini-section-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1d4ed8;
+            margin-top: 1.2rem;
+            margin-bottom: 0.6rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_info_karte(titel: str, wert: str | int, beschreibung: str) -> None:
+    """Zeigt eine kleine optische Kennzahlenkarte."""
+    st.markdown(
+        f"""
+        <div class="material-card">
+            <div class="material-card-title">{titel}</div>
+            <div class="material-card-value">{wert}</div>
+            <div class="material-card-caption">{beschreibung}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def zeige_naechsten_schritt_hinweis(materialtyp_code: str, analyse_code: str) -> None:
     """Zeigt an, was nach dem Speichern als nächster Schritt passiert."""
     if ist_direkter_kulturworkflow(materialtyp_code, analyse_code):
@@ -77,8 +191,103 @@ def zeige_leermeldung() -> None:
         )
 
 
+def zeige_kleine_uebersicht(patienten: list[Patient]) -> None:
+    """Zeigt kleine Kennzahlen zur aktuellen Materialerfassung."""
+    st.markdown('<div class="mini-section-title">Kurzübersicht</div>', unsafe_allow_html=True)
+
+    patienten_spalte, materialtypen_spalte, analysen_spalte = st.columns(3)
+
+    with patienten_spalte:
+        zeige_info_karte(
+            titel="Verfügbare Patienten",
+            wert=len(patienten),
+            beschreibung="Patienten, für die Material erfasst werden kann.",
+        )
+
+    with materialtypen_spalte:
+        zeige_info_karte(
+            titel="Materialtypen",
+            wert=len(MATERIALTYPEN),
+            beschreibung="Auswählbare Materialarten in dieser App.",
+        )
+
+    with analysen_spalte:
+        zeige_info_karte(
+            titel="Analysen",
+            wert=len(ANALYSEN),
+            beschreibung="Verfügbare Untersuchungen für neues Material.",
+        )
+
+
+def zeige_workflow_status(materialtyp_code: str, analyse_code: str) -> None:
+    """Zeigt visuell an, ob der direkte Kulturworkflow aktiv ist."""
+    direkter_workflow = ist_direkter_kulturworkflow(materialtyp_code, analyse_code)
+
+    st.markdown('<div class="mini-section-title">Nächster Schritt</div>', unsafe_allow_html=True)
+
+    if direkter_workflow:
+        st.markdown(
+            """
+            <div class="workflow-box workflow-active">
+                <div class="workflow-label">Workflow-Status</div>
+                <div class="workflow-title">Direkter Kulturworkflow aktiv</div>
+                <div class="workflow-text">
+                    Nach dem Speichern wird automatisch die Seite
+                    <b>Kulturen ablesen</b> geöffnet.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            """
+            <div class="workflow-box workflow-inactive">
+                <div class="workflow-label">Workflow-Status</div>
+                <div class="workflow-title">Nur Speicherung ohne direkte Kulturbeurteilung</div>
+                <div class="workflow-text">
+                    Nach dem Speichern wird das Material in der Patientenakte angezeigt.
+                    Die App wechselt danach zurück zur <b>Patientenübersicht</b>.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def zeige_datumskontrolle(abnahmedatum: date, eingangsdatum: date) -> None:
+    """Zeigt eine kleine Kontrolle der Zeitspanne zwischen Abnahme und Eingang."""
+    tage_bis_eingang = (eingangsdatum - abnahmedatum).days
+
+    if tage_bis_eingang == 0:
+        css_klasse = "date-check date-check-good"
+        titel = "Materialeingang am gleichen Tag"
+        text = "Zwischen Abnahme und Eingang liegt keine Verzögerung."
+    elif tage_bis_eingang == 1:
+        css_klasse = "date-check date-check-info"
+        titel = "Zeit zwischen Abnahme und Eingang: 1 Tag"
+        text = "Die Datumsangaben sind gültig."
+    else:
+        css_klasse = "date-check date-check-info"
+        titel = f"Zeit zwischen Abnahme und Eingang: {tage_bis_eingang} Tage"
+        text = "Die Datumsangaben sind gültig."
+
+    st.markdown(
+        f"""
+        <div class="{css_klasse}">
+            <div class="workflow-label">Datumskontrolle</div>
+            <div class="workflow-title">{titel}</div>
+            <div class="workflow-text">{text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def main() -> None:
     """Rendert die Materialerfassung und bindet die Fachlogik ein."""
+    zeige_design_css()
+
     show_header("Material erfassen")
     st.write("Hier kannst du ein neues Material für einen bestehenden Patienten erfassen.")
     st.info(
@@ -97,6 +306,8 @@ def main() -> None:
     if not patienten:
         zeige_leermeldung()
         return
+
+    zeige_kleine_uebersicht(patienten)
 
     patienten_nach_id = {patient.id: patient for patient in patienten}
 
@@ -122,6 +333,8 @@ def main() -> None:
     patient_ids = [patient.id for patient in patienten]
     materialtyp_codes = [eintrag.code for eintrag in MATERIALTYPEN]
     analyse_codes = [eintrag.code for eintrag in ANALYSEN]
+
+    st.markdown('<div class="mini-section-title">Materialdaten erfassen</div>', unsafe_allow_html=True)
 
     with st.form("material_erfassen_formular"):
         if vorbelegter_patient is None:
@@ -173,6 +386,8 @@ def main() -> None:
                 format="DD.MM.YYYY",
             )
 
+        zeige_datumskontrolle(abnahmedatum, eingangsdatum)
+        zeige_workflow_status(materialtyp_code, analyse_code)
         zeige_naechsten_schritt_hinweis(materialtyp_code, analyse_code)
 
         speichern = st.form_submit_button(
