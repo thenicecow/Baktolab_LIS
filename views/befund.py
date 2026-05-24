@@ -63,6 +63,57 @@ PROJEKTWURZEL = Path(__file__).resolve().parent.parent
 BAKTOLOGO_PFAD = PROJEKTWURZEL / "docs" / "images" / "BAKTOLABLOGO.jpeg"
 
 
+def zeige_design_css() -> None:
+    """Ergaenzt kleine lokale Styles fuer eine ruhigere Befundansicht."""
+    st.markdown(
+        """
+        <style>
+        .befund-hinweis {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .befund-hinweis-titel {
+            color: #1d4ed8;
+            font-weight: 800;
+            font-size: 1.05rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .befund-hinweis-text {
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        div[data-testid="stMetric"] {
+            background: #ffffff;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            padding: 0.75rem 0.9rem;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.05);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_seitenhinweis(titel: str, text: str) -> None:
+    """Zeigt einen rein dekorativen Hinweisbereich ohne fachliche Logik."""
+    st.markdown(
+        f"""
+        <div class="befund-hinweis">
+            <div class="befund-hinweis-titel">{titel}</div>
+            <div class="befund-hinweis-text">{text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def kehre_zu_kulturen_ablesen_zurueck() -> None:
     """Beendet nur die Befundansicht und zeigt wieder die Kulturseite an."""
     deaktiviere_befund()
@@ -77,28 +128,29 @@ def kehre_zur_patientendetailansicht_zurueck() -> None:
 
 def zeige_aktionsleiste() -> None:
     """Rendert die wichtigsten Ruecksprung- und Navigationsaktionen der Befundansicht."""
-    linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
+    with st.container(border=True):
+        linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
 
-    with linke_spalte:
-        if st.button(
-            "Zurueck zu Kulturen ablesen",
-            use_container_width=True,
-        ):
-            kehre_zu_kulturen_ablesen_zurueck()
+        with linke_spalte:
+            if st.button(
+                "Zurueck zu Kulturen ablesen",
+                use_container_width=True,
+            ):
+                kehre_zu_kulturen_ablesen_zurueck()
 
-    with mittlere_spalte:
-        st.page_link(
-            "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
-            icon=":material/groups:",
-        )
+        with mittlere_spalte:
+            st.page_link(
+                "views/patientenuebersicht.py",
+                label="Zurueck zur Patientenuebersicht",
+                icon=":material/groups:",
+            )
 
-    with rechte_spalte:
-        st.page_link(
-            "views/dashboard.py",
-            label="Zurueck zum Dashboard",
-            icon=":material/dashboard:",
-        )
+        with rechte_spalte:
+            st.page_link(
+                "views/dashboard.py",
+                label="Zurueck zum Dashboard",
+                icon=":material/dashboard:",
+            )
 
 
 def loese_abkuerzung_auf(kuerzel: str | None) -> str:
@@ -426,7 +478,7 @@ def zeige_pdf_downloadbereich(
     pdf_bytes = baue_befund_pdf_bytes(patient, material, beurteilung)
 
     with st.container(border=True):
-        st.markdown("**PDF-Download**")
+        st.markdown("### PDF-Download")
         st.caption(
             "Der aktuell angezeigte Befund kann als professionell formatierte PDF-Datei heruntergeladen werden."
         )
@@ -450,28 +502,40 @@ def zeige_pdf_downloadbereich(
 
 def zeige_befundkopf(patient: Patient, material: Material) -> None:
     """Zeigt den Kopfbereich mit Patientenangaben und Datum."""
-    linke_spalte, rechte_spalte = st.columns((3, 1))
+    material_label = loese_materialtyp_label_auf(material.materialtyp_code)
+    analyse_label = loese_analyse_label_auf(material.klinische_frage_code)
 
-    with linke_spalte:
-        st.markdown("**Patientenangaben**")
-        patient_links, patient_rechts = st.columns(2)
+    st.markdown("### Patientenangaben")
+    st.caption("Stammdaten und Untersuchungsinformationen")
 
-        with patient_links:
-            st.markdown(f"**Vorname:** {formatiere_text(patient.vorname)}")
-            st.markdown(f"**Nachname:** {formatiere_text(patient.nachname)}")
+    patient_spalte, geburt_spalte, befund_spalte = st.columns(3)
 
-        with patient_rechts:
-            st.markdown(f"**Geburtsdatum:** {formatiere_datum(patient.geburtsdatum)}")
-            st.markdown(f"**Geschlecht:** {formatiere_text(patient.geschlecht)}")
+    with patient_spalte:
+        with st.container(border=True):
+            st.markdown("**Vorname**")
+            st.write(formatiere_text(patient.vorname))
 
-        st.caption(
-            "Analyse: "
-            f"{loese_analyse_label_auf(material.klinische_frage_code)}"
-        )
+            st.markdown("**Nachname**")
+            st.write(formatiere_text(patient.nachname))
 
-    with rechte_spalte:
-        st.markdown("**Datum**")
-        st.write(hole_befunddatum())
+    with geburt_spalte:
+        with st.container(border=True):
+            st.markdown("**Geburtsdatum**")
+            st.write(formatiere_datum(patient.geburtsdatum))
+
+            st.markdown("**Geschlecht**")
+            st.write(formatiere_text(patient.geschlecht))
+
+    with befund_spalte:
+        with st.container(border=True):
+            st.markdown("**Befunddatum**")
+            st.write(hole_befunddatum())
+
+            st.markdown("**Material**")
+            st.write(material_label)
+
+            st.markdown("**Analyse**")
+            st.write(analyse_label)
 
 
 def zeige_keimdarstellung(material: Material, beurteilung: UrinBeurteilung | None) -> None:
@@ -479,29 +543,41 @@ def zeige_keimdarstellung(material: Material, beurteilung: UrinBeurteilung | Non
     kulturdaten = hole_kulturdaten_oder_standard(material)
 
     if kulturdaten.wachstum is False:
-        st.markdown("**Befundlage:** In diesem Material sind keine Bakterien gewachsen.")
+        with st.container(border=True):
+            st.markdown("**Befundlage**")
+            st.success("In diesem Material sind keine Bakterien gewachsen.")
         return
 
     keimbloecke = baue_keimbloecke(material, beurteilung)
 
     if not keimbloecke:
-        st.markdown("**Keimstatus:** Noch keine Keime erfasst")
+        with st.container(border=True):
+            st.markdown("**Keimstatus**")
+            st.info("Noch keine Keime erfasst.")
         return
 
     for keimblock in keimbloecke:
         resistenzempfehlung = keimblock.get("resistenzempfehlung")
 
         with st.container(border=True):
-            st.markdown(f"**{keimblock['ueberschrift']}**")
-            st.markdown(f"**Keim:** {keimblock['keim']}")
-            st.markdown(f"**Keimzahl:** {keimblock['keimzahl']}")
+            st.markdown(f"### {keimblock['ueberschrift']}")
+
+            keim_spalte, keimzahl_spalte, rolle_spalte = st.columns(3)
+
+            with keim_spalte:
+                st.markdown("**Keim**")
+                st.write(keimblock["keim"])
+
+            with keimzahl_spalte:
+                st.markdown("**Keimzahl**")
+                st.write(keimblock["keimzahl"])
+
+            with rolle_spalte:
+                st.markdown("**Rolle**")
+                st.write(keimblock["rolle"])
 
             if isinstance(resistenzempfehlung, str) and resistenzempfehlung.strip():
-                st.markdown(
-                    f"**Resistenzempfehlung:** {resistenzempfehlung}"
-                )
-
-            st.markdown(f"**Rolle:** {keimblock['rolle']}")
+                st.info(f"**Resistenzempfehlung:** {resistenzempfehlung}")
 
 
 def zeige_befundinhalt(
@@ -509,43 +585,56 @@ def zeige_befundinhalt(
     material: Material,
     beurteilung: UrinBeurteilung | None,
 ) -> None:
-    """Rendert den eigentlichen Befund im Stil des Mockups."""
+    """Rendert den eigentlichen Befund im Stil eines Mikrobiologie-Befunds."""
     material_label = loese_materialtyp_label_auf(material.materialtyp_code)
     flora_text = baue_zusaetzliche_flora(material, beurteilung)
     validiert_durch = hole_aktuellen_user_id() or "Nicht verfuegbar"
 
     with st.container(border=True):
         zeige_befundkopf(patient, material)
+
         st.divider()
 
         st.markdown("## Mikrobiologischer Befund")
-        st.write(baue_einleitungssatz(material))
-        st.markdown(f"**Material:** {material_label}")
+
+        with st.container(border=True):
+            st.markdown("**Befundtext**")
+            st.write(baue_einleitungssatz(material))
+
+            st.markdown("**Material**")
+            st.write(material_label)
 
         zeige_keimdarstellung(material, beurteilung)
 
-        st.markdown(f"**Zusaetzliche Flora:** {flora_text}")
+        with st.container(border=True):
+            st.markdown("**Zusaetzliche Flora**")
+            st.write(flora_text)
 
         if beurteilung is not None and beurteilung.hinweise:
             for hinweis in beurteilung.hinweise:
-                st.caption(hinweis)
+                st.warning(hinweis)
 
-        st.divider()
-        st.markdown(f"**Validiert durch:** {validiert_durch}")
+        st.success(f"**Validiert durch:** {validiert_durch}")
 
 
 def zeige_ausgeschriebene_abkuerzungen() -> None:
     """Zeigt die im Befund verwendeten Abkuerzungen in einem dezenten Zusatzbereich an."""
-    with st.container(border=True):
-        st.caption("Ausgeschriebene Abkuerzungen")
-
+    with st.expander("Ausgeschriebene Abkuerzungen anzeigen"):
         for code, bedeutung in ABKUERZUNGEN:
-            st.markdown(f"`{code}`: {bedeutung}")
+            st.markdown(f"**`{code}`**: {bedeutung}")
 
 
 def main() -> None:
     """Rendert die interne Befundansicht fuer das aktuell validierte Material."""
+    zeige_design_css()
+
     show_header("Befund")
+
+    zeige_seitenhinweis(
+        titel="Mikrobiologischer Befund",
+        text="Validierte Kulturdaten werden hier strukturiert angezeigt und koennen als PDF heruntergeladen werden.",
+    )
+
     zeige_aktionsleiste()
 
     materialreferenz = hole_material_id_fuer_befund()
