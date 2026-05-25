@@ -32,11 +32,36 @@ from functions.patienten.navigation import aktiviere_patientendetailansicht
 from persistenz import PatientenRepository
 
 
+PROBENVERZOEGERUNG_WARNGRENZE_TAGE = 5
+
+
 def ist_direkter_kulturworkflow(materialtyp_code: str, analyse_code: str) -> bool:
     """Prueft, ob nach dem Speichern direkt 'Kulturen ablesen' folgt."""
     return (
         materialtyp_code == UNTERSTUETZTER_MATERIALTYP_CODE
         and analyse_code == UNTERSTUETZTER_ANALYSE_CODE
+    )
+
+
+def berechne_tage_bis_probeneingang(abnahmedatum: date, eingangsdatum: date) -> int:
+    """Berechnet die Anzahl Tage zwischen Abnahme und Probeneingang."""
+    return (eingangsdatum - abnahmedatum).days
+
+
+def hat_kritische_probenverzoegerung(abnahmedatum: date, eingangsdatum: date) -> bool:
+    """Prueft, ob zwischen Abnahme und Probeneingang eine kritische Verzoegerung liegt."""
+    tage_bis_eingang = berechne_tage_bis_probeneingang(abnahmedatum, eingangsdatum)
+    return tage_bis_eingang >= PROBENVERZOEGERUNG_WARNGRENZE_TAGE
+
+
+def baue_probenverzoegerungs_warntext(abnahmedatum: date, eingangsdatum: date) -> str:
+    """Erzeugt den Warntext fuer eine kritische Probenverzoegerung."""
+    tage_bis_eingang = berechne_tage_bis_probeneingang(abnahmedatum, eingangsdatum)
+
+    return (
+        f"Zwischen Abnahme und Probeneingang liegen {tage_bis_eingang} Tage. "
+        "Das Wachstum kann dadurch nicht zuverlässig beurteilt werden. "
+        "Dieser Hinweis sollte im Befund dokumentiert werden."
     )
 
 
@@ -91,6 +116,12 @@ def zeige_design_css() -> None:
             border-left: 7px solid #f59e0b;
         }
 
+        .workflow-warning {
+            border-left: 7px solid #dc2626;
+            border-color: #fecaca;
+            background: #fff7f7;
+        }
+
         .workflow-label {
             font-size: 0.82rem;
             color: #64748b;
@@ -127,12 +158,29 @@ def zeige_design_css() -> None:
             border-left: 7px solid #3b82f6;
         }
 
+        .date-check-warning {
+            border-left: 7px solid #dc2626;
+            border-color: #fecaca;
+            background: #fff7f7;
+        }
+
         .mini-section-title {
             font-size: 1.15rem;
             font-weight: 800;
             color: #1d4ed8;
             margin-top: 1.2rem;
             margin-bottom: 0.6rem;
+        }
+
+        .material-chip {
+            display: inline-block;
+            border: 1px solid rgba(49, 51, 63, 0.16);
+            border-radius: 999px;
+            padding: 0.25rem 0.7rem;
+            margin-right: 0.35rem;
+            margin-bottom: 0.35rem;
+            background: rgba(250,250,250,0.8);
+            font-size: 0.88rem;
         }
         </style>
         """,
@@ -256,21 +304,32 @@ def zeige_workflow_status(materialtyp_code: str, analyse_code: str) -> None:
 
 
 def zeige_datumskontrolle(abnahmedatum: date, eingangsdatum: date) -> None:
-    """Zeigt eine kleine Kontrolle der Zeitspanne zwischen Abnahme und Eingang."""
-    tage_bis_eingang = (eingangsdatum - abnahmedatum).days
+    """Zeigt eine Kontrolle der Zeitspanne zwischen Abnahme und Probeneingang."""
+    tage_bis_eingang = berechne_tage_bis_probeneingang(abnahmedatum, eingangsdatum)
 
-    if tage_bis_eingang == 0:
+    if hat_kritische_probenverzoegerung(abnahmedatum, eingangsdatum):
+        css_klasse = "date-check date-check-warning"
+        titel = f"Kritische Verzögerung: {tage_bis_eingang} Tage"
+        text = (
+            "Das Wachstum kann dadurch nicht zuverlässig beurteilt werden. "
+            "Dieser Hinweis soll im Befund sichtbar sein."
+        )
+        hinweis = baue_probenverzoegerungs_warntext(abnahmedatum, eingangsdatum)
+    elif tage_bis_eingang == 0:
         css_klasse = "date-check date-check-good"
         titel = "Materialeingang am gleichen Tag"
         text = "Zwischen Abnahme und Eingang liegt keine Verzögerung."
+        hinweis = "Die Datumsangaben sind unauffällig."
     elif tage_bis_eingang == 1:
         css_klasse = "date-check date-check-info"
         titel = "Zeit zwischen Abnahme und Eingang: 1 Tag"
         text = "Die Datumsangaben sind gültig."
+        hinweis = "Die Datumsangaben sind unauffällig."
     else:
         css_klasse = "date-check date-check-info"
         titel = f"Zeit zwischen Abnahme und Eingang: {tage_bis_eingang} Tage"
-        text = "Die Datumsangaben sind gültig."
+        text = "Die Datumsangaben sind gültig, aber die Zeitspanne sollte beachtet werden."
+        hinweis = "Die Datumsangaben sind noch unterhalb der kritischen Warnschwelle."
 
     st.markdown(
         f"""
@@ -282,6 +341,102 @@ def zeige_datumskontrolle(abnahmedatum: date, eingangsdatum: date) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+    if hat_kritische_probenverzoegerung(abnahmedatum, eingangsdatum):
+        st.warning(hinweis)
+
+
+def zeige_datumsfelder() -> tuple[date, date]:
+    """Zeigt die Datumsfelder ausserhalb eines Formulars, damit Warnungen sofort erscheinen."""
+    st.markdown('<div class="mini-section-title">Datumsangaben prüfen</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div>
+            <span class="material-chip">📅 Abnahmedatum</span>
+            <span class="material-chip">📥 Probeneingang</span>
+            <span class="material-chip">⚠️ automatische Plausibilitätsprüfung</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    linke_spalte, rechte_spalte = st.columns(2)
+
+    with linke_spalte:
+        abnahmedatum = st.date_input(
+            "Abnahmedatum",
+            value=date.today(),
+            max_value=date.today(),
+            format="DD.MM.YYYY",
+            key="material_abnahmedatum",
+        )
+
+    with rechte_spalte:
+        eingangsdatum = st.date_input(
+            "Eingangsdatum",
+            value=max(
+                abnahmedatum,
+                st.session_state.get("material_eingangsdatum", date.today()),
+            ),
+            min_value=abnahmedatum,
+            max_value=date.today(),
+            format="DD.MM.YYYY",
+            key="material_eingangsdatum",
+        )
+
+    zeige_datumskontrolle(abnahmedatum, eingangsdatum)
+
+    return abnahmedatum, eingangsdatum
+
+
+def zeige_materialauswahl(
+    patienten: list[Patient],
+    patienten_nach_id: dict[str, Patient],
+    vorbelegter_patient: Patient | None,
+) -> tuple[str | None, str, str]:
+    """Zeigt Patient, Materialtyp und Analyse als normale Widgets."""
+    patient_ids = [patient.id for patient in patienten]
+    materialtyp_codes = [eintrag.code for eintrag in MATERIALTYPEN]
+    analyse_codes = [eintrag.code for eintrag in ANALYSEN]
+
+    st.markdown('<div class="mini-section-title">Materialdaten erfassen</div>', unsafe_allow_html=True)
+
+    with st.container(border=True):
+        if vorbelegter_patient is None:
+            ausgewaehlte_patient_id = st.selectbox(
+                "Patient",
+                options=patient_ids,
+                index=None,
+                placeholder="Patient auswählen",
+                format_func=lambda patient_id: formatiere_patient_label(
+                    patienten_nach_id[patient_id]
+                ),
+                key="material_patient_id",
+            )
+        else:
+            ausgewaehlte_patient_id = vorbelegter_patient.id
+            st.text_input(
+                "Patient",
+                value=formatiere_patient_label(vorbelegter_patient),
+                disabled=True,
+            )
+
+        materialtyp_code = st.selectbox(
+            "Materialtyp",
+            options=materialtyp_codes,
+            format_func=loese_materialtyp_label_auf,
+            key="material_materialtyp_code",
+        )
+
+        analyse_code = st.selectbox(
+            "Analyse",
+            options=analyse_codes,
+            format_func=loese_analyse_label_auf,
+            key="material_analyse_code",
+        )
+
+    return ausgewaehlte_patient_id, materialtyp_code, analyse_code
 
 
 def main() -> None:
@@ -330,71 +485,22 @@ def main() -> None:
         )
         st.caption(f"Patienten-ID: {vorbelegter_patient.id}")
 
-    patient_ids = [patient.id for patient in patienten]
-    materialtyp_codes = [eintrag.code for eintrag in MATERIALTYPEN]
-    analyse_codes = [eintrag.code for eintrag in ANALYSEN]
+    ausgewaehlte_patient_id, materialtyp_code, analyse_code = zeige_materialauswahl(
+        patienten=patienten,
+        patienten_nach_id=patienten_nach_id,
+        vorbelegter_patient=vorbelegter_patient,
+    )
 
-    st.markdown('<div class="mini-section-title">Materialdaten erfassen</div>', unsafe_allow_html=True)
+    abnahmedatum, eingangsdatum = zeige_datumsfelder()
 
-    with st.form("material_erfassen_formular"):
-        if vorbelegter_patient is None:
-            ausgewaehlte_patient_id = st.selectbox(
-                "Patient",
-                options=patient_ids,
-                index=None,
-                placeholder="Patient auswählen",
-                format_func=lambda patient_id: formatiere_patient_label(
-                    patienten_nach_id[patient_id]
-                ),
-            )
-        else:
-            ausgewaehlte_patient_id = vorbelegter_patient.id
-            st.text_input(
-                "Patient",
-                value=formatiere_patient_label(vorbelegter_patient),
-                disabled=True,
-            )
+    zeige_workflow_status(materialtyp_code, analyse_code)
+    zeige_naechsten_schritt_hinweis(materialtyp_code, analyse_code)
 
-        materialtyp_code = st.selectbox(
-            "Materialtyp",
-            options=materialtyp_codes,
-            format_func=loese_materialtyp_label_auf,
-        )
-
-        analyse_code = st.selectbox(
-            "Analyse",
-            options=analyse_codes,
-            format_func=loese_analyse_label_auf,
-        )
-
-        linke_spalte, rechte_spalte = st.columns(2)
-
-        with linke_spalte:
-            abnahmedatum = st.date_input(
-                "Abnahmedatum",
-                value=date.today(),
-                max_value=date.today(),
-                format="DD.MM.YYYY",
-            )
-
-        with rechte_spalte:
-            eingangsdatum = st.date_input(
-                "Eingangsdatum",
-                value=date.today(),
-                min_value=abnahmedatum,
-                max_value=date.today(),
-                format="DD.MM.YYYY",
-            )
-
-        zeige_datumskontrolle(abnahmedatum, eingangsdatum)
-        zeige_workflow_status(materialtyp_code, analyse_code)
-        zeige_naechsten_schritt_hinweis(materialtyp_code, analyse_code)
-
-        speichern = st.form_submit_button(
-            "Material speichern",
-            type="primary",
-            use_container_width=True,
-        )
+    speichern = st.button(
+        "Material speichern",
+        type="primary",
+        use_container_width=True,
+    )
 
     if speichern:
         if ausgewaehlte_patient_id is None:
@@ -414,6 +520,14 @@ def main() -> None:
             if ergebnis is not None:
                 patient, material = ergebnis
                 merke_erfolgreiche_materialspeicherung(patient, material)
+
+                if hat_kritische_probenverzoegerung(abnahmedatum, eingangsdatum):
+                    st.warning(
+                        baue_probenverzoegerungs_warntext(
+                            abnahmedatum=abnahmedatum,
+                            eingangsdatum=eingangsdatum,
+                        )
+                    )
 
                 if not aktiviere_patientendetailansicht(patient.id):
                     st.error("Die Patientendetailansicht konnte nicht geöffnet werden.")

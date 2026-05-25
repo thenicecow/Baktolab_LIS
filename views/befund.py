@@ -62,6 +62,8 @@ ZUSATZFLORA_CODES: frozenset[str] = frozenset({"kf", "kfzus", "uriflor", "urikon
 PROJEKTWURZEL = Path(__file__).resolve().parent.parent
 BAKTOLOGO_PFAD = PROJEKTWURZEL / "docs" / "images" / "BAKTOLABLOGO.jpeg"
 
+PROBENVERZOEGERUNG_WARNGRENZE_TAGE = 5
+
 
 def zeige_design_css() -> None:
     """Ergaenzt kleine lokale Styles fuer eine ruhigere Befundansicht."""
@@ -86,6 +88,17 @@ def zeige_design_css() -> None:
         .befund-hinweis-text {
             color: #475569;
             font-size: 0.9rem;
+        }
+
+        .abnahmedatum-kritisch {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        .abnahmedatum-warnhinweis {
+            color: #dc2626;
+            font-size: 0.85rem;
+            font-weight: 650;
         }
 
         div[data-testid="stMetric"] {
@@ -184,6 +197,50 @@ def loese_keimzahl_auf(keimzahl_code: str | None) -> str:
 def hole_befunddatum() -> str:
     """Liefert das anzuzeigende Befunddatum."""
     return formatiere_datum(date.today())
+
+
+def berechne_tage_bis_probeneingang(material: Material) -> int:
+    """Berechnet die Anzahl Tage zwischen Abnahme und Probeneingang."""
+    return (material.eingangsdatum - material.abnahmedatum).days
+
+
+def ist_abnahmedatum_kritisch(material: Material) -> bool:
+    """Prueft, ob das Abnahmedatum im Vergleich zum Probeneingang kritisch alt ist."""
+    return berechne_tage_bis_probeneingang(material) >= PROBENVERZOEGERUNG_WARNGRENZE_TAGE
+
+
+def baue_abnahmedatum_darstellung(material: Material) -> str:
+    """Markiert das Abnahmedatum rot, wenn die Probe kritisch lange unterwegs war."""
+    abnahmedatum_text = formatiere_datum(material.abnahmedatum)
+
+    if not ist_abnahmedatum_kritisch(material):
+        return abnahmedatum_text
+
+    tage = berechne_tage_bis_probeneingang(material)
+
+    return (
+        f"<span class='abnahmedatum-kritisch'>{abnahmedatum_text}</span><br>"
+        f"<span class='abnahmedatum-warnhinweis'>"
+        f"⚠️ {tage} Tage bis Probeneingang</span>"
+    )
+
+
+def baue_abnahmedatum_warntext(material: Material) -> str:
+    """Erzeugt den Warntext fuer eine kritische Probenverzoegerung."""
+    tage = berechne_tage_bis_probeneingang(material)
+
+    return (
+        f"Hinweis zur Präanalytik: Zwischen Abnahme und Probeneingang liegen "
+        f"{tage} Tage. Das Wachstum kann dadurch nicht zuverlässig beurteilt werden."
+    )
+
+
+def zeige_abnahmedatum_warnung(material: Material) -> None:
+    """Zeigt einen Warnhinweis, wenn die Probe kritisch lange unterwegs war."""
+    if not ist_abnahmedatum_kritisch(material):
+        return
+
+    st.warning(baue_abnahmedatum_warntext(material))
 
 
 def baue_beurteilung_fuer_befund(material: Material) -> UrinBeurteilung | None:
@@ -431,6 +488,11 @@ def baue_befund_pdf_daten(
         for keimblock in baue_keimbloecke(material, beurteilung)
     ]
 
+    hinweise = list(beurteilung.hinweise) if beurteilung is not None else []
+
+    if ist_abnahmedatum_kritisch(material):
+        hinweise.append(baue_abnahmedatum_warntext(material))
+
     return BefundPdfDaten(
         titel="Mikrobiologischer Befund",
         datum=hole_befunddatum(),
@@ -444,13 +506,15 @@ def baue_befund_pdf_daten(
             f"Datum: {hole_befunddatum()}",
             f"Material: {loese_materialtyp_label_auf(material.materialtyp_code)}",
             f"Analyse: {loese_analyse_label_auf(material.klinische_frage_code)}",
+            f"Abnahmedatum: {formatiere_datum(material.abnahmedatum)}",
+            f"Eingangsdatum: {formatiere_datum(material.eingangsdatum)}",
         ],
         einleitung=baue_einleitungssatz(material),
         keimstatus=hole_keimstatus(material),
         keimbloecke=keimbloecke,
         zusaetzliche_flora=baue_zusaetzliche_flora(material, beurteilung),
         validiert_durch=hole_aktuellen_user_id() or "Nicht verfuegbar",
-        hinweise=list(beurteilung.hinweise) if beurteilung is not None else [],
+        hinweise=hinweise,
         ausgeschriebene_abkuerzungen=list(ABKUERZUNGEN),
         logo_pfad=hole_logo_pfad_fuer_pdf(),
     )
@@ -501,14 +565,14 @@ def zeige_pdf_downloadbereich(
 
 
 def zeige_befundkopf(patient: Patient, material: Material) -> None:
-    """Zeigt den Kopfbereich mit Patientenangaben und Datum."""
+    """Zeigt den Kopfbereich mit Patientenangaben, Materialdaten und Datum."""
     material_label = loese_materialtyp_label_auf(material.materialtyp_code)
     analyse_label = loese_analyse_label_auf(material.klinische_frage_code)
 
     st.markdown("### Patientenangaben")
     st.caption("Stammdaten und Untersuchungsinformationen")
 
-    patient_spalte, geburt_spalte, befund_spalte = st.columns(3)
+    patient_spalte, geburt_spalte, befund_spalte, material_spalte = st.columns(4)
 
     with patient_spalte:
         with st.container(border=True):
@@ -536,6 +600,19 @@ def zeige_befundkopf(patient: Patient, material: Material) -> None:
 
             st.markdown("**Analyse**")
             st.write(analyse_label)
+
+    with material_spalte:
+        with st.container(border=True):
+            st.markdown("**Abnahmedatum**")
+            st.markdown(
+                baue_abnahmedatum_darstellung(material),
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("**Eingangsdatum**")
+            st.write(formatiere_datum(material.eingangsdatum))
+
+    zeige_abnahmedatum_warnung(material)
 
 
 def zeige_keimdarstellung(material: Material, beurteilung: UrinBeurteilung | None) -> None:
