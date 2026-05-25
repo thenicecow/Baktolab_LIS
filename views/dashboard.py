@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import streamlit as st
 
 from functions.dashboard.logik import (
@@ -19,11 +21,46 @@ from ui.header import show_header
 STANDARD_AKZENTFARBE = "#2563EB"
 
 
+@dataclass(frozen=True)
+class DashboardZusatzkarte:
+    """Beschreibt eine zusätzliche Dashboard-Aktionskarte."""
+
+    titel: str
+    beschreibung: str
+    seitenpfad: str
+    icon: str
+    color: str
+    button_text: str = "Öffnen"
+    button_typ: str = "secondary"
+
+
 def zeige_dashboard_design_css() -> None:
     """Ergaenzt lokale Styles fuer zusaetzliche Dashboard-Bereiche."""
     st.markdown(
         """
         <style>
+        .dashboard-intro-box {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            border: 1px solid #bfdbfe;
+            border-left: 7px solid #2563eb;
+            border-radius: 16px;
+            padding: 1rem 1.15rem;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-intro-title {
+            color: #1d4ed8;
+            font-weight: 850;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .dashboard-intro-text {
+            color: #475569;
+            font-size: 0.92rem;
+            line-height: 1.45;
+        }
+
         .workflow-card {
             background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
             border: 1px solid #bfdbfe;
@@ -54,29 +91,6 @@ def zeige_dashboard_design_css() -> None:
         }
 
         .workflow-card-text {
-            color: #475569;
-            font-size: 0.9rem;
-            line-height: 1.45;
-        }
-
-        .dashboard-help-box {
-            background: #f8fbff;
-            border: 1px solid #dbeafe;
-            border-left: 6px solid #2563eb;
-            border-radius: 16px;
-            padding: 0.95rem 1.1rem;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .dashboard-help-title {
-            color: #1d4ed8;
-            font-weight: 850;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .dashboard-help-text {
             color: #475569;
             font-size: 0.9rem;
             line-height: 1.45;
@@ -145,6 +159,22 @@ def zeige_dashboard_design_css() -> None:
     )
 
 
+def zeige_intro(anzeige_name: str) -> None:
+    """Zeigt eine kurze Einfuehrung ins Dashboard."""
+    st.markdown(
+        f"""
+        <div class="dashboard-intro-box">
+            <div class="dashboard-intro-title">Willkommen, {anzeige_name}</div>
+            <div class="dashboard-intro-text">
+                Das Dashboard zeigt den Laborworkflow und bietet direkten Zugriff auf die wichtigsten
+                Bereiche der App.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def zeige_workflow_schritt(
     nummer: int,
     titel: str,
@@ -164,7 +194,7 @@ def zeige_workflow_schritt(
 
 
 def zeige_workflow_uebersicht() -> None:
-    """Zeigt einen stabilen, fachlichen Workflow-Ueberblick ohne fehleranfaellige Zaehllogik."""
+    """Zeigt einen stabilen, fachlichen Workflow-Ueberblick mit integrierter Status-Legende."""
     st.markdown("### Workflow-Übersicht")
 
     spalte_1, spalte_2, spalte_3, spalte_4 = st.columns(4)
@@ -173,159 +203,32 @@ def zeige_workflow_uebersicht() -> None:
         zeige_workflow_schritt(
             nummer=1,
             titel="Patient erfassen",
-            beschreibung=(
-                "Stammdaten aufnehmen und eine eindeutige Patientenakte erstellen."
-            ),
+            beschreibung="Stammdaten aufnehmen und eine eindeutige Patientenakte erstellen.",
         )
 
     with spalte_2:
         zeige_workflow_schritt(
             nummer=2,
             titel="Material erfassen",
-            beschreibung=(
-                "Probe einem Patienten zuordnen, Materialtyp wählen und Datumsangaben prüfen."
-            ),
+            beschreibung="Probe einem Patienten zuordnen, Materialtyp wählen und Datumsangaben prüfen.",
         )
 
     with spalte_3:
         zeige_workflow_schritt(
             nummer=3,
             titel="Kulturen ablesen",
-            beschreibung=(
-                "Wachstum, Keim, Keimzahl und Rolle erfassen und fachlich beurteilen."
-            ),
+            beschreibung="Wachstum, Keim, Keimzahl und Rolle erfassen und fachlich beurteilen.",
         )
 
     with spalte_4:
         zeige_workflow_schritt(
             nummer=4,
             titel="Befund exportieren",
-            beschreibung=(
-                "Validierte Kulturdaten prüfen und den mikrobiologischen Befund als PDF herunterladen."
-            ),
+            beschreibung="Validierte Kulturdaten prüfen und den mikrobiologischen Befund als PDF herunterladen.",
         )
-
-
-def zeige_hilfe_glossar_hinweis() -> None:
-    """Zeigt einen dezenten Hinweis auf die Hilfe- und Glossarseite."""
-    linke_spalte, rechte_spalte = st.columns((3, 1))
-
-    with linke_spalte:
-        st.markdown(
-            """
-            <div class="dashboard-help-box">
-                <div class="dashboard-help-title">Hilfe & Glossar</div>
-                <div class="dashboard-help-text">
-                    Fachbegriffe, Keimzahl-Codes, Abkürzungen und der BaktoLab-Workflow
-                    sind auf einer eigenen Hilfeseite zusammengefasst.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with rechte_spalte:
-        st.write("")
-        st.write("")
-        st.page_link(
-            "views/hilfe_glossar.py",
-            label="Hilfe öffnen",
-            icon=":material/help:",
-        )
-
-
-def zeige_demofall_wertkarte(titel: str, werte: list[tuple[str, str]]) -> None:
-    """Rendert eine kompakte Karte mit Demo-Falldaten."""
-    html_werte = ""
-
-    for label, wert in werte:
-        html_werte += f"""
-        <div class="demo-label">{label}</div>
-        <div class="demo-value">{wert}</div>
-        """
-
-    st.markdown(
-        f"""
-        <div class="demo-mini-card">
-            <div class="demo-mini-title">{titel}</div>
-            {html_werte}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def zeige_demofall() -> None:
-    """Zeigt einen weniger prominenten Demo-Fall fuer neue Benutzer."""
-    with st.expander("Demo-Fall für neue Benutzer anzeigen"):
-        st.caption(
-            "Diese Beispielwerte werden nur angezeigt und nicht automatisch gespeichert. "
-            "Sie helfen neuen Benutzern, den BaktoLab-Workflow Schritt für Schritt nachzuvollziehen."
-        )
-
-        patient_spalte, material_spalte, kultur_spalte = st.columns(3)
-
-        with patient_spalte:
-            zeige_demofall_wertkarte(
-                titel="Patient",
-                werte=[
-                    ("Vorname", "Max"),
-                    ("Nachname", "Muster"),
-                    ("Geburtsdatum", "12.04.1985"),
-                    ("Geschlecht", "Männlich"),
-                ],
-            )
-
-        with material_spalte:
-            zeige_demofall_wertkarte(
-                titel="Material",
-                werte=[
-                    ("Materialtyp", "Urin"),
-                    ("Analyse", "Allgemeine Bakteriologie"),
-                    ("Abnahmedatum", "heutiges Datum"),
-                    ("Eingangsdatum", "heutiges Datum"),
-                ],
-            )
-
-        with kultur_spalte:
-            zeige_demofall_wertkarte(
-                titel="Kulturdaten",
-                werte=[
-                    ("Wachstum", "Ja"),
-                    ("Keim", "Escherichia coli"),
-                    ("Keimzahl", "p5 = 100'000 KBE/ml"),
-                    ("Erwartung", "ID + Resi"),
-                ],
-            )
-
-        st.caption(
-            "Empfohlener Ablauf: Patient erfassen → Material erfassen → Kulturen ablesen "
-            "→ Beurteilung berechnen → validieren → Befund als PDF herunterladen."
-        )
-
-        linke_spalte, rechte_spalte = st.columns(2)
-
-        with linke_spalte:
-            if st.button(
-                "Patient erfassen starten",
-                use_container_width=True,
-                key="dashboard_demo_patient_starten",
-            ):
-                st.switch_page("views/patienten_erfassen.py")
-
-        with rechte_spalte:
-            st.page_link(
-                "views/material_erfassen.py",
-                label="Material erfassen öffnen",
-                icon=":material/science:",
-            )
-
-
-def zeige_status_legende() -> None:
-    """Zeigt eine einfache Status-Legende fuer den Workflow."""
-    st.markdown("### Status-Legende")
 
     with st.container(border=True):
+        st.markdown("**Status-Legende**")
         st.markdown(
             """
             <span class="status-chip chip-lila">Patient erfasst</span>
@@ -337,9 +240,136 @@ def zeige_status_legende() -> None:
         )
 
         st.caption(
-            "Die Legende dient als Orientierung für den Ablauf. "
-            "Die tatsächliche Bearbeitung erfolgt über die Hauptaktionen unten."
+            "Der genaue Bearbeitungsstand aller Fälle ist über den Fallstatus sichtbar."
         )
+
+
+def hole_zusaetzliche_hauptaktionskarten() -> list[DashboardZusatzkarte]:
+    """Liefert zusätzliche Hauptaktionen."""
+    return [
+        DashboardZusatzkarte(
+            titel="Patientenübersicht",
+            beschreibung=(
+                "Zeigt alle erfassten Patienten, ermöglicht Suche, Detailansicht, "
+                "Bearbeitung und sichere Löschaktion."
+            ),
+            seitenpfad="views/patientenuebersicht.py",
+            icon=":material/people:",
+            color="#2563EB",
+            button_text="Übersicht öffnen",
+            button_typ="primary",
+        ),
+        DashboardZusatzkarte(
+            titel="Kulturen ablesen",
+            beschreibung=(
+                "Öffnet den Kulturworkflow für unterstützte Urinmaterialien mit "
+                "Allgemeiner Bakteriologie."
+            ),
+            seitenpfad="views/kulturen_ablesen.py",
+            icon=":material/biotech:",
+            color="#16A34A",
+            button_text="Kulturen öffnen",
+            button_typ="secondary",
+        ),
+    ]
+
+
+def hole_zusaetzliche_nebenaktionskarten() -> list[DashboardZusatzkarte]:
+    """Liefert zusätzliche weitere Aktionen."""
+    return [
+        DashboardZusatzkarte(
+            titel="Fallstatus",
+            beschreibung=(
+                "Zeigt den aktuellen Bearbeitungsstand aller Patientenfälle mit Material, "
+                "Kulturstatus, Befundstatus und nächstem Schritt."
+            ),
+            seitenpfad="views/fallstatus.py",
+            icon=":material/fact_check:",
+            color="#22C55E",
+            button_text="Fallstatus öffnen",
+            button_typ="primary",
+        ),
+        DashboardZusatzkarte(
+            titel="Hilfe & Glossar",
+            beschreibung=(
+                "Erklärt Fachbegriffe, Keimzahl-Codes, Abkürzungen und den BaktoLab-Workflow."
+            ),
+            seitenpfad="views/hilfe_glossar.py",
+            icon=":material/help:",
+            color="#7C3AED",
+            button_text="Hilfe öffnen",
+            button_typ="secondary",
+        ),
+    ]
+
+
+def zeige_zusatzaktionskarte(karte: DashboardZusatzkarte, kompakt: bool = False) -> None:
+    """Rendert eine zusätzliche Aktionskarte im farbigen Dashboard-Stil."""
+    akzentfarbe = karte.color or STANDARD_AKZENTFARBE
+    hintergrundfarbe = f"{akzentfarbe}18"
+    icon_groesse = "2rem" if kompakt else "2.4rem"
+    titel_groesse = "1.35rem" if kompakt else "2rem"
+    text_min_hoehe = "5.3rem" if kompakt else "4.5rem"
+    border_top = "0.35rem" if kompakt else "0.45rem"
+    border_left = "0.3rem" if kompakt else "0.35rem"
+    icon_html = ""
+
+    if karte.icon:
+        icon_name = karte.icon[len(":material/"):-1]
+        icon_html = (
+            f"<span class='material-icons' style='font-size: {icon_groesse}; display:block; "
+            f"margin: 0 auto 0.55rem; color: {akzentfarbe};'>{icon_name}</span>"
+        )
+
+    with st.container(border=True):
+        st.markdown(
+            f"""
+            <div style="
+                background: linear-gradient(180deg, {hintergrundfarbe} 0%, #ffffff 92%);
+                border-top: {border_top} solid {akzentfarbe};
+                border-left: {border_left} solid {akzentfarbe};
+                border-radius: 14px;
+                padding: 1rem 0.9rem 0.9rem 0.9rem;
+                margin-bottom: 0.75rem;
+            ">
+                <div style="text-align: center;">
+                    {icon_html}
+                    <div style="
+                        font-size: {titel_groesse};
+                        font-weight: 700;
+                        line-height: 1.2;
+                        color: {akzentfarbe};
+                    ">
+                        {karte.titel}
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f"""
+            <div style="
+                color: #475569;
+                min-height: {text_min_hoehe};
+                line-height: 1.5;
+                margin-bottom: 0.55rem;
+                font-size: 0.95rem;
+            ">
+                {karte.beschreibung}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if st.button(
+            karte.button_text,
+            use_container_width=True,
+            type=karte.button_typ,
+            key=f"dashboard_zusatzaktion_{karte.titel}",
+        ):
+            st.switch_page(karte.seitenpfad)
 
 
 def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
@@ -382,6 +412,7 @@ def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
             """,
             unsafe_allow_html=True,
         )
+
         st.markdown(
             f"""
             <div style="
@@ -445,6 +476,7 @@ def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
             """,
             unsafe_allow_html=True,
         )
+
         st.markdown(
             f"""
             <div style="
@@ -469,6 +501,134 @@ def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
             st.switch_page(karte.seitenpfad)
 
 
+def zeige_hauptaktionen() -> None:
+    """Zeigt Hauptaktionen mit bestehenden und zusätzlich gewünschten Karten."""
+    st.markdown("### Hauptaktionen")
+
+    hauptaktionen = list(hole_hauptaktionskarten())
+    zusatzkarten = hole_zusaetzliche_hauptaktionskarten()
+
+    alle_karten = hauptaktionen + zusatzkarten
+
+    for start in range(0, len(alle_karten), 2):
+        spalten = st.columns(2)
+        kartenpaar = alle_karten[start : start + 2]
+
+        for spalte, karte in zip(spalten, kartenpaar):
+            with spalte:
+                if isinstance(karte, DashboardZusatzkarte):
+                    zeige_zusatzaktionskarte(karte, kompakt=False)
+                else:
+                    zeige_hauptaktionskarte(karte)
+
+
+def ist_kulturen_ablesen_karte(karte: DashboardAktionskarte) -> bool:
+    """Prueft, ob eine Karte auf Kulturen ablesen verweist."""
+    titel = str(getattr(karte, "titel", "")).strip().casefold()
+    seitenpfad = str(getattr(karte, "seitenpfad", "")).strip().casefold()
+
+    return titel == "kulturen ablesen" or seitenpfad == "views/kulturen_ablesen.py"
+
+
+def zeige_weitere_aktionen() -> None:
+    """Zeigt weitere Aktionen inklusive Fallstatus und Hilfe, ohne doppelte Kulturkarte."""
+    st.markdown("### Weitere Aktionen")
+
+    zusatzkarten = hole_zusaetzliche_nebenaktionskarten()
+
+    nebenaktionen = [
+        karte
+        for karte in hole_nebenaktionskarten()
+        if not ist_kulturen_ablesen_karte(karte)
+    ]
+
+    alle_karten = zusatzkarten + nebenaktionen
+
+    if not alle_karten:
+        return
+
+    spalten = st.columns(len(alle_karten))
+
+    for spalte, karte in zip(spalten, alle_karten):
+        with spalte:
+            if isinstance(karte, DashboardZusatzkarte):
+                zeige_zusatzaktionskarte(karte, kompakt=True)
+            else:
+                zeige_nebenaktionskarte(karte)
+
+
+def zeige_demofall_wertkarte(titel: str, werte: list[tuple[str, str]]) -> None:
+    """Rendert eine kompakte Karte mit Demo-Falldaten."""
+    html_werte = ""
+
+    for label, wert in werte:
+        html_werte += f"""
+        <div class="demo-label">{label}</div>
+        <div class="demo-value">{wert}</div>
+        """
+
+    st.markdown(
+        f"""
+        <div class="demo-mini-card">
+            <div class="demo-mini-title">{titel}</div>
+            {html_werte}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_demofall() -> None:
+    """Zeigt einen weniger prominenten Demo-Fall fuer neue Benutzer."""
+    st.markdown("### Demo-Fall für neue Benutzer")
+
+    with st.expander("Beispielwerte anzeigen"):
+        st.caption(
+            "Diese Beispielwerte werden nur angezeigt und nicht automatisch gespeichert. "
+            "Sie helfen neuen Benutzern, den BaktoLab-Workflow Schritt für Schritt nachzuvollziehen."
+        )
+
+        patient_spalte, material_spalte, kultur_spalte = st.columns(3)
+
+        with patient_spalte:
+            zeige_demofall_wertkarte(
+                titel="Patient",
+                werte=[
+                    ("Vorname", "Max"),
+                    ("Nachname", "Muster"),
+                    ("Geburtsdatum", "12.04.1985"),
+                    ("Geschlecht", "Männlich"),
+                ],
+            )
+
+        with material_spalte:
+            zeige_demofall_wertkarte(
+                titel="Material",
+                werte=[
+                    ("Materialtyp", "Urin"),
+                    ("Analyse", "Allgemeine Bakteriologie"),
+                    ("Abnahmedatum", "heutiges Datum"),
+                    ("Eingangsdatum", "heutiges Datum"),
+                ],
+            )
+
+        with kultur_spalte:
+            zeige_demofall_wertkarte(
+                titel="Kulturdaten",
+                werte=[
+                    ("Wachstum", "Ja"),
+                    ("Keim", "Escherichia coli"),
+                    ("Keimzahl", "p5 = 100'000 KBE/ml"),
+                    ("Erwartung", "ID + Resi"),
+                ],
+            )
+
+        st.caption(
+            "Empfohlener Ablauf: Patient erfassen → Material erfassen → Kulturen ablesen "
+            "→ Beurteilung berechnen → validieren → Befund als PDF herunterladen."
+        )
+
+
 def main() -> None:
     """Rendert das Dashboard und bindet die fachlichen Inhalte ein."""
     zeige_dashboard_design_css()
@@ -478,30 +638,18 @@ def main() -> None:
     show_header(title="Dashboard")
 
     st.caption(DASHBOARD_UNTERTITEL)
-    st.write(f"Willkommen, **{anzeige_name}**.")
+    zeige_intro(anzeige_name)
 
     zeige_workflow_uebersicht()
-    zeige_hilfe_glossar_hinweis()
+    st.divider()
+
+    zeige_hauptaktionen()
+    st.divider()
+
+    zeige_weitere_aktionen()
+    st.divider()
+
     zeige_demofall()
-    zeige_status_legende()
-
-    hauptaktionen = hole_hauptaktionskarten()
-    if hauptaktionen:
-        st.markdown("### Hauptaktionen")
-        hauptaktions_spalten = st.columns(2)
-
-        for spalte, karte in zip(hauptaktions_spalten, hauptaktionen):
-            with spalte:
-                zeige_hauptaktionskarte(karte)
-
-    nebenaktionen = hole_nebenaktionskarten()
-    if nebenaktionen:
-        st.markdown("### Weitere Aktionen")
-        nebenaktions_spalten = st.columns(len(nebenaktionen))
-
-        for spalte, karte in zip(nebenaktions_spalten, nebenaktionen):
-            with spalte:
-                zeige_nebenaktionskarte(karte)
 
 
 main()

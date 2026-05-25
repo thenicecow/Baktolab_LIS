@@ -10,6 +10,7 @@ SICHTBARE_NAVIGATION_URL_SCHLUESSEL = "sichtbare_navigation_url"
 DASHBOARD_URL_PFAD = "dashboard"
 PATIENTEN_ERFASSEN_URL_PFAD = "patienten-erfassen"
 PATIENTENUEBERSICHT_URL_PFAD = "patientenuebersicht"
+FALLSTATUS_URL_PFAD = "fallstatus"
 MATERIAL_ERFASSEN_URL_PFAD = "material-erfassen"
 KULTUREN_ABLESEN_URL_PFAD = "kulturen-ablesen"
 RESISTENZRECHNER_URL_PFAD = "rechner-resistenzmonitoring"
@@ -38,6 +39,12 @@ def erstelle_navigation():
                 title="Patientenübersicht",
                 icon=":material/people:",
                 url_path=PATIENTENUEBERSICHT_URL_PFAD,
+            ),
+            st.Page(
+                "views/fallstatus.py",
+                title="Fallstatus",
+                icon=":material/fact_check:",
+                url_path=FALLSTATUS_URL_PFAD,
             ),
             st.Page(
                 "views/material_erfassen.py",
