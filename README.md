@@ -91,4 +91,5 @@ Diese Seite ist unabhängig für die Spüitalhygiene oder die Infektiologie geda
 
 ### Besonderheiten
 * Hilfe und Glossar, alle Fachbegriffe und wissenwertes zur APP ist dort beschrieben
-* Patientendetail beachten! UNter Pateintenübersicht kann unter Detail der Workflowstatus pro Patient angezeigt werden! Weiter kann man in der Patientenübersicht unter Detals die Person auch definitv löschen es erscheint eine Warnmeldung und ein Kontrollhäckchen muss angeklickt werden. 
+* Patientendetail beachten! Unter Pateintenübersicht kann unter Detail der Workflowstatus pro Patient angezeigt werden! Weiter kann man in der Patientenübersicht unter Detals die Person auch definitv löschen es erscheint eine Warnmeldung und ein Kontrollhäckchen muss angeklickt werden. 
+* Fallstatus Seite für die Überischt was noch zu tun ist
