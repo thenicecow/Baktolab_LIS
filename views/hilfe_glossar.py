@@ -91,6 +91,104 @@ def zeige_design_css() -> None:
             line-height: 1.45;
             margin-top: 0.35rem;
         }
+
+        .workflow-graphic-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+            min-height: 150px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.07);
+        }
+
+        .workflow-graphic-number {
+            background: #2563eb;
+            color: white;
+            font-weight: 850;
+            border-radius: 999px;
+            width: 2rem;
+            height: 2rem;
+            line-height: 2rem;
+            margin: 0 auto 0.6rem auto;
+        }
+
+        .workflow-graphic-title {
+            color: #1d4ed8;
+            font-weight: 850;
+            font-size: 0.95rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .workflow-graphic-text {
+            color: #475569;
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+
+        .keimzahl-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+            min-height: 145px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        }
+
+        .keimzahl-code {
+            font-size: 1.55rem;
+            font-weight: 900;
+            margin-bottom: 0.35rem;
+        }
+
+        .keimzahl-value {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 0.35rem;
+        }
+
+        .keimzahl-text {
+            color: #475569;
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+
+        .keimzahl-k4 {
+            border: 1px solid #c7d2fe;
+            border-left: 7px solid #6366f1;
+        }
+
+        .keimzahl-p4 {
+            border: 1px solid #bfdbfe;
+            border-left: 7px solid #2563eb;
+        }
+
+        .keimzahl-p5 {
+            border: 1px solid #bbf7d0;
+            border-left: 7px solid #22c55e;
+        }
+
+        .keimzahl-g5 {
+            border: 1px solid #fed7aa;
+            border-left: 7px solid #f97316;
+        }
+
+        .code-k4 {
+            color: #4f46e5;
+        }
+
+        .code-p4 {
+            color: #1d4ed8;
+        }
+
+        .code-p5 {
+            color: #15803d;
+        }
+
+        .code-g5 {
+            color: #c2410c;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -176,6 +274,109 @@ def zeige_app_hilfe() -> None:
         )
 
 
+def zeige_workflow_grafik_karte(nummer: int, titel: str, text: str) -> None:
+    """Zeigt eine Karte fuer die visuelle Workflow-Grafik."""
+    st.markdown(
+        f"""
+        <div class="workflow-graphic-card">
+            <div class="workflow-graphic-number">{nummer}</div>
+            <div class="workflow-graphic-title">{titel}</div>
+            <div class="workflow-graphic-text">{text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_workflow_grafik() -> None:
+    """Zeigt den BaktoLab-Workflow als visuelle Grafik."""
+    st.markdown("## Visuelle Workflow-Grafik")
+    st.caption(
+        "Diese Übersicht zeigt den idealen Ablauf von der Patientenaufnahme bis zum PDF-Befund."
+    )
+
+    spalten = st.columns(6)
+
+    schritte = [
+        (1, "Patient", "Stammdaten erfassen"),
+        (2, "Material", "Probe zuordnen"),
+        (3, "Kultur", "Wachstum und Keim erfassen"),
+        (4, "Beurteilung", "Empfehlung berechnen"),
+        (5, "Validierung", "Daten fachlich freigeben"),
+        (6, "PDF", "Befund exportieren"),
+    ]
+
+    for spalte, (nummer, titel, text) in zip(spalten, schritte):
+        with spalte:
+            zeige_workflow_grafik_karte(nummer, titel, text)
+
+
+def zeige_keimzahl_grafik_karte(
+    code: str,
+    wert: str,
+    text: str,
+    css_klasse: str,
+    code_klasse: str,
+) -> None:
+    """Zeigt eine visuelle Karte fuer einen Keimzahl-Code."""
+    st.markdown(
+        f"""
+        <div class="keimzahl-card {css_klasse}">
+            <div class="keimzahl-code {code_klasse}">{code}</div>
+            <div class="keimzahl-value">{wert}</div>
+            <div class="keimzahl-text">{text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_keimzahl_code_grafik() -> None:
+    """Zeigt die Keimzahl-Codes als visuelle Karten."""
+    st.markdown("## Keimzahl-Code-Grafik")
+    st.caption(
+        "Die Keimzahl-Codes vereinfachen die Erfassung der Bakterienmenge im Urinbefund."
+    )
+
+    spalte_1, spalte_2, spalte_3, spalte_4 = st.columns(4)
+
+    with spalte_1:
+        zeige_keimzahl_grafik_karte(
+            code="k4",
+            wert="<10'000",
+            text="weniger als 10'000 KBE/ml",
+            css_klasse="keimzahl-k4",
+            code_klasse="code-k4",
+        )
+
+    with spalte_2:
+        zeige_keimzahl_grafik_karte(
+            code="p4",
+            wert="10'000",
+            text="10'000 KBE/ml",
+            css_klasse="keimzahl-p4",
+            code_klasse="code-p4",
+        )
+
+    with spalte_3:
+        zeige_keimzahl_grafik_karte(
+            code="p5",
+            wert="100'000",
+            text="100'000 KBE/ml",
+            css_klasse="keimzahl-p5",
+            code_klasse="code-p5",
+        )
+
+    with spalte_4:
+        zeige_keimzahl_grafik_karte(
+            code="g5",
+            wert=">100'000",
+            text="mehr als 100'000 KBE/ml",
+            css_klasse="keimzahl-g5",
+            code_klasse="code-g5",
+        )
+
+
 def zeige_workflow_erklaerung() -> None:
     """Zeigt den BaktoLab-Workflow als Schrittfolge."""
     st.markdown("## Workflow-Erklärung")
@@ -238,7 +439,7 @@ def zeige_workflow_erklaerung() -> None:
 
 def zeige_keimzahl_codes() -> None:
     """Zeigt die Keimzahl-Codes."""
-    st.markdown("## Keimzahl-Codes")
+    st.markdown("## Keimzahl-Codes als Tabelle")
 
     keimzahl_daten = [
         {
@@ -321,43 +522,68 @@ def zeige_glossar() -> None:
     glossar = [
         {
             "Begriff": "KBE/ml",
-            "Erklärung": "Koloniebildende Einheiten pro Milliliter. Einheit zur ungefähren Quantifizierung bakteriellen Wachstums.",
+            "Erklärung": (
+                "Koloniebildende Einheiten pro Milliliter. Einheit zur ungefähren "
+                "Quantifizierung bakteriellen Wachstums."
+            ),
         },
         {
             "Begriff": "Keim",
-            "Erklärung": "Mikroorganismus, der in einer Probe nachgewiesen oder beurteilt wird.",
+            "Erklärung": (
+                "Mikroorganismus, der in einer Probe nachgewiesen oder beurteilt wird."
+            ),
         },
         {
             "Begriff": "Keimzahl",
-            "Erklärung": "Menge der nachgewiesenen Keime in einer Probe, in BaktoLab über Codes wie k4, p4, p5 und g5 dargestellt.",
+            "Erklärung": (
+                "Menge der nachgewiesenen Keime in einer Probe, in BaktoLab über Codes "
+                "wie k4, p4, p5 und g5 dargestellt."
+            ),
         },
         {
             "Begriff": "Kontamination",
-            "Erklärung": "Hinweis darauf, dass eine Probe möglicherweise durch Begleit- oder Umgebungsflora verunreinigt wurde.",
+            "Erklärung": (
+                "Hinweis darauf, dass eine Probe möglicherweise durch Begleit- oder "
+                "Umgebungsflora verunreinigt wurde."
+            ),
         },
         {
             "Begriff": "Urinflora",
-            "Erklärung": "Mikrobielle Flora, die im Urinkontext als Begleit- oder Kontaminationsflora interpretiert werden kann.",
+            "Erklärung": (
+                "Mikrobielle Flora, die im Urinkontext als Begleit- oder "
+                "Kontaminationsflora interpretiert werden kann."
+            ),
         },
         {
             "Begriff": "Identifikation",
-            "Erklärung": "Fachlicher Schritt zur genaueren Bestimmung eines nachgewiesenen Keims.",
+            "Erklärung": (
+                "Fachlicher Schritt zur genaueren Bestimmung eines nachgewiesenen Keims."
+            ),
         },
         {
             "Begriff": "Resistenztestung",
-            "Erklärung": "Untersuchung, ob ein Keim gegenüber bestimmten Antibiotika empfindlich oder resistent ist.",
+            "Erklärung": (
+                "Untersuchung, ob ein Keim gegenüber bestimmten Antibiotika empfindlich "
+                "oder resistent ist."
+            ),
         },
         {
             "Begriff": "Validierung",
-            "Erklärung": "Fachliche Freigabe eines Befunds nach Prüfung der erfassten Daten.",
+            "Erklärung": (
+                "Fachliche Freigabe eines Befunds nach Prüfung der erfassten Daten."
+            ),
         },
         {
             "Begriff": "Befund",
-            "Erklärung": "Strukturierte Zusammenfassung der mikrobiologischen Untersuchungsergebnisse.",
+            "Erklärung": (
+                "Strukturierte Zusammenfassung der mikrobiologischen Untersuchungsergebnisse."
+            ),
         },
         {
             "Begriff": "Resistenzmonitoring",
-            "Erklärung": "Auswertung resistenter und getesteter Isolate über Zeiträume hinweg.",
+            "Erklärung": (
+                "Auswertung resistenter und getesteter Isolate über Zeiträume hinweg."
+            ),
         },
     ]
 
@@ -372,11 +598,14 @@ def zeige_faq() -> None:
     """Zeigt haeufige Fragen."""
     st.markdown("## Häufige Fragen")
 
-    with st.expander("Warum funktioniert der vollständige Workflow vor allem mit Urin und Allgemeiner Bakteriologie?"):
+    with st.expander(
+        "Warum funktioniert der vollständige Workflow vor allem mit Urin und Allgemeiner Bakteriologie?"
+    ):
         st.write(
-            "Der aktuelle Prototyp wurde gezielt auf einen klar abgegrenzten mikrobiologischen "
-            "Workflow ausgelegt. Urin mit Allgemeiner Bakteriologie eignet sich dafür gut, "
-            "weil Wachstum, Keimzahl, Keimrolle und Beurteilung strukturiert abgebildet werden können."
+            "Der aktuelle Prototyp wurde gezielt auf einen klar abgegrenzten "
+            "mikrobiologischen Workflow ausgelegt. Urin mit Allgemeiner Bakteriologie "
+            "eignet sich dafür gut, weil Wachstum, Keimzahl, Keimrolle und Beurteilung "
+            "strukturiert abgebildet werden können."
         )
 
     with st.expander("Kann ich andere Materialtypen erfassen?"):
@@ -413,6 +642,8 @@ def main() -> None:
 
     zeige_prototyp_hinweis()
     zeige_app_hilfe()
+    zeige_workflow_grafik()
+    zeige_keimzahl_code_grafik()
     zeige_workflow_erklaerung()
     zeige_keimzahl_codes()
     zeige_abkuerzungen()

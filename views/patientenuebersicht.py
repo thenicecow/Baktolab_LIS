@@ -31,6 +31,9 @@ from views.patient_bearbeiten import main as rendere_patientenbearbeitung
 from views.patientendetail import main as rendere_patientendetailansicht
 
 
+INITIAL_FILTER_ALLE = "Alle"
+
+
 def zeige_seitenstil() -> None:
     """Fuegt kleine visuelle Verbesserungen fuer die Patientenuebersicht hinzu."""
     st.markdown(
@@ -122,6 +125,68 @@ def zeige_seitenstil() -> None:
         .patient-zeilenkopf {
             color: rgba(49, 51, 63, 0.72);
             font-size: 0.88rem;
+        }
+
+        .patient-insight-card {
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            padding: 1rem 1.1rem;
+            min-height: 145px;
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.07);
+        }
+
+        .patient-insight-title {
+            color: #1d4ed8;
+            font-size: 1rem;
+            font-weight: 850;
+            margin-bottom: 0.35rem;
+        }
+
+        .patient-insight-value {
+            color: #0f172a;
+            font-size: 1.35rem;
+            font-weight: 850;
+            margin-bottom: 0.25rem;
+        }
+
+        .patient-insight-text {
+            color: #475569;
+            font-size: 0.86rem;
+            line-height: 1.4;
+        }
+
+        .patient-mini-chip {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 0.28rem 0.65rem;
+            margin: 0.15rem 0.2rem 0.15rem 0;
+            font-size: 0.82rem;
+            font-weight: 750;
+        }
+
+        .chip-lila {
+            background: #ede9fe;
+            color: #5b21b6;
+            border: 1px solid #c4b5fd;
+        }
+
+        .chip-tuerkis {
+            background: #ccfbf1;
+            color: #115e59;
+            border: 1px solid #5eead4;
+        }
+
+        .chip-blau {
+            background: #dbeafe;
+            color: #1e3a8a;
+            border: 1px solid #93c5fd;
+        }
+
+        .chip-grau {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
         }
         </style>
         """,
@@ -258,6 +323,126 @@ def zeige_uebersichtskacheln(
         )
 
 
+def zaehle_geschlechter(patienten: list[Patient]) -> dict[str, int]:
+    """Zaehlt die Geschlechter der aktuell geladenen Patienten."""
+    zaehlung: dict[str, int] = {}
+
+    for patient in patienten:
+        geschlecht = str(patient.geschlecht or "Nicht angegeben").strip()
+        if not geschlecht:
+            geschlecht = "Nicht angegeben"
+
+        zaehlung[geschlecht] = zaehlung.get(geschlecht, 0) + 1
+
+    return zaehlung
+
+
+def finde_zuletzt_erfassten_patienten(patienten: list[Patient]) -> Patient | None:
+    """Findet defensiv den zuletzt erfassten Patienten."""
+    patienten_mit_zeitpunkt = [
+        patient for patient in patienten if patient.erstellt_am is not None
+    ]
+
+    if not patienten_mit_zeitpunkt:
+        return patienten[-1] if patienten else None
+
+    return max(patienten_mit_zeitpunkt, key=lambda patient: patient.erstellt_am)
+
+
+def baue_initial_optionen(patienten: list[Patient]) -> list[str]:
+    """Erzeugt die Optionen fuer den alphabetischen Schnellfilter."""
+    initialen = sorted(
+        {
+            patient.nachname.strip()[0].upper()
+            for patient in patienten
+            if isinstance(patient.nachname, str) and patient.nachname.strip()
+        }
+    )
+
+    return [INITIAL_FILTER_ALLE] + initialen
+
+
+def filtere_patienten_nach_initial(
+    patienten: list[Patient],
+    initial: str,
+) -> list[Patient]:
+    """Filtert Patienten nach dem Anfangsbuchstaben des Nachnamens."""
+    if initial == INITIAL_FILTER_ALLE:
+        return patienten
+
+    return [
+        patient
+        for patient in patienten
+        if isinstance(patient.nachname, str)
+        and patient.nachname.strip().upper().startswith(initial)
+    ]
+
+
+def zeige_patienten_insights(patienten: list[Patient]) -> str:
+    """Zeigt sichere Zusatzinformationen zur Patientenliste und liefert den Initialfilter."""
+    st.markdown("### Patienten-Insights")
+
+    zuletzt_erfasst = finde_zuletzt_erfassten_patienten(patienten)
+    geschlechter = zaehle_geschlechter(patienten)
+    initial_optionen = baue_initial_optionen(patienten)
+
+    spalte_1, spalte_2, spalte_3 = st.columns(3)
+
+    with spalte_1:
+        chip_html = ""
+
+        for geschlecht, anzahl in sorted(geschlechter.items()):
+            chip_html += (
+                f'<span class="patient-mini-chip chip-lila">'
+                f'{geschlecht}: {anzahl}'
+                f'</span>'
+            )
+
+        st.markdown(
+            f"""
+            <div class="patient-insight-card">
+                <div class="patient-insight-title">Geschlechterverteilung</div>
+                <div>{chip_html}</div>
+                <div class="patient-insight-text">
+                    Übersicht auf Basis der aktuell gespeicherten Patientendaten.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with spalte_2:
+        if zuletzt_erfasst is not None:
+            name = f"{zuletzt_erfasst.vorname} {zuletzt_erfasst.nachname}"
+            zeitpunkt = formatiere_zeitpunkt(zuletzt_erfasst.erstellt_am)
+        else:
+            name = "-"
+            zeitpunkt = "-"
+
+        st.markdown(
+            f"""
+            <div class="patient-insight-card">
+                <div class="patient-insight-title">Zuletzt erfasst</div>
+                <div class="patient-insight-value">{name}</div>
+                <div class="patient-insight-text">{zeitpunkt}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with spalte_3:
+        with st.container(border=True):
+            st.markdown("**Alphabetischer Schnellfilter**")
+            st.caption("Filtert die Liste nach dem Anfangsbuchstaben des Nachnamens.")
+            initial = st.selectbox(
+                "Nachname beginnt mit",
+                options=initial_optionen,
+                key="patientenuebersicht_initial_filter",
+            )
+
+    return initial
+
+
 def zeige_suchbereich() -> str:
     """Zeigt die Suche optisch abgesetzt an und liefert den Suchtext."""
     with st.container(border=True):
@@ -335,7 +520,10 @@ def zeige_tabellenkopf() -> None:
     )
 
     for spalte, ueberschrift in zip(spalten, ueberschriften):
-        spalte.markdown(f"<span class='patient-zeilenkopf'><strong>{ueberschrift}</strong></span>", unsafe_allow_html=True)
+        spalte.markdown(
+            f"<span class='patient-zeilenkopf'><strong>{ueberschrift}</strong></span>",
+            unsafe_allow_html=True,
+        )
 
 
 def zeige_loeschaktion(patient: Patient) -> None:
@@ -439,8 +627,14 @@ def main() -> None:
 
     st.divider()
 
+    initial_filter = zeige_patienten_insights(patienten)
     suchtext = zeige_suchbereich()
+
     gefilterte_patienten = filtere_patienten(patienten, suchtext)
+    gefilterte_patienten = filtere_patienten_nach_initial(
+        gefilterte_patienten,
+        initial_filter,
+    )
 
     zeige_uebersichtskacheln(
         patienten=patienten,
@@ -448,15 +642,24 @@ def main() -> None:
         suchtext=suchtext,
     )
 
+    aktive_filtertexte = []
+
     if suchtext.strip():
+        aktive_filtertexte.append(f"Suche: {suchtext.strip()}")
+
+    if initial_filter != INITIAL_FILTER_ALLE:
+        aktive_filtertexte.append(f"Nachname beginnt mit: {initial_filter}")
+
+    if aktive_filtertexte:
         st.caption(
-            f"Treffer: {len(gefilterte_patienten)} von {len(patienten)} Patienten"
+            f"Treffer: {len(gefilterte_patienten)} von {len(patienten)} Patienten "
+            f"({'; '.join(aktive_filtertexte)})"
         )
     else:
         st.caption(f"Anzahl Patienten: {len(patienten)}")
 
     if not gefilterte_patienten:
-        zeige_leermeldung_keine_treffer(suchtext)
+        zeige_leermeldung_keine_treffer(suchtext or initial_filter)
         return
 
     st.divider()

@@ -88,3 +88,7 @@ Diese Seite ist unabhängig für die Spüitalhygiene oder die Infektiologie geda
 * Berechnen und speichern
 * visuelle Darstellungen werden angezeigt(es wurden schon einige Erfasst)
 * CSV der Daten kann heruntergeladenb werden bei der Grafik oben rechts
+
+### Besonderheiten
+* Hilfe und Glossar, alle Fachbegriffe und wissenwertes zur APP ist dort beschrieben
+* Patientendetail beachten! UNter Pateintenübersicht kann unter Detail der Workflowstatus pro Patient angezeigt werden! Weiter kann man in der Patientenübersicht unter Detals die Person auch definitv löschen es erscheint eine Warnmeldung und ein Kontrollhäckchen muss angeklickt werden. 

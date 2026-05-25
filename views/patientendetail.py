@@ -14,7 +14,10 @@ from functions.gemeinsam.anzeige_hilfen import (
     loese_materialtyp_label_auf,
 )
 from ui.header import show_header
-from functions.kulturen.ablesen import ist_material_fuer_kulturen_ablesen_unterstuetzt
+from functions.kulturen.ablesen import (
+    hole_kulturdaten_oder_standard,
+    ist_material_fuer_kulturen_ablesen_unterstuetzt,
+)
 from functions.kulturen.navigation import aktiviere_kulturen_ablesen
 from functions.patienten.detail import (
     ALLE_FILTER_OPTION,
@@ -75,6 +78,67 @@ def _inject_patient_detail_button_styles() -> None:
             background: #FCA5A5 !important;
             color: #ffffff !important;
             border: none !important;
+        }
+
+        .workflow-status-card {
+            border-radius: 16px;
+            padding: 1rem 1.1rem;
+            min-height: 125px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.06);
+            background: #ffffff;
+        }
+
+        .workflow-status-card-active {
+            border: 1px solid #bfdbfe;
+        }
+
+        .workflow-status-card-inactive {
+            border: 1px solid #e5e7eb;
+            opacity: 0.72;
+        }
+
+        .workflow-status-icon {
+            font-size: 1.55rem;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .workflow-status-title {
+            font-size: 0.98rem;
+            font-weight: 850;
+            margin-bottom: 0.25rem;
+            color: #0f172a;
+        }
+
+        .workflow-status-text {
+            font-size: 0.84rem;
+            color: #64748b;
+            line-height: 1.35;
+        }
+
+        .workflow-lila {
+            border-left: 7px solid #7c3aed;
+            background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);
+        }
+
+        .workflow-tuerkis {
+            border-left: 7px solid #14b8a6;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%);
+        }
+
+        .workflow-hellgruen {
+            border-left: 7px solid #84cc16;
+            background: linear-gradient(135deg, #f7fee7 0%, #ffffff 100%);
+        }
+
+        .workflow-gruen {
+            border-left: 7px solid #22c55e;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        }
+
+        .workflow-grau {
+            border-left: 7px solid #cbd5e1;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
         }
         </style>
         """,
@@ -229,6 +293,161 @@ def zeige_stammdaten(patient: Patient) -> None:
             st.markdown(f"**Geschlecht:** {patient.geschlecht}")
             st.markdown(f"**Erstellt am:** {formatiere_zeitpunkt(patient.erstellt_am)}")
             st.markdown(f"**Erstellt von:** {formatiere_text(patient.erstellt_von_user_id)}")
+
+
+def hole_kulturdaten_defensiv(material: Material):
+    """Liest Kulturdaten defensiv aus einem Material."""
+    try:
+        return hole_kulturdaten_oder_standard(material)
+    except Exception:
+        return None
+
+
+def ist_kultur_bearbeitet(material: Material) -> bool:
+    """Prueft, ob bei einem Material bereits Kulturdaten erfasst wurden."""
+    kulturdaten = hole_kulturdaten_defensiv(material)
+
+    if kulturdaten is None:
+        return False
+
+    wachstum = getattr(kulturdaten, "wachstum", None)
+    keime = getattr(kulturdaten, "keime", None)
+    beurteilung = getattr(kulturdaten, "beurteilung", None)
+
+    if wachstum is not None:
+        return True
+
+    if keime:
+        return True
+
+    if beurteilung:
+        return True
+
+    return False
+
+
+def ist_befund_validiert(material: Material) -> bool:
+    """Prueft, ob ein Material bereits eine Beurteilung oder Validierung besitzt."""
+    kulturdaten = hole_kulturdaten_defensiv(material)
+
+    if kulturdaten is not None:
+        beurteilung = getattr(kulturdaten, "beurteilung", None)
+        if beurteilung:
+            return True
+
+        for attribut in (
+            "validiert",
+            "ist_validiert",
+            "befund_validiert",
+            "kultur_validiert",
+            "validiert_am",
+            "befunddatum",
+        ):
+            wert = getattr(kulturdaten, attribut, None)
+
+            if isinstance(wert, bool):
+                if wert:
+                    return True
+            elif wert is not None:
+                return True
+
+    for attribut in (
+        "validiert",
+        "ist_validiert",
+        "befund_validiert",
+        "kultur_validiert",
+        "validiert_am",
+        "befunddatum",
+        "befund_erstellt_am",
+    ):
+        wert = getattr(material, attribut, None)
+
+        if isinstance(wert, bool):
+            if wert:
+                return True
+        elif wert is not None:
+            return True
+
+    status = getattr(material, "status", None)
+
+    if isinstance(status, str):
+        return status.strip().casefold() in {
+            "validiert",
+            "abgeschlossen",
+            "befundet",
+            "befund erstellt",
+            "fertig",
+            "done",
+        }
+
+    return False
+
+
+def zeige_workflow_statuskarte(
+    titel: str,
+    beschreibung: str,
+    aktiv: bool,
+    farbklasse: str,
+) -> None:
+    """Zeigt eine einzelne Workflow-Statuskarte."""
+    icon = "✓" if aktiv else "○"
+    statusklasse = "workflow-status-card-active" if aktiv else "workflow-status-card-inactive"
+    farbe = farbklasse if aktiv else "workflow-grau"
+
+    st.markdown(
+        f"""
+        <div class="workflow-status-card {statusklasse} {farbe}">
+            <div class="workflow-status-icon">{icon}</div>
+            <div class="workflow-status-title">{titel}</div>
+            <div class="workflow-status-text">{beschreibung}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_workflow_status(patient: Patient, materialien: list[Material]) -> None:
+    """Zeigt den Workflow-Status direkt in der Patientendetailansicht."""
+    st.subheader("Workflow-Status")
+
+    patient_erfasst = patient is not None
+    material_erfasst = len(materialien) > 0
+    kultur_bearbeitet = any(ist_kultur_bearbeitet(material) for material in materialien)
+    befund_validiert = any(ist_befund_validiert(material) for material in materialien)
+
+    spalte_1, spalte_2, spalte_3, spalte_4 = st.columns(4)
+
+    with spalte_1:
+        zeige_workflow_statuskarte(
+            titel="Patient erfasst",
+            beschreibung="Stammdaten sind vorhanden.",
+            aktiv=patient_erfasst,
+            farbklasse="workflow-lila",
+        )
+
+    with spalte_2:
+        zeige_workflow_statuskarte(
+            titel="Material erfasst",
+            beschreibung="Mindestens ein Material ist dokumentiert.",
+            aktiv=material_erfasst,
+            farbklasse="workflow-tuerkis",
+        )
+
+    with spalte_3:
+        zeige_workflow_statuskarte(
+            titel="Kultur bearbeitet",
+            beschreibung="Wachstum, Keim oder Beurteilung wurde erfasst.",
+            aktiv=kultur_bearbeitet,
+            farbklasse="workflow-hellgruen",
+        )
+
+    with spalte_4:
+        zeige_workflow_statuskarte(
+            titel="Befund validiert",
+            beschreibung="Eine Beurteilung oder Validierung wurde erkannt.",
+            aktiv=befund_validiert,
+            farbklasse="workflow-gruen",
+        )
 
 
 def zeige_loeschsektion(patient: Patient) -> None:
@@ -404,6 +623,7 @@ def main() -> None:
 
     zeige_arbeitskontext()
     zeige_stammdaten(patient)
+    zeige_workflow_status(patient, materialien)
     st.divider()
     zeige_loeschsektion(patient)
     st.divider()
