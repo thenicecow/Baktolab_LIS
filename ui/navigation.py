@@ -13,6 +13,7 @@ PATIENTENUEBERSICHT_URL_PFAD = "patientenuebersicht"
 MATERIAL_ERFASSEN_URL_PFAD = "material-erfassen"
 KULTUREN_ABLESEN_URL_PFAD = "kulturen-ablesen"
 RESISTENZRECHNER_URL_PFAD = "rechner-resistenzmonitoring"
+HILFE_GLOSSAR_URL_PFAD = "hilfe-glossar"
 
 
 def erstelle_navigation():
@@ -56,6 +57,12 @@ def erstelle_navigation():
                 icon=":material/functions:",
                 url_path=RESISTENZRECHNER_URL_PFAD,
             ),
+            st.Page(
+                "views/hilfe_glossar.py",
+                title="Hilfe & Glossar",
+                icon=":material/help:",
+                url_path=HILFE_GLOSSAR_URL_PFAD,
+            ),
         ]
     )
 
@@ -69,4 +76,3 @@ def hole_sichtbare_navigation_url(navigationseintrag: object) -> str | None:
 
     bereinigt = url_path.strip()
     return bereinigt or None
-

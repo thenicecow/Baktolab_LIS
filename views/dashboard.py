@@ -5,7 +5,6 @@ from __future__ import annotations
 import streamlit as st
 
 from functions.dashboard.logik import (
-    DASHBOARD_HINWEIS,
     DASHBOARD_UNTERTITEL,
     DashboardAktionskarte,
     hole_akzentfarbe_fuer_titel,
@@ -60,27 +59,56 @@ def zeige_dashboard_design_css() -> None:
             line-height: 1.45;
         }
 
-        .dashboard-info-box {
+        .dashboard-help-box {
             background: #f8fbff;
             border: 1px solid #dbeafe;
-            border-left: 7px solid #2563eb;
+            border-left: 6px solid #2563eb;
             border-radius: 16px;
-            padding: 1rem 1.15rem;
+            padding: 0.95rem 1.1rem;
             margin-top: 1rem;
             margin-bottom: 1rem;
         }
 
-        .dashboard-info-title {
+        .dashboard-help-title {
             color: #1d4ed8;
             font-weight: 850;
-            font-size: 1.05rem;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .dashboard-help-text {
+            color: #475569;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .demo-mini-card {
+            background: #ffffff;
+            border: 1px solid #dcfce7;
+            border-radius: 14px;
+            padding: 0.8rem 0.9rem;
+            min-height: 105px;
+        }
+
+        .demo-mini-title {
+            color: #166534;
+            font-weight: 850;
+            font-size: 0.95rem;
             margin-bottom: 0.35rem;
         }
 
-        .dashboard-info-text {
-            color: #475569;
-            font-size: 0.92rem;
-            line-height: 1.5;
+        .demo-label {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 750;
+            margin-bottom: 0.1rem;
+        }
+
+        .demo-value {
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 650;
+            margin-bottom: 0.35rem;
         }
 
         .status-chip {
@@ -92,24 +120,24 @@ def zeige_dashboard_design_css() -> None:
             margin: 0.2rem 0.25rem 0.2rem 0;
         }
 
-        .chip-blue {
-            background: #dbeafe;
-            color: #1e3a8a;
+        .chip-lila {
+            background: #ede9fe;
+            color: #5b21b6;
         }
 
-        .chip-green {
+        .chip-tuerkisgruen {
+            background: #ccfbf1;
+            color: #115e59;
+        }
+
+        .chip-hellgruen {
+            background: #ecfccb;
+            color: #3f6212;
+        }
+
+        .chip-gruen {
             background: #dcfce7;
             color: #14532d;
-        }
-
-        .chip-orange {
-            background: #ffedd5;
-            color: #7c2d12;
-        }
-
-        .chip-gray {
-            background: #f1f5f9;
-            color: #334155;
         }
         </style>
         """,
@@ -178,21 +206,119 @@ def zeige_workflow_uebersicht() -> None:
         )
 
 
-def zeige_naechster_schritt_hilfe() -> None:
-    """Zeigt eine klare Orientierung, was im Laborworkflow als Naechstes zu tun ist."""
-    st.markdown(
-        """
-        <div class="dashboard-info-box">
-            <div class="dashboard-info-title">Nächster sinnvoller Schritt</div>
-            <div class="dashboard-info-text">
-                Starte bei neuen Fällen mit <b>Patient erfassen</b>. Wenn der Patient bereits vorhanden ist,
-                gehe direkt zu <b>Material erfassen</b>. Für Urin mit der Analyse
-                <b>Allgemeine Bakteriologie</b> öffnet sich anschliessend der Kulturworkflow automatisch.
+def zeige_hilfe_glossar_hinweis() -> None:
+    """Zeigt einen dezenten Hinweis auf die Hilfe- und Glossarseite."""
+    linke_spalte, rechte_spalte = st.columns((3, 1))
+
+    with linke_spalte:
+        st.markdown(
+            """
+            <div class="dashboard-help-box">
+                <div class="dashboard-help-title">Hilfe & Glossar</div>
+                <div class="dashboard-help-text">
+                    Fachbegriffe, Keimzahl-Codes, Abkürzungen und der BaktoLab-Workflow
+                    sind auf einer eigenen Hilfeseite zusammengefasst.
+                </div>
             </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with rechte_spalte:
+        st.write("")
+        st.write("")
+        st.page_link(
+            "views/hilfe_glossar.py",
+            label="Hilfe öffnen",
+            icon=":material/help:",
+        )
+
+
+def zeige_demofall_wertkarte(titel: str, werte: list[tuple[str, str]]) -> None:
+    """Rendert eine kompakte Karte mit Demo-Falldaten."""
+    html_werte = ""
+
+    for label, wert in werte:
+        html_werte += f"""
+        <div class="demo-label">{label}</div>
+        <div class="demo-value">{wert}</div>
+        """
+
+    st.markdown(
+        f"""
+        <div class="demo-mini-card">
+            <div class="demo-mini-title">{titel}</div>
+            {html_werte}
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+
+def zeige_demofall() -> None:
+    """Zeigt einen weniger prominenten Demo-Fall fuer neue Benutzer."""
+    with st.expander("Demo-Fall für neue Benutzer anzeigen"):
+        st.caption(
+            "Diese Beispielwerte werden nur angezeigt und nicht automatisch gespeichert. "
+            "Sie helfen neuen Benutzern, den BaktoLab-Workflow Schritt für Schritt nachzuvollziehen."
+        )
+
+        patient_spalte, material_spalte, kultur_spalte = st.columns(3)
+
+        with patient_spalte:
+            zeige_demofall_wertkarte(
+                titel="Patient",
+                werte=[
+                    ("Vorname", "Max"),
+                    ("Nachname", "Muster"),
+                    ("Geburtsdatum", "12.04.1985"),
+                    ("Geschlecht", "Männlich"),
+                ],
+            )
+
+        with material_spalte:
+            zeige_demofall_wertkarte(
+                titel="Material",
+                werte=[
+                    ("Materialtyp", "Urin"),
+                    ("Analyse", "Allgemeine Bakteriologie"),
+                    ("Abnahmedatum", "heutiges Datum"),
+                    ("Eingangsdatum", "heutiges Datum"),
+                ],
+            )
+
+        with kultur_spalte:
+            zeige_demofall_wertkarte(
+                titel="Kulturdaten",
+                werte=[
+                    ("Wachstum", "Ja"),
+                    ("Keim", "Escherichia coli"),
+                    ("Keimzahl", "p5 = 100'000 KBE/ml"),
+                    ("Erwartung", "ID + Resi"),
+                ],
+            )
+
+        st.caption(
+            "Empfohlener Ablauf: Patient erfassen → Material erfassen → Kulturen ablesen "
+            "→ Beurteilung berechnen → validieren → Befund als PDF herunterladen."
+        )
+
+        linke_spalte, rechte_spalte = st.columns(2)
+
+        with linke_spalte:
+            if st.button(
+                "Patient erfassen starten",
+                use_container_width=True,
+                key="dashboard_demo_patient_starten",
+            ):
+                st.switch_page("views/patienten_erfassen.py")
+
+        with rechte_spalte:
+            st.page_link(
+                "views/material_erfassen.py",
+                label="Material erfassen öffnen",
+                icon=":material/science:",
+            )
 
 
 def zeige_status_legende() -> None:
@@ -202,10 +328,10 @@ def zeige_status_legende() -> None:
     with st.container(border=True):
         st.markdown(
             """
-            <span class="status-chip chip-gray">Patient erfasst</span>
-            <span class="status-chip chip-blue">Material aufgenommen</span>
-            <span class="status-chip chip-orange">Kultur in Bearbeitung</span>
-            <span class="status-chip chip-green">Befund validiert</span>
+            <span class="status-chip chip-lila">Patient erfasst</span>
+            <span class="status-chip chip-tuerkisgruen">Material aufgenommen</span>
+            <span class="status-chip chip-hellgruen">Kultur in Bearbeitung</span>
+            <span class="status-chip chip-gruen">Befund validiert</span>
             """,
             unsafe_allow_html=True,
         )
@@ -353,10 +479,10 @@ def main() -> None:
 
     st.caption(DASHBOARD_UNTERTITEL)
     st.write(f"Willkommen, **{anzeige_name}**.")
-    st.info(DASHBOARD_HINWEIS)
 
     zeige_workflow_uebersicht()
-    zeige_naechster_schritt_hilfe()
+    zeige_hilfe_glossar_hinweis()
+    zeige_demofall()
     zeige_status_legende()
 
     hauptaktionen = hole_hauptaktionskarten()
