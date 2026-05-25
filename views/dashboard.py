@@ -290,6 +290,18 @@ def hole_zusaetzliche_nebenaktionskarten() -> list[DashboardZusatzkarte]:
             button_typ="primary",
         ),
         DashboardZusatzkarte(
+            titel="Probeneingang-Auswertung",
+            beschreibung=(
+                "Analysiert den Probeneingang nach Tagen, Kalenderwochen und Wochentagen "
+                "inklusive Heatmap für Belastungsspitzen."
+            ),
+            seitenpfad="views/probeneingang_auswertung.py",
+            icon=":material/analytics:",
+            color="#F97316",
+            button_text="Auswertung öffnen",
+            button_typ="secondary",
+        ),
+        DashboardZusatzkarte(
             titel="Hilfe & Glossar",
             beschreibung=(
                 "Erklärt Fachbegriffe, Keimzahl-Codes, Abkürzungen und den BaktoLab-Workflow."
@@ -308,8 +320,9 @@ def zeige_zusatzaktionskarte(karte: DashboardZusatzkarte, kompakt: bool = False)
     akzentfarbe = karte.color or STANDARD_AKZENTFARBE
     hintergrundfarbe = f"{akzentfarbe}18"
     icon_groesse = "2rem" if kompakt else "2.4rem"
-    titel_groesse = "1.35rem" if kompakt else "2rem"
-    text_min_hoehe = "5.3rem" if kompakt else "4.5rem"
+    titel_groesse = "1.25rem" if kompakt else "2rem"
+    text_min_hoehe = "7.2rem" if kompakt else "4.5rem"
+    kopf_min_hoehe = "7.4rem" if kompakt else "8.6rem"
     border_top = "0.35rem" if kompakt else "0.45rem"
     border_left = "0.3rem" if kompakt else "0.35rem"
     icon_html = ""
@@ -331,6 +344,10 @@ def zeige_zusatzaktionskarte(karte: DashboardZusatzkarte, kompakt: bool = False)
                 border-radius: 14px;
                 padding: 1rem 0.9rem 0.9rem 0.9rem;
                 margin-bottom: 0.75rem;
+                min-height: {kopf_min_hoehe};
+                display: flex;
+                align-items: center;
+                justify-content: center;
             ">
                 <div style="text-align: center;">
                     {icon_html}
@@ -396,6 +413,10 @@ def zeige_hauptaktionskarte(karte: DashboardAktionskarte) -> None:
                 border-radius: 14px;
                 padding: 1.15rem 1rem 1rem 1rem;
                 margin-bottom: 0.9rem;
+                min-height: 8.6rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             ">
                 <div style="text-align: center;">
                     {icon_html}
@@ -460,11 +481,15 @@ def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
                 border-radius: 14px;
                 padding: 0.95rem 0.9rem 0.85rem 0.9rem;
                 margin-bottom: 0.75rem;
+                min-height: 7.4rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             ">
                 <div style="text-align: center;">
                     {icon_html}
                     <div style="
-                        font-size: 1.35rem;
+                        font-size: 1.25rem;
                         font-weight: 700;
                         line-height: 1.25;
                         color: {akzentfarbe};
@@ -481,7 +506,7 @@ def zeige_nebenaktionskarte(karte: DashboardAktionskarte) -> None:
             f"""
             <div style="
                 color: #475569;
-                min-height: 5.3rem;
+                min-height: 7.2rem;
                 line-height: 1.5;
                 margin-bottom: 0.55rem;
                 font-size: 0.95rem;
@@ -530,8 +555,16 @@ def ist_kulturen_ablesen_karte(karte: DashboardAktionskarte) -> bool:
     return titel == "kulturen ablesen" or seitenpfad == "views/kulturen_ablesen.py"
 
 
+def ist_hilfe_glossar_karte(karte: DashboardAktionskarte) -> bool:
+    """Prueft, ob eine Karte auf Hilfe und Glossar verweist."""
+    titel = str(getattr(karte, "titel", "")).strip().casefold()
+    seitenpfad = str(getattr(karte, "seitenpfad", "")).strip().casefold()
+
+    return titel in {"hilfe & glossar", "hilfe und glossar"} or seitenpfad == "views/hilfe_glossar.py"
+
+
 def zeige_weitere_aktionen() -> None:
-    """Zeigt weitere Aktionen inklusive Fallstatus und Hilfe, ohne doppelte Kulturkarte."""
+    """Zeigt weitere Aktionen inklusive Fallstatus, Probeneingang-Auswertung und Hilfe."""
     st.markdown("### Weitere Aktionen")
 
     zusatzkarten = hole_zusaetzliche_nebenaktionskarten()
@@ -540,6 +573,7 @@ def zeige_weitere_aktionen() -> None:
         karte
         for karte in hole_nebenaktionskarten()
         if not ist_kulturen_ablesen_karte(karte)
+        and not ist_hilfe_glossar_karte(karte)
     ]
 
     alle_karten = zusatzkarten + nebenaktionen

@@ -89,7 +89,8 @@ Diese Seite ist unabhängig für die Spüitalhygiene oder die Infektiologie geda
 * visuelle Darstellungen werden angezeigt(es wurden schon einige Erfasst)
 * CSV der Daten kann heruntergeladenb werden bei der Grafik oben rechts
 
-### Besonderheiten
+### Besonderheiten mit Grafiken und Auswertungen
 * Hilfe und Glossar, alle Fachbegriffe und wissenwertes zur APP ist dort beschrieben
 * Patientendetail beachten! Unter Pateintenübersicht kann unter Detail der Workflowstatus pro Patient angezeigt werden! Weiter kann man in der Patientenübersicht unter Detals die Person auch definitv löschen es erscheint eine Warnmeldung und ein Kontrollhäckchen muss angeklickt werden. 
 * Fallstatus Seite für die Überischt was noch zu tun ist
+* Für die Laborleitung wurde noch eine Probeneingang-Auswertung erstellt, damit die Arbeitsplanung ggf. angepasst werden kann an Spitzentagen

@@ -11,7 +11,6 @@ from domaene import Material, Patient
 from functions.gemeinsam.anzeige_hilfen import (
     baue_technische_fehlernachricht,
     formatiere_datum,
-    formatiere_patient_label,
     formatiere_zeitpunkt,
     loese_analyse_label_auf,
     loese_materialtyp_label_auf,
@@ -85,15 +84,6 @@ def zeige_seitenstil() -> None:
             line-height: 1.35;
         }
 
-        .fall-card {
-            background: #ffffff;
-            border: 1px solid #dbeafe;
-            border-radius: 16px;
-            padding: 1rem 1.1rem;
-            margin-bottom: 0.75rem;
-            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
-        }
-
         .fall-name {
             color: #0f172a;
             font-size: 1.05rem;
@@ -165,6 +155,40 @@ def zeige_seitenstil() -> None:
             padding: 0.9rem 1rem;
             margin-bottom: 1rem;
         }
+
+        .analysis-transition-card {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+            border: 1px solid #fed7aa;
+            border-left: 7px solid #f97316;
+            border-radius: 16px;
+            padding: 1rem 1.15rem;
+            box-shadow: 0 4px 14px rgba(249, 115, 22, 0.08);
+        }
+
+        .analysis-transition-title {
+            color: #c2410c;
+            font-size: 1.05rem;
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }
+
+        .analysis-transition-text {
+            color: #475569;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .analysis-transition-chip {
+            display: inline-block;
+            background: #ffedd5;
+            color: #9a3412;
+            border: 1px solid #fdba74;
+            border-radius: 999px;
+            padding: 0.25rem 0.65rem;
+            margin: 0.15rem 0.2rem 0.15rem 0;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -225,6 +249,20 @@ def hat_befund_bereit(material: Material) -> bool:
     return bool(material.kulturdaten.beurteilung)
 
 
+def sortiere_materialien_nach_datum(materialien: list[Material]) -> list[Material]:
+    """Sortiert Materialien absteigend nach Eingangsdatum, Abnahmedatum und Erstellzeit."""
+    return sorted(
+        materialien,
+        key=lambda material: (
+            material.eingangsdatum.toordinal(),
+            material.abnahmedatum.toordinal(),
+            material.erstellt_am.timestamp() if material.erstellt_am is not None else float("-inf"),
+            material.id,
+        ),
+        reverse=True,
+    )
+
+
 def waehle_bevorzugtes_material(materialien: list[Material]) -> Material | None:
     """Waehlt ein sinnvolles Material fuer direkte Aktionen aus."""
     if not materialien:
@@ -251,20 +289,6 @@ def waehle_bevorzugtes_material(materialien: list[Material]) -> Material | None:
         return sortiere_materialien_nach_datum(unterstuetzte_materialien)[0]
 
     return sortiere_materialien_nach_datum(materialien)[0]
-
-
-def sortiere_materialien_nach_datum(materialien: list[Material]) -> list[Material]:
-    """Sortiert Materialien absteigend nach Eingangsdatum, Abnahmedatum und Erstellzeit."""
-    return sorted(
-        materialien,
-        key=lambda material: (
-            material.eingangsdatum.toordinal(),
-            material.abnahmedatum.toordinal(),
-            material.erstellt_am.timestamp() if material.erstellt_am is not None else float("-inf"),
-            material.id,
-        ),
-        reverse=True,
-    )
 
 
 def ermittle_naechsten_schritt(
@@ -461,6 +485,40 @@ def zeige_legende() -> None:
     )
 
 
+def zeige_probeneingang_ueberleitung() -> None:
+    """Zeigt eine Ueberleitung zur Probeneingang-Auswertung."""
+    linke_spalte, rechte_spalte = st.columns((3, 1))
+
+    with linke_spalte:
+        st.markdown(
+            """
+            <div class="analysis-transition-card">
+                <div class="analysis-transition-title">Probeneingang-Auswertung</div>
+                <div class="analysis-transition-text">
+                    Neben dem aktuellen Fallstatus kann auch die Laborbelastung ausgewertet werden.
+                    Die Probeneingang-Auswertung zeigt, an welchen Tagen besonders viele Materialien
+                    eingegangen sind, inklusive Tagesdiagramm und Heatmap nach Kalenderwoche und Wochentag.
+                </div>
+                <div style="margin-top: 0.55rem;">
+                    <span class="analysis-transition-chip">Proben pro Tag</span>
+                    <span class="analysis-transition-chip">Heatmap</span>
+                    <span class="analysis-transition-chip">Belastungsspitzen</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with rechte_spalte:
+        st.write("")
+        st.write("")
+        st.page_link(
+            "views/probeneingang_auswertung.py",
+            label="Auswertung öffnen",
+            icon=":material/analytics:",
+        )
+
+
 def zeige_filterbereich() -> tuple[str, str]:
     """Zeigt Suche und Statusfilter."""
     with st.container(border=True):
@@ -550,7 +608,7 @@ def oeffne_kulturseite(material: Material | None) -> None:
 def zeige_fallkarte(status: Fallstatus) -> None:
     """Zeigt einen Patientenfall als Statuskarte."""
     patient = status.patient
-    material = status.bevozugtes_material if hasattr(status, "bevozugtes_material") else status.bevorzugtes_material
+    material = status.bevorzugtes_material
 
     with st.container(border=True):
         kopf_spalte, status_spalte, schritt_spalte, aktion_spalte = st.columns(
@@ -662,6 +720,9 @@ def main() -> None:
     zeige_kennzahlen(statusliste)
     st.divider()
     zeige_legende()
+    zeige_probeneingang_ueberleitung()
+
+    st.divider()
 
     suchtext, statusfilter = zeige_filterbereich()
     gefilterte_statusliste = filtere_statusliste(

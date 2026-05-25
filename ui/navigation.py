@@ -10,10 +10,11 @@ SICHTBARE_NAVIGATION_URL_SCHLUESSEL = "sichtbare_navigation_url"
 DASHBOARD_URL_PFAD = "dashboard"
 PATIENTEN_ERFASSEN_URL_PFAD = "patienten-erfassen"
 PATIENTENUEBERSICHT_URL_PFAD = "patientenuebersicht"
-FALLSTATUS_URL_PFAD = "fallstatus"
 MATERIAL_ERFASSEN_URL_PFAD = "material-erfassen"
 KULTUREN_ABLESEN_URL_PFAD = "kulturen-ablesen"
 RESISTENZRECHNER_URL_PFAD = "rechner-resistenzmonitoring"
+FALLSTATUS_URL_PFAD = "fallstatus"
+PROBENEINGANG_AUSWERTUNG_URL_PFAD = "probeneingang-auswertung"
 HILFE_GLOSSAR_URL_PFAD = "hilfe-glossar"
 
 
@@ -41,12 +42,6 @@ def erstelle_navigation():
                 url_path=PATIENTENUEBERSICHT_URL_PFAD,
             ),
             st.Page(
-                "views/fallstatus.py",
-                title="Fallstatus",
-                icon=":material/fact_check:",
-                url_path=FALLSTATUS_URL_PFAD,
-            ),
-            st.Page(
                 "views/material_erfassen.py",
                 title="Material erfassen",
                 icon=":material/science:",
@@ -63,6 +58,18 @@ def erstelle_navigation():
                 title="Resistenzmonitoring",
                 icon=":material/functions:",
                 url_path=RESISTENZRECHNER_URL_PFAD,
+            ),
+            st.Page(
+                "views/fallstatus.py",
+                title="Fallstatus",
+                icon=":material/fact_check:",
+                url_path=FALLSTATUS_URL_PFAD,
+            ),
+            st.Page(
+                "views/probeneingang_auswertung.py",
+                title="Probeneingang-Auswertung",
+                icon=":material/analytics:",
+                url_path=PROBENEINGANG_AUSWERTUNG_URL_PFAD,
             ),
             st.Page(
                 "views/hilfe_glossar.py",
