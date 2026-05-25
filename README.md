@@ -58,11 +58,11 @@ Um den digitalisierten Laborworkflow in BaktoLab Schritt für Schritt zu durchla
 * Melde dich mit deinem Labor-Logindaten an 
 
 ### Schritt 2: Patientenaufnahme (Stammdaten)
-* Gehe zum Bereich **Patientenaufnahme**.
+* Gehe zum Bereich **Patient erfassen**.
 * Erfasse die demografischen Daten des Patienten (Name, Vorname, Geburtsdatum, Geschlecht). Diese Daten bilden die Basis für die spätere Zuordnung.
 
 ### Schritt 3: Materialaufnahme (Probenbestellung)
-* Wechsele zum Menüpunkt **Materialaufnahme**.
+* Wechsele zum Menüpunkt **Material erfassen**.
 * Wähle den Patienten aus
 * Wähle die Materialart (z. B. Urin, Abstrich, Sputum) und erfasse das Entnahmedatum (die volle Nutzung zurzeit nur mit Urin und Bakteriologie allgemein möglich).
 
