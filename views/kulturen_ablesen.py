@@ -55,6 +55,149 @@ PATIENTENAUSWAHL_MATERIALKONTEXT_SCHLUESSEL = (
 )
 
 
+def zeige_seitenstil() -> None:
+    """Fuegt kleine visuelle Verbesserungen fuer Karten und Ablaufgrafik hinzu."""
+    st.markdown(
+        """
+<style>
+.kultur-karte {
+    border: 1px solid rgba(49, 51, 63, 0.18);
+    border-radius: 14px;
+    padding: 1rem;
+    min-height: 145px;
+    background: rgba(250, 250, 250, 0.65);
+}
+
+.kultur-icon {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.35rem;
+}
+
+.kultur-karten-titel {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.kultur-karten-text {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.kultur-karten-caption {
+    color: rgba(49, 51, 63, 0.65);
+    font-size: 0.82rem;
+}
+
+.workflow-box {
+    border: 1px solid rgba(49, 51, 63, 0.16);
+    border-radius: 16px;
+    padding: 1rem 0.75rem;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,247,250,0.95));
+    min-height: 155px;
+}
+
+.workflow-icon {
+    font-size: 2rem;
+    margin-bottom: 0.3rem;
+}
+
+.workflow-number {
+    display: inline-block;
+    border-radius: 999px;
+    border: 1px solid rgba(49, 51, 63, 0.2);
+    padding: 0.12rem 0.55rem;
+    font-size: 0.78rem;
+    margin-bottom: 0.45rem;
+}
+
+.workflow-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.workflow-text {
+    color: rgba(49, 51, 63, 0.7);
+    font-size: 0.85rem;
+}
+
+.status-chip {
+    display: inline-block;
+    border: 1px solid rgba(49, 51, 63, 0.18);
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+    background: rgba(250,250,250,0.75);
+    font-size: 0.88rem;
+}
+</style>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def zeige_workflow_grafik() -> None:
+    """Zeigt eine kleine grafische Ablaufuebersicht ohne externe Bilddateien."""
+    st.subheader("Arbeitsablauf")
+
+    schritt_1, schritt_2, schritt_3, schritt_4 = st.columns(4)
+
+    with schritt_1:
+        st.markdown(
+            """
+<div class="workflow-box">
+    <div class="workflow-icon">🧫</div>
+    <div class="workflow-number">Schritt 1</div>
+    <div class="workflow-title">Wachstum</div>
+    <div class="workflow-text">Festlegen, ob Bakterienwachstum vorhanden ist.</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    with schritt_2:
+        st.markdown(
+            """
+<div class="workflow-box">
+    <div class="workflow-icon">🔬</div>
+    <div class="workflow-number">Schritt 2</div>
+    <div class="workflow-title">Keime</div>
+    <div class="workflow-text">Nur bei Wachstum die nachgewiesenen Keime erfassen.</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    with schritt_3:
+        st.markdown(
+            """
+<div class="workflow-box">
+    <div class="workflow-icon">🧪</div>
+    <div class="workflow-number">Schritt 3</div>
+    <div class="workflow-title">Beurteilung</div>
+    <div class="workflow-text">Eingaben validieren und fachlich beurteilen.</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    with schritt_4:
+        st.markdown(
+            """
+<div class="workflow-box">
+    <div class="workflow-icon">📄</div>
+    <div class="workflow-number">Schritt 4</div>
+    <div class="workflow-title">Befund</div>
+    <div class="workflow-text">Nach gueltiger Beurteilung den Befund oeffnen.</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+
 def hole_ausgewaehlte_patienten_id_auswahl() -> str | None:
     """Liest die aktuell im Dropdown gewaehlte Patienten-ID aus dem Session State."""
     patient_id = st.session_state.get(PATIENTENAUSWAHL_SCHLUESSEL)
@@ -92,33 +235,38 @@ def kehre_zur_patientendetailansicht_zurueck() -> None:
 
 def zeige_aktionsleiste() -> None:
     """Rendert die wichtigsten Ruecksprung- und Navigationsaktionen."""
-    linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
+    with st.container(border=True):
+        st.markdown("### Navigation")
 
-    with linke_spalte:
-        if st.button(
-            "Zurueck zur Patientendetailansicht",
-            use_container_width=True,
-        ):
-            kehre_zur_patientendetailansicht_zurueck()
+        linke_spalte, mittlere_spalte, rechte_spalte = st.columns(3)
 
-    with mittlere_spalte:
-        st.page_link(
-            "views/patientenuebersicht.py",
-            label="Zurueck zur Patientenuebersicht",
-            icon=":material/groups:",
-        )
+        with linke_spalte:
+            if st.button(
+                "Zurueck zur Patientendetailansicht",
+                use_container_width=True,
+            ):
+                kehre_zur_patientendetailansicht_zurueck()
 
-    with rechte_spalte:
-        st.page_link(
-            "views/dashboard.py",
-            label="Zurueck zum Dashboard",
-            icon=":material/dashboard:",
-        )
+        with mittlere_spalte:
+            st.page_link(
+                "views/patientenuebersicht.py",
+                label="Zurueck zur Patientenuebersicht",
+                icon=":material/groups:",
+            )
+
+        with rechte_spalte:
+            st.page_link(
+                "views/dashboard.py",
+                label="Zurueck zum Dashboard",
+                icon=":material/dashboard:",
+            )
 
 
 def zeige_kurzanleitung() -> None:
     """Zeigt eine kurze, gut sichtbare Anleitung fuer die Arbeitsschritte."""
-    with st.expander("Kurzanleitung fuer diese Seite", expanded=True):
+    zeige_workflow_grafik()
+
+    with st.expander("Ausfuehrliche Kurzanleitung anzeigen", expanded=False):
         st.markdown(
             """
 1. Lege zuerst fest, ob Bakterienwachstum vorliegt oder ob ausdruecklich kein Wachstum vorhanden ist.
@@ -215,7 +363,9 @@ def zeige_patientenauswahl(
     )
 
     with st.container(border=True):
-        st.markdown("**Patientenauswahl**")
+        st.markdown("### Patient auswaehlen")
+        st.caption("Waehle den Patienten, dessen Kulturdaten du ablesen moechtest.")
+
         st.selectbox(
             "Patient",
             options=patienten_ids,
@@ -278,19 +428,51 @@ def ermittle_materialkontext_fuer_patientenauswahl(
 
 
 def zeige_materialkontext(patient: Patient, material: Material) -> None:
-    """Zeigt den aktuell verwendeten Patienten- und Materialkontext an."""
-    st.caption(f"Aktuelle Materialreferenz: {material.id}")
+    """Zeigt den aktuell verwendeten Patienten- und Materialkontext uebersichtlich an."""
+    st.subheader("Aktueller Fall")
 
-    with st.container(border=True):
-        st.markdown("**Aktuelles Material**")
-        st.write(f"Patient: {formatiere_patient_label(patient)}")
-        st.write(f"Material-ID: {material.id}")
-        st.write(f"Materialtyp: {loese_materialtyp_label_auf(material.materialtyp_code)}")
-        st.write(f"Analyse: {loese_analyse_label_auf(material.klinische_frage_code)}")
-        st.write(f"Eingangsdatum: {formatiere_datum(material.eingangsdatum)}")
-        st.caption(
-            "Alle Eingaben auf dieser Seite werden direkt bei diesem Material gespeichert."
+    patient_spalte, material_spalte, analyse_spalte = st.columns(3)
+
+    with patient_spalte:
+        st.markdown(
+            f"""
+<div class="kultur-karte">
+    <div class="kultur-icon">👤</div>
+    <div class="kultur-karten-titel">Patient</div>
+    <div class="kultur-karten-text">{formatiere_patient_label(patient)}</div>
+    <div class="kultur-karten-caption">Patienten-ID: {patient.id}</div>
+</div>
+""",
+            unsafe_allow_html=True,
         )
+
+    with material_spalte:
+        st.markdown(
+            f"""
+<div class="kultur-karte">
+    <div class="kultur-icon">🧫</div>
+    <div class="kultur-karten-titel">Material</div>
+    <div class="kultur-karten-text">{loese_materialtyp_label_auf(material.materialtyp_code)}</div>
+    <div class="kultur-karten-caption">Material-ID: {material.id}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    with analyse_spalte:
+        st.markdown(
+            f"""
+<div class="kultur-karte">
+    <div class="kultur-icon">🔬</div>
+    <div class="kultur-karten-titel">Analyse</div>
+    <div class="kultur-karten-text">{loese_analyse_label_auf(material.klinische_frage_code)}</div>
+    <div class="kultur-karten-caption">Eingang: {formatiere_datum(material.eingangsdatum)}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    st.caption("Alle Eingaben auf dieser Seite werden direkt bei diesem Material gespeichert.")
 
 
 def pruefe_kulturworkflow_voraussetzungen(material: Material) -> bool:
@@ -469,32 +651,67 @@ def validiere_und_oeffne_befund(material: Material) -> UrinBeurteilung | None:
     return beurteilung
 
 
+def zeige_wachstumsstatus(material: Material) -> None:
+    """Zeigt eine kleine grafische Statusanzeige zum aktuellen Wachstumsstatus."""
+    wachstum_vorhanden = hole_wachstum(material.id)
+
+    if wachstum_vorhanden:
+        st.markdown(
+            """
+<div>
+    <span class="status-chip">🧫 Wachstum vorhanden</span>
+    <span class="status-chip">🔬 Keime erfassen</span>
+    <span class="status-chip">✅ Keimzahl bestaetigen</span>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            """
+<div>
+    <span class="status-chip">✅ Kein Wachstum</span>
+    <span class="status-chip">🧫 Keine Keime erforderlich</span>
+    <span class="status-chip">📄 Direkt beurteilbar</span>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+
 def zeige_kulturdatenformular(material: Material) -> None:
     """Rendert den Eingabebereich fuer Wachstum und Keime."""
-    st.subheader("Kulturdaten")
-    st.radio(
-        "Bakterienwachstum",
-        options=hole_wachstumsoptionen(),
-        key=baue_formularschluessel(material.id, "wachstum"),
-        format_func=hole_wachstumsoption_label,
-        horizontal=True,
-    )
+    st.subheader("Kulturdaten erfassen")
 
-    if hole_wachstum(material.id):
-        st.caption(
-            "Erfasse nur die vorhandenen Keime. Jede ausgewaehlte Keimzahl muss vor "
-            "dem Speichern oder Beurteilen anhand des Referenzbilds bestaetigt werden."
+    with st.container(border=True):
+        st.markdown("### 🧫 Bakterienwachstum")
+        st.caption("Waehle zuerst aus, ob Bakterienwachstum vorhanden ist.")
+
+        st.radio(
+            "Bakterienwachstum",
+            options=hole_wachstumsoptionen(),
+            key=baue_formularschluessel(material.id, "wachstum"),
+            format_func=hole_wachstumsoption_label,
+            horizontal=True,
         )
-        zeige_keimeingabe(material.id)
-    else:
-        st.info(
-            "Es ist ausdruecklich 'Kein Wachstum' ausgewaehlt. "
-            "Fuer dieses Material muessen keine Keime erfasst werden."
-        )
-        st.caption(
-            "Beim Speichern, Beurteilen und im Befund wird dieser Fall als "
-            "'keine Bakterien gewachsen' weitergefuehrt."
-        )
+
+        zeige_wachstumsstatus(material)
+
+        if hole_wachstum(material.id):
+            st.info(
+                "Bakterienwachstum ist vorhanden. Erfasse nun die nachgewiesenen Keime "
+                "und bestaetige die Keimzahl anhand des Referenzbilds."
+            )
+            zeige_keimeingabe(material.id)
+        else:
+            st.success(
+                "Es ist ausdruecklich 'Kein Wachstum' ausgewaehlt. "
+                "Fuer dieses Material muessen keine Keime erfasst werden."
+            )
+            st.caption(
+                "Beim Speichern, Beurteilen und im Befund wird dieser Fall als "
+                "'keine Bakterien gewachsen' weitergefuehrt."
+            )
 
 
 def verarbeite_aktionsbuttons(
@@ -503,47 +720,88 @@ def verarbeite_aktionsbuttons(
 ) -> UrinBeurteilung | None:
     """Verarbeitet Speichern, Beurteilung und Befundoeffnung fuer das aktuelle Material."""
     aktualisierte_beurteilung = aktuelle_beurteilung
-    button_spalte_links, button_spalte_mitte, button_spalte_rechts = st.columns(3)
 
-    with button_spalte_links:
-        if st.button(
-            "Kulturdaten speichern",
-            type="secondary",
-            use_container_width=True,
-        ):
-            if speichere_kulturdaten(material):
-                aktualisierte_beurteilung = None
+    st.subheader("Aktionen")
 
-    with button_spalte_mitte:
-        if st.button(
-            "Beurteilung berechnen",
-            type="secondary",
-            use_container_width=True,
-        ):
-            berechnete_beurteilung = berechne_und_speichere_beurteilung(material)
-            if berechnete_beurteilung is not None:
-                aktualisierte_beurteilung = berechnete_beurteilung
+    with st.container(border=True):
+        st.markdown(
+            """
+<div>
+    <span class="status-chip">💾 Speichern</span>
+    <span class="status-chip">🧪 Beurteilung berechnen</span>
+    <span class="status-chip">📄 Befund oeffnen</span>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
-    with button_spalte_rechts:
-        if st.button(
-            "Validieren und Befund oeffnen",
-            type="primary",
-            use_container_width=True,
-        ):
-            berechnete_beurteilung = validiere_und_oeffne_befund(material)
-            if berechnete_beurteilung is not None:
-                aktualisierte_beurteilung = berechnete_beurteilung
+        st.caption(
+            "Speichere zuerst die Kulturdaten oder berechne direkt die Beurteilung. "
+            "Der Befund wird erst nach erfolgreicher Validierung geoeffnet."
+        )
+
+        button_spalte_links, button_spalte_mitte, button_spalte_rechts = st.columns(3)
+
+        with button_spalte_links:
+            if st.button(
+                "Kulturdaten speichern",
+                type="secondary",
+                use_container_width=True,
+            ):
+                if speichere_kulturdaten(material):
+                    aktualisierte_beurteilung = None
+
+        with button_spalte_mitte:
+            if st.button(
+                "Beurteilung berechnen",
+                type="secondary",
+                use_container_width=True,
+            ):
+                berechnete_beurteilung = berechne_und_speichere_beurteilung(material)
+                if berechnete_beurteilung is not None:
+                    aktualisierte_beurteilung = berechnete_beurteilung
+
+        with button_spalte_rechts:
+            if st.button(
+                "Validieren und Befund oeffnen",
+                type="primary",
+                use_container_width=True,
+            ):
+                berechnete_beurteilung = validiere_und_oeffne_befund(material)
+                if berechnete_beurteilung is not None:
+                    aktualisierte_beurteilung = berechnete_beurteilung
 
     return aktualisierte_beurteilung
 
 
+def zeige_ergebnisbereich(
+    material: Material,
+    aktuelle_beurteilung: UrinBeurteilung | None,
+) -> None:
+    """Zeigt Vorschau und Beurteilung uebersichtlich in Tabs."""
+    st.subheader("Ergebnis und Kontrolle")
+
+    tab_vorschau, tab_beurteilung = st.tabs(["📋 Vorschau", "🧪 Beurteilung"])
+
+    with tab_vorschau:
+        st.caption("Kontrolliere hier die aktuell erfassten Kulturdaten.")
+        zeige_vorschau(material.id)
+
+    with tab_beurteilung:
+        st.caption("Hier erscheint die berechnete oder gespeicherte Beurteilung.")
+        zeige_beurteilung(aktuelle_beurteilung)
+
+
 def main() -> None:
     """Rendert die Seite ``Kulturen ablesen`` mit speicherbarer Eingabemaske."""
+    zeige_seitenstil()
+
     if hat_gueltige_befund_route():
         zeige_befund_innerhalb_kulturen_ablesen()
         return
 
     show_header("Kulturen ablesen")
+
     st.info(
         "Diese Seite ist aktuell nur fuer Urin mit der Analyse "
         "'Allgemeine Bakteriologie' freigeschaltet. Kulturdaten, Beurteilung "
@@ -560,11 +818,13 @@ def main() -> None:
         )
 
     zeige_aktionsleiste()
+    st.divider()
 
     materialkontext = lade_und_validiere_materialkontext()
     if materialkontext is None:
         return
 
+    st.divider()
     zeige_kurzanleitung()
 
     _patient, material = materialkontext
@@ -572,10 +832,13 @@ def main() -> None:
 
     aktuelle_beurteilung = hole_gespeicherte_beurteilung(material)
 
+    st.divider()
     zeige_kulturdatenformular(material)
+
     aktuelle_beurteilung = verarbeite_aktionsbuttons(material, aktuelle_beurteilung)
-    zeige_vorschau(material.id)
-    zeige_beurteilung(aktuelle_beurteilung)
+
+    st.divider()
+    zeige_ergebnisbereich(material, aktuelle_beurteilung)
 
 
 main()

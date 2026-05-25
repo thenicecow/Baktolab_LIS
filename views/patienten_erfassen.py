@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import streamlit as st
 
 from functions.patienten.erfassung import (
@@ -10,17 +12,36 @@ from functions.patienten.erfassung import (
     GEBURTSMONAT_SCHLUESSEL,
     GESCHLECHTER,
     GESCHLECHT_SCHLUESSEL,
-    MONATE,
     NACHNAME_SCHLUESSEL,
     VORNAME_SCHLUESSEL,
-    hole_geburtsjahre,
-    hole_monatslabel,
     hole_und_entferne_erfolgsmeldung,
     initialisiere_formularzustand,
     merke_erfolgreiche_speicherung,
     speichere_patient,
 )
 from ui.header import show_header
+
+
+GEBURTSDATUM_KALENDER_SCHLUESSEL = "geburtsdatum_kalender"
+
+
+def hole_vorausgewaehltes_geburtsdatum() -> date:
+    """Erzeugt ein Datum aus dem bestehenden Formularzustand."""
+    tag = st.session_state.get(GEBURTSTAG_SCHLUESSEL, 1)
+    monat = st.session_state.get(GEBURTSMONAT_SCHLUESSEL, 1)
+    jahr = st.session_state.get(GEBURTSJAHR_SCHLUESSEL, 2000)
+
+    try:
+        return date(int(jahr), int(monat), int(tag))
+    except ValueError:
+        return date(2000, 1, 1)
+
+
+def uebertrage_kalenderdatum_in_formularzustand(geburtsdatum: date) -> None:
+    """Speichert das Kalenderdatum in den bisherigen Tag-, Monat- und Jahr-Schlüsseln."""
+    st.session_state[GEBURTSTAG_SCHLUESSEL] = geburtsdatum.day
+    st.session_state[GEBURTSMONAT_SCHLUESSEL] = geburtsdatum.month
+    st.session_state[GEBURTSJAHR_SCHLUESSEL] = geburtsdatum.year
 
 
 def main() -> None:
@@ -40,32 +61,17 @@ def main() -> None:
 
         with linke_spalte:
             st.text_input("Vorname", key=VORNAME_SCHLUESSEL)
-            st.markdown("**Geburtsdatum**")
-            tag_spalte, monat_spalte, jahr_spalte = st.columns(3)
 
-            with tag_spalte:
-                st.selectbox(
-                    "Tag",
-                    options=list(range(1, 32)),
-                    key=GEBURTSTAG_SCHLUESSEL,
-                )
+            geburtsdatum = st.date_input(
+                "Geburtsdatum",
+                value=hole_vorausgewaehltes_geburtsdatum(),
+                min_value=date(1900, 1, 1),
+                max_value=date.today(),
+                format="DD.MM.YYYY",
+                key=GEBURTSDATUM_KALENDER_SCHLUESSEL,
+            )
 
-            with monat_spalte:
-                st.selectbox(
-                    "Monat",
-                    options=[monatsnummer for monatsnummer, _ in MONATE],
-                    key=GEBURTSMONAT_SCHLUESSEL,
-                    format_func=hole_monatslabel,
-                )
-
-            with jahr_spalte:
-                st.selectbox(
-                    "Jahr",
-                    options=hole_geburtsjahre(),
-                    key=GEBURTSJAHR_SCHLUESSEL,
-                )
-
-            st.caption("Jahre bis einschliesslich 1900 sind auswählbar.")
+            st.caption("Das Geburtsdatum kann direkt im Kalender ausgewählt werden.")
 
         with rechte_spalte:
             st.text_input("Nachname", key=NACHNAME_SCHLUESSEL)
@@ -78,6 +84,8 @@ def main() -> None:
         )
 
     if speichern:
+        uebertrage_kalenderdatum_in_formularzustand(geburtsdatum)
+
         neue_erfolgsmeldung = speichere_patient()
         if neue_erfolgsmeldung is not None:
             merke_erfolgreiche_speicherung(neue_erfolgsmeldung)
